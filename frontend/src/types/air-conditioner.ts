@@ -7,7 +7,14 @@ export interface AirConditioner {
   description?: string | null;
   price?: number | null;
   image_url?: string | null;
-  error_codes?: any[]; // Simplified for now
+}
+
+export interface ErrorCode {
+  id: string;
+  code: string;
+  description: string;
+  air_conditioner_id: string;
+  // potentially other fields like solution, cause
 }
 
 export interface CreateAirConditionerRequest {

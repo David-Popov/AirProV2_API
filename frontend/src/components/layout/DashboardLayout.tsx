@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/context'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { ModeToggle } from '@/components/mode-toggle'
 
 export default function DashboardLayout() {
   const { user, logout } = useAuth()
@@ -30,14 +31,14 @@ export default function DashboardLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      {/* Sidebar */}
-      <aside className="fixed left-0 top-0 h-full w-64 bg-slate-900 border-r border-slate-800 p-4 z-50 flex flex-col">
+    <div className="min-h-screen bg-background">
+      {/* Sidebar - Glass Effect */}
+      <aside className="fixed left-0 top-0 h-full w-64 glass-sidebar p-4 z-50 flex flex-col transition-all duration-300">
         <div className="flex items-center gap-2 mb-8 cursor-pointer" onClick={() => navigate('/dashboard')}>
-          <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
-            <Snowflake className="w-6 h-6 text-white" />
+          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/25 ring-1 ring-white/10">
+            <Snowflake className="w-6 h-6 text-primary-foreground" />
           </div>
-          <span className="text-white font-bold text-xl">{t('app_name')}</span>
+          <span className="text-sidebar-foreground font-bold text-xl tracking-tight">{t('app_name')}</span>
         </div>
 
         <nav className="space-y-2 flex-1">
@@ -73,7 +74,7 @@ export default function DashboardLayout() {
             active={location.pathname === '/air-conditioners'}
             onClick={() => handleNavClick('/air-conditioners')}
           />
-          <div className="pt-4 mt-4 border-t border-slate-800">
+          <div className="pt-4 mt-4 border-t border-sidebar-border/50">
              <NavItem 
               icon={Settings} 
               label={t('common.settings')}
@@ -83,14 +84,14 @@ export default function DashboardLayout() {
           </div>
         </nav>
 
-        <div className="mt-auto">
+        <div className="mt-auto space-y-4">
           {/* User info */}
-          <div className="mb-4 p-3 bg-slate-800/50 rounded-lg">
-            <p className="text-white font-medium text-sm truncate">{user?.full_name}</p>
-            <p className="text-gray-400 text-xs truncate">{user?.email}</p>
+          <div className="p-3 bg-sidebar-accent/50 rounded-xl border border-sidebar-border/50 backdrop-blur-sm">
+            <p className="text-sidebar-foreground font-medium text-sm truncate">{user?.full_name}</p>
+            <p className="text-muted-foreground text-xs truncate">{user?.email}</p>
             <div className="flex gap-1 mt-2 flex-wrap">
               {user?.roles.map(role => (
-                <Badge key={role} variant="secondary" className="text-[10px] px-1 h-5">
+                <Badge key={role} variant="secondary" className="text-[10px] px-2 h-5 rounded-md bg-sidebar-accent text-sidebar-foreground hover:bg-sidebar-accent/80">
                   {role}
                 </Badge>
               ))}
@@ -100,12 +101,13 @@ export default function DashboardLayout() {
           <div className="flex items-center gap-2">
             <Button 
               variant="ghost" 
-              className="flex-1 justify-start text-gray-400 hover:text-white hover:bg-red-500/10 hover:text-red-400"
+              className="flex-1 justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
               onClick={handleLogout}
             >
               <LogOut className="w-4 h-4 mr-2" />
               {t('common.logout')}
             </Button>
+            <ModeToggle />
             <LanguageSwitcher />
           </div>
         </div>
@@ -128,14 +130,14 @@ function NavItem({ icon: Icon, label, active = false, onClick }: NavItemProps) {
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
         active 
-          ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' 
-          : 'text-gray-400 hover:bg-slate-800 hover:text-white'
+          ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25 scale-[1.02]' 
+          : 'text-muted-foreground hover:bg-sidebar-accent/80 hover:text-sidebar-foreground'
       }`}
     >
-      <Icon className="w-5 h-5" />
-      <span>{label}</span>
+      <Icon className={`w-5 h-5 transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
+      <span className="font-medium">{label}</span>
       </button>
   )
 }

@@ -46,16 +46,16 @@ export interface UpdateMontageRequest extends Partial<CreateMontageRequest> {
 }
 
 export const MONTAGE_STATUS_OPTIONS = [
-  'Planned',
-  'Scheduled',
-  'In Progress',
-  'Completed',
-  'Cancelled'
+  { value: 'Planned', label: 'Planned' },
+  { value: 'InProgress', label: 'In Progress' },
+  { value: 'Completed', label: 'Completed' },
+  { value: 'Canceled', label: 'Cancelled' },
+  { value: 'Overdue', label: 'Overdue' }
 ];
 
 export const PAYMENT_STATUS_OPTIONS = [
-  'Not Paid',
-  'Partially Paid',
-  'Paid',
-  'Refunded'
+  { value: 'NotPaid', label: 'Not Paid' },
+  { value: 'PartiallyPaid', label: 'Partially Paid' },
+  { value: 'Paid', label: 'Paid' },
+  { value: 'Overdue', label: 'Overdue' }
 ];
