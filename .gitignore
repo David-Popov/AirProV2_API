@@ -134,6 +134,8 @@ docker-compose.override.yml
 # PostgreSQL Docker volume data
 /Data/
 
+/docs/
+
 # ===================
 # Database
 # ===================

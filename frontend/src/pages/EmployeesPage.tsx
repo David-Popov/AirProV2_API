@@ -119,17 +119,17 @@ export default function EmployeesPage() {
   )
 
   return (
-    <div className="min-h-screen bg-slate-950 p-8 ml-64">
+    <div className="min-h-screen bg-background p-8 ml-64 transition-colors duration-300">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-            <Users className="w-8 h-8 text-purple-500" />
+          <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+            <Users className="w-8 h-8 text-primary" />
             {t('employees.title')}
           </h1>
-          <p className="text-gray-400">{t('employees.subtitle')}</p>
+          <p className="text-muted-foreground">{t('employees.subtitle')}</p>
         </div>
-        <Button onClick={handleCreate} className="bg-purple-600 hover:bg-purple-700">
+        <Button onClick={handleCreate} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
           <Plus className="w-4 h-4 mr-2" />
           {t('employees.add_employee')}
         </Button>
@@ -138,10 +138,10 @@ export default function EmployeesPage() {
       {/* Search */}
       <div className="flex gap-4 mb-6">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input 
             placeholder={t('employees.search_placeholder')}
-            className="pl-10 bg-slate-900 border-slate-800 text-white"
+            className="pl-10 bg-background/50 border-input text-foreground hover:bg-background/80 transition-colors"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -149,16 +149,16 @@ export default function EmployeesPage() {
       </div>
 
       {/* Table */}
-      <div className="rounded-md border border-slate-800 bg-slate-900/50 overflow-hidden">
+      <div className="glass-card rounded-xl overflow-hidden">
         <Table>
-          <TableHeader className="bg-slate-900">
-            <TableRow className="border-slate-800 hover:bg-slate-900">
-              <TableHead className="text-gray-400">{t('inventory.name')}</TableHead>
-              <TableHead className="text-gray-400">{t('auth.email')}</TableHead>
-              <TableHead className="text-gray-400">{t('employees.role')}</TableHead>
-              <TableHead className="text-gray-400">{t('auth.phone')}</TableHead>
-              <TableHead className="text-gray-400">{t('common.status')}</TableHead>
-              <TableHead className="text-right text-gray-400">{t('common.actions')}</TableHead>
+          <TableHeader className="bg-muted/30">
+            <TableRow className="border-border hover:bg-muted/30">
+              <TableHead className="text-muted-foreground">{t('inventory.name')}</TableHead>
+              <TableHead className="text-muted-foreground">{t('auth.email')}</TableHead>
+              <TableHead className="text-muted-foreground">{t('employees.role')}</TableHead>
+              <TableHead className="text-muted-foreground">{t('auth.phone')}</TableHead>
+              <TableHead className="text-muted-foreground">{t('common.status')}</TableHead>
+              <TableHead className="text-right text-muted-foreground">{t('common.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -166,21 +166,21 @@ export default function EmployeesPage() {
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center">
                   <div className="flex justify-center">
-                    <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
                   </div>
                 </TableCell>
               </TableRow>
             ) : filteredEmployees.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-gray-500">
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                   {t('employees.no_employees')}
                 </TableCell>
               </TableRow>
             ) : (
               filteredEmployees.map((emp) => (
-                <TableRow key={emp.id} className="border-slate-800 hover:bg-slate-800/50">
-                  <TableCell className="font-medium text-white">{emp.full_name}</TableCell>
-                  <TableCell className="text-gray-400">{emp.email}</TableCell>
+                <TableRow key={emp.id} className="border-border hover:bg-muted/30 transition-colors">
+                  <TableCell className="font-medium text-foreground">{emp.full_name}</TableCell>
+                  <TableCell className="text-muted-foreground">{emp.email}</TableCell>
                   <TableCell>
                     {emp.roles.map(role => (
                       <Badge key={role} variant="secondary" className="mr-1">
@@ -188,14 +188,14 @@ export default function EmployeesPage() {
                       </Badge>
                     ))}
                   </TableCell>
-                  <TableCell className="text-gray-400">{emp.phone_number || '-'}</TableCell>
+                  <TableCell className="text-muted-foreground">{emp.phone_number || '-'}</TableCell>
                   <TableCell>
                     {emp.is_active ? (
-                      <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20">
+                      <Badge className="bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20 border-green-500/20">
                         {t('common.active')}
                       </Badge>
                     ) : (
-                      <Badge variant="destructive" className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20">
+                      <Badge variant="destructive" className="bg-destructive/10 text-destructive hover:bg-destructive/20 border-destructive/20">
                         {t('common.inactive')}
                       </Badge>
                     )}
@@ -203,12 +203,12 @@ export default function EmployeesPage() {
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0 text-gray-400 hover:text-white">
+                        <Button variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
                           <MoreVertical className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-gray-300">
-                        <DropdownMenuItem onClick={() => handleDelete(emp.id)} className="text-red-500 hover:bg-red-900/20 cursor-pointer">
+                      <DropdownMenuContent align="end" className="bg-popover border-border text-popover-foreground">
+                        <DropdownMenuItem onClick={() => handleDelete(emp.id)} className="text-destructive focus:text-destructive cursor-pointer">
                           <Trash className="w-4 h-4 mr-2" />
                           {t('common.remove')}
                         </DropdownMenuItem>
@@ -224,7 +224,7 @@ export default function EmployeesPage() {
 
       {/* Create Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-slate-900 border-slate-800 text-white sm:max-w-[425px]">
+        <DialogContent className="bg-card border-border text-card-foreground sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>{t('employees.add_employee')}</DialogTitle>
           </DialogHeader>
@@ -236,7 +236,7 @@ export default function EmployeesPage() {
                   id="firstName"
                   value={newEmployee.first_name}
                   onChange={(e) => setNewEmployee({ ...newEmployee, first_name: e.target.value })}
-                  className="bg-slate-800 border-slate-700"
+                  className="bg-background border-input"
                   required
                 />
               </div>
@@ -246,7 +246,7 @@ export default function EmployeesPage() {
                   id="lastName"
                   value={newEmployee.last_name}
                   onChange={(e) => setNewEmployee({ ...newEmployee, last_name: e.target.value })}
-                  className="bg-slate-800 border-slate-700"
+                  className="bg-background border-input"
                   required
                 />
               </div>
@@ -258,7 +258,7 @@ export default function EmployeesPage() {
                 type="email"
                 value={newEmployee.email}
                 onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
-                className="bg-slate-800 border-slate-700"
+                className="bg-background border-input"
                 required
               />
             </div>
@@ -269,7 +269,7 @@ export default function EmployeesPage() {
                 type="password"
                 value={newEmployee.password}
                 onChange={(e) => setNewEmployee({ ...newEmployee, password: e.target.value })}
-                className="bg-slate-800 border-slate-700"
+                className="bg-background border-input"
                 required
               />
             </div>
@@ -279,11 +279,11 @@ export default function EmployeesPage() {
                 id="phone"
                 value={newEmployee.phone_number || ''}
                 onChange={(e) => setNewEmployee({ ...newEmployee, phone_number: e.target.value })}
-                className="bg-slate-800 border-slate-700"
+                className="bg-background border-input"
               />
             </div>
             <DialogFooter>
-              <Button type="submit" className="bg-purple-600 hover:bg-purple-700" disabled={isSaving}>
+              <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSaving}>
                 {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {t('employees.create_account')}
               </Button>

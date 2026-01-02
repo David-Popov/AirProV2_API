@@ -25,12 +25,12 @@ export const COMPANY_TYPE_OPTIONS: { value: CompanyType; label: string }[] = [
 // Pagination
 export interface PagedList<T> {
   items: T[];
-  current_page: number;
-  page_size: number;
-  total_count: number;
-  total_pages: number;
-  has_previous: boolean;
-  has_next: boolean;
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 }
 
 // API Response types

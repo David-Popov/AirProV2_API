@@ -39,6 +39,10 @@ class ApiClient {
       throw new Error(error.message || `HTTP error! status: ${response.status}`);
     }
 
+    if (response.status === 204) {
+      return {} as T;
+    }
+
     return response.json();
   }
 
@@ -52,6 +56,10 @@ class ApiClient {
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'An error occurred' }));
       throw new Error(error.message || error.errors?.join(', ') || `HTTP error! status: ${response.status}`);
+    }
+
+    if (response.status === 204) {
+      return {} as T;
     }
 
     return response.json();
@@ -69,7 +77,12 @@ class ApiClient {
       throw new Error(error.message || error.errors?.join(', ') || `HTTP error! status: ${response.status}`);
     }
 
-    return response.json();
+    if (response.status === 204) {
+      return {} as T;
+    }
+
+    const text = await response.text();
+    return text ? JSON.parse(text) : ({} as T);
   }
 
   async patch<T, D = unknown>(endpoint: string, data?: D, includeAuth: boolean = true): Promise<T> {
@@ -82,6 +95,10 @@ class ApiClient {
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'An error occurred' }));
       throw new Error(error.message || error.errors?.join(', ') || `HTTP error! status: ${response.status}`);
+    }
+
+    if (response.status === 204) {
+      return {} as T;
     }
 
     return response.json();
