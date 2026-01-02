@@ -1,0 +1,54 @@
+using System.Text.Json.Serialization;
+
+namespace API.DTOs;
+
+/// <summary>
+/// Response DTO for authentication (login/register)
+/// </summary>
+public class AuthResponseDto
+{
+    [JsonPropertyName("token")]
+    public string Token { get; set; } = string.Empty;
+    
+    [JsonPropertyName("token_expiration")]
+    public DateTime TokenExpiration { get; set; }
+    
+    [JsonPropertyName("user")]
+    public AuthUserDto User { get; set; } = new();
+}
+
+/// <summary>
+/// User information returned after authentication
+/// </summary>
+public class AuthUserDto
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = string.Empty;
+    
+    [JsonPropertyName("email")]
+    public string Email { get; set; } = string.Empty;
+    
+    [JsonPropertyName("first_name")]
+    public string FirstName { get; set; } = string.Empty;
+    
+    [JsonPropertyName("middle_name")]
+    public string? MiddleName { get; set; }
+    
+    [JsonPropertyName("last_name")]
+    public string LastName { get; set; } = string.Empty;
+    
+    [JsonPropertyName("full_name")]
+    public string FullName { get; set; } = string.Empty;
+    
+    [JsonPropertyName("phone_number")]
+    public string? PhoneNumber { get; set; }
+    
+    [JsonPropertyName("company_id")]
+    public Guid? CompanyId { get; set; }
+    
+    [JsonPropertyName("company_name")]
+    public string? CompanyName { get; set; }
+    
+    [JsonPropertyName("roles")]
+    public List<string> Roles { get; set; } = new();
+}

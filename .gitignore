@@ -1,0 +1,212 @@
+# ===================
+# .NET / C# / ASP.NET
+# ===================
+
+# Build results
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio
+.vs/
+*.user
+*.userosscache
+*.suo
+*.sln.docstates
+*.userprefs
+
+# Rider
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+**/packages/*
+
+# Build artifacts
+*.dll
+*.exe
+*.pdb
+*.cache
+*.ilk
+*.meta
+*.obj
+*.iobj
+*.pch
+*.ipdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*_wpftmp.csproj
+*.log
+*.tlog
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+# Test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+
+# NCrunch
+_NCrunch_*
+.*crunch*.local.xml
+nCrunchTemp_*
+
+# MSpec
+.mspec
+
+# DocProject
+DocProject/buildhelp/
+DocProject/Help/*.HxT
+DocProject/Help/*.HxC
+DocProject/Help/*.hhc
+DocProject/Help/*.hhk
+DocProject/Help/*.hhp
+DocProject/Help/Html2
+DocProject/Help/html
+
+# Publish
+publish/
+[Pp]ublish*/
+
+# Entity Framework migrations
+# Note: Keep migrations in version control, but ignore local migration outputs
+*.Designer.cs.bak
+
+# ===================
+# macOS
+# ===================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# ===================
+# Windows
+# ===================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ===================
+# Environment / Secrets
+# ===================
+*.env
+*.env.local
+*.env.*.local
+appsettings.local.json
+appsettings.*.local.json
+secrets.json
+*.pfx
+*.p12
+
+# ===================
+# Docker
+# ===================
+docker-compose.override.yml
+
+# PostgreSQL Docker volume data
+/Data/
+
+# ===================
+# Database
+# ===================
+*.mdf
+*.ldf
+*.ndf
+*.sqlite
+*.db
+
+# ===================
+# Other
+# ===================
+# Backup files
+*.bak
+*.backup
+*~
+
+# Resharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# JustCode
+.JustCode
+
+# TeamCity
+_TeamCity*
+
+# DotCover
+*.dotCover
+
+# AxoCover
+.axoCover/*
+!.axoCover/settings.json
+
+# Coverlet
+coverage*/
+*.opencover.xml
+
+# NCover
+*.ncover
+
+# Code Coverage
+*.coverage
+*.coveragexml
+
+# StyleCop
+StyleCopReport.xml
+
+# Files built by Visual Studio
+*_i.c
+*_p.c
+*_h.h
+*.ilk
+*.meta
+*.obj
+*.iobj
+*.pch
+*.pdb
+*.ipdb
+
+# Fakes Assemblies
+FakesAssemblies/
+
+# GhostDoc plugin
+*.GhostDoc.xml
+
+# Web workbench
+.sass-cache/
+
+# Installshield output
+[Ee]xpress/
+
+# DocFX
+_site/
+docfx.json.meta

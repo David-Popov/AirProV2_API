@@ -74,4 +74,5 @@ public class Company
     // Navigation properties
     public virtual ICollection<ApplicationUser> Users { get; set; } = new List<ApplicationUser>();
     public virtual ICollection<Montage> Montages { get; set; } = new List<Montage>();
+    public virtual ICollection<InventoryItem> InventoryItems { get; set; } = new List<InventoryItem>();
 }

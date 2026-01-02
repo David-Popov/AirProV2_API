@@ -21,6 +21,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Montage> Montages { get; set; }
     
     public DbSet<Company> Companies { get; set; }
+    
+    public DbSet<InventoryItem> InventoryItems { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -93,6 +95,26 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                   .WithMany()
                   .HasForeignKey(e => e.AirConditionerId)
                   .OnDelete(DeleteBehavior.SetNull);
+        });
+    
+        // InventoryItem configuration
+        builder.Entity<InventoryItem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("now()");
+            
+            entity.HasIndex(e => e.CompanyId).HasDatabaseName("idx_inventory_items_company_id");
+            entity.HasIndex(e => e.Name).HasDatabaseName("idx_inventory_items_name");
+            entity.HasIndex(e => e.Sku).HasDatabaseName("idx_inventory_items_sku");
+            entity.HasIndex(e => e.IsActive).HasDatabaseName("idx_inventory_items_is_active");
+            entity.HasIndex(e => new { e.CompanyId, e.Name }).IsUnique().HasDatabaseName("idx_inventory_items_company_name_unique");
+            
+            entity.HasOne(e => e.Company)
+                  .WithMany(c => c.InventoryItems)
+                  .HasForeignKey(e => e.CompanyId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
