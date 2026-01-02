@@ -64,6 +64,9 @@ public class AuthService : IAuthService
                 IsCompanyOwner = true, // User registering is the company owner
                 WarrantyDefaultMonths = dto.WarrantyDefaultMonths ?? 12,
                 SubscriptionPlan = SubscriptionPlan.FreeTrial,
+                SubscriptionStatus = SubscriptionStatus.Trial,
+                TrialStartDate = DateTime.UtcNow,
+                TrialEndDate = DateTime.UtcNow.AddMonths(3),
                 IsSubscriptionActive = true,
                 IsActive = true
             };
@@ -121,6 +124,9 @@ public class AuthService : IAuthService
                     PhoneNumber = user.PhoneNumber,
                     CompanyId = company.Id,
                     CompanyName = company.CompanyName,
+                    SubscriptionPlan = company.SubscriptionPlan.ToString(),
+                    SubscriptionStatus = company.SubscriptionStatus.ToString(),
+                    TrialEndDate = company.TrialEndDate,
                     Roles = roles.ToList()
                 }
             };
@@ -176,6 +182,9 @@ public class AuthService : IAuthService
                     PhoneNumber = user.PhoneNumber,
                     CompanyId = user.CompanyId,
                     CompanyName = company?.CompanyName,
+                    SubscriptionPlan = company?.SubscriptionPlan.ToString(),
+                    SubscriptionStatus = company?.SubscriptionStatus.ToString(),
+                    TrialEndDate = company?.TrialEndDate,
                     Roles = roles.ToList()
                 }
             };
@@ -216,6 +225,9 @@ public class AuthService : IAuthService
                 PhoneNumber = user.PhoneNumber,
                 CompanyId = user.CompanyId,
                 CompanyName = company?.CompanyName,
+                SubscriptionPlan = company?.SubscriptionPlan.ToString(),
+                SubscriptionStatus = company?.SubscriptionStatus.ToString(),
+                TrialEndDate = company?.TrialEndDate,
                 Roles = roles.ToList()
             };
         }

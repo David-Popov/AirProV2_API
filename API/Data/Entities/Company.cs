@@ -57,7 +57,16 @@ public class Company
     public int? WarrantyDefaultMonths { get; set; } = 12;
 
     [Column("subscription_plan")]
-    public SubscriptionPlan SubscriptionPlan { get; set; } = Models.SubscriptionPlan.FreeTrial;
+    public SubscriptionPlan SubscriptionPlan { get; set; } = SubscriptionPlan.FreeTrial;
+
+    [Column("subscription_status")]
+    public SubscriptionStatus SubscriptionStatus { get; set; } = SubscriptionStatus.Trial;
+
+    [Column("trial_start_date")]
+    public DateTime? TrialStartDate { get; set; }
+
+    [Column("trial_end_date")]
+    public DateTime? TrialEndDate { get; set; }
 
     [Column("is_subscription_active")]
     public bool? IsSubscriptionActive { get; set; } = true;

@@ -49,6 +49,15 @@ public class AuthUserDto
     [JsonPropertyName("company_name")]
     public string? CompanyName { get; set; }
     
+    [JsonPropertyName("subscription_plan")]
+    public string? SubscriptionPlan { get; set; }
+
+    [JsonPropertyName("subscription_status")]
+    public string? SubscriptionStatus { get; set; }
+
+    [JsonPropertyName("trial_end_date")]
+    public DateTime? TrialEndDate { get; set; }
+    
     [JsonPropertyName("roles")]
     public List<string> Roles { get; set; } = new();
 }
