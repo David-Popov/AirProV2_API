@@ -87,6 +87,9 @@ builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+// Register background services
+builder.Services.AddHostedService<API.Services.Background.TrialCleanupService>();
+
 // Register validators
 builder.Services.AddScoped<IValidator<CreateCompanyDto>, CreateCompanyDtoValidator>();
 builder.Services.AddScoped<IValidator<UpdateCompanyDto>, UpdateCompanyDtoValidator>();
