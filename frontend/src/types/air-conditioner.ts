@@ -11,10 +11,12 @@ export interface AirConditioner {
 
 export interface ErrorCode {
   id: string;
-  code: string;
-  description: string;
+  error_code: string;
+  error_name?: string | null;
+  description?: string | null;
   air_conditioner_id: string;
-  // potentially other fields like solution, cause
+  solution?: string | null;
+  severity?: string | null;
 }
 
 export interface CreateAirConditionerRequest {
@@ -28,3 +30,16 @@ export interface CreateAirConditionerRequest {
 }
 
 export interface UpdateAirConditionerRequest extends Partial<CreateAirConditionerRequest> {}
+
+export interface CreateErrorCodeRequest {
+  error_code: string;
+  error_name?: string | null;
+  description?: string | null;
+  air_conditioner_id: string;
+  solution?: string | null;
+  severity?: string | null;
+}
+
+export interface UpdateErrorCodeRequest extends Partial<Omit<CreateErrorCodeRequest, 'air_conditioner_id'>> {}
+
+

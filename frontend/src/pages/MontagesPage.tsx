@@ -13,7 +13,8 @@ import {
   Calendar,
   MapPin,
   CreditCard,
-  Snowflake
+  Snowflake,
+  AlertTriangle
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -42,6 +43,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { montageService } from '@/services'
 import { 
   type Montage, 
@@ -90,6 +101,11 @@ export default function MontagesPage() {
   }
 
   const [formData, setFormData] = useState<MontageFormState>(initialFormState)
+  
+  // Delete confirmation state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [itemToDelete, setItemToDelete] = useState<Montage | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Status Colors (Adaptive for Light/Dark)
   const statusColors: Record<string, string> = {
@@ -107,7 +123,8 @@ export default function MontagesPage() {
       setItems(response.items)
       setTotalPages(response.totalPages) 
     } catch (error) {
-      toast.error(t('common.unknown_error'))
+      const message = error instanceof Error ? error.message : t('common.unknown_error')
+      toast.error(message)
       console.error(error)
     } finally {
       setIsLoading(false)
@@ -148,6 +165,25 @@ export default function MontagesPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Client-side validation
+    const validationErrors: string[] = []
+    
+    if (!formData.client_name?.trim()) {
+      validationErrors.push(t('validation.client_name_required', 'Client name is required'))
+    }
+    if (!formData.installation_date) {
+      validationErrors.push(t('validation.date_required', 'Installation date is required'))
+    }
+    if (formData.total_price != null && formData.total_price < 0) {
+      validationErrors.push(t('validation.price_invalid', 'Price must be 0 or greater'))
+    }
+    
+    if (validationErrors.length > 0) {
+      toast.error(validationErrors.join('. '))
+      return
+    }
+    
     setIsSaving(true)
     try {
       if (isEditing && formData.id) {
@@ -168,32 +204,44 @@ export default function MontagesPage() {
           outdoor_unit_serial: formData.outdoor_unit_serial
         }
         await montageService.update(formData.id, updatePayload)
-        toast.success(t('common.save')) 
+        toast.success(t('montages.updated_success', 'Montage updated successfully')) 
       } else {
         // Create
         await montageService.create(formData)
-        toast.success(t('common.save'))
+        toast.success(t('montages.created_success', 'Montage created successfully'))
       }
       setIsDialogOpen(false)
       loadItems()
     } catch (error) {
-      toast.error(t('common.unknown_error'))
+      const message = error instanceof Error ? error.message : t('common.unknown_error')
+      toast.error(message)
       console.error(error)
     } finally {
       setIsSaving(false)
     }
   }
 
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
+  const handleDeleteClick = (e: React.MouseEvent, item: Montage) => {
     e.stopPropagation()
-    if (!confirm(t('common.confirm_delete'))) return
+    setItemToDelete(item)
+    setDeleteDialogOpen(true)
+  }
 
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete) return
+    
+    setIsDeleting(true)
     try {
-      await montageService.delete(id)
-      toast.success(t('common.delete'))
+      await montageService.delete(itemToDelete.id)
+      toast.success(t('montages.deleted_success', 'Montage deleted successfully'))
       loadItems()
     } catch (error) {
-      toast.error(t('common.unknown_error'))
+      const message = error instanceof Error ? error.message : t('common.unknown_error')
+      toast.error(message)
+    } finally {
+      setIsDeleting(false)
+      setDeleteDialogOpen(false)
+      setItemToDelete(null)
     }
   }
 
@@ -331,7 +379,7 @@ export default function MontagesPage() {
                         variant="ghost" 
                         size="icon"
                         className="h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10"
-                        onClick={(e) => handleDelete(e, item.id)}
+                        onClick={(e) => handleDeleteClick(e, item)}
                       >
                         <Trash className="w-4 h-4" />
                       </Button>
@@ -486,6 +534,39 @@ export default function MontagesPage() {
           </form>
         </DialogContent>
       </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-foreground">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              {t('common.confirm_delete_title', 'Delete Montage')}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              {t('montages.delete_confirmation', 'Are you sure you want to delete this montage? This action cannot be undone.')}
+              {itemToDelete && (
+                <span className="block mt-2 font-medium text-foreground">
+                  {itemToDelete.client_name} - {new Date(itemToDelete.installation_date).toLocaleDateString()}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-border text-foreground hover:bg-muted">
+              {t('common.cancel', 'Cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {t('common.delete', 'Delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -5,8 +5,8 @@ import {
   Plus, 
   Search, 
   Trash, 
-  MoreVertical, 
-  Loader2
+  Loader2,
+  AlertTriangle
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -29,11 +29,15 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { employeeService } from '@/services'
 import type { Employee, CreateEmployeeRequest } from '@/types'
 
@@ -54,6 +58,11 @@ export default function EmployeesPage() {
     address: ''
   })
   const [isSaving, setIsSaving] = useState(false)
+  
+  // Delete confirmation state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const loadEmployees = async () => {
     setIsLoading(true)
@@ -84,31 +93,93 @@ export default function EmployeesPage() {
     setIsDialogOpen(true)
   }
 
+  // Password validation helper
+  const validatePassword = (password: string): string[] => {
+    const errors: string[] = []
+    if (password.length < 8) {
+      errors.push(t('validation.password_min_length', 'Password must be at least 8 characters'))
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push(t('validation.password_uppercase', 'Password must contain at least one uppercase letter'))
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push(t('validation.password_lowercase', 'Password must contain at least one lowercase letter'))
+    }
+    if (!/[0-9]/.test(password)) {
+      errors.push(t('validation.password_number', 'Password must contain at least one number'))
+    }
+    if (!/[^a-zA-Z0-9]/.test(password)) {
+      errors.push(t('validation.password_special', 'Password must contain at least one special character'))
+    }
+    return errors
+  }
+
+  // Email validation helper
+  const validateEmail = (email: string): boolean => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  }
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Client-side validation
+    const validationErrors: string[] = []
+    
+    if (!newEmployee.first_name.trim()) {
+      validationErrors.push(t('validation.first_name_required', 'First name is required'))
+    }
+    if (!newEmployee.last_name.trim()) {
+      validationErrors.push(t('validation.last_name_required', 'Last name is required'))
+    }
+    if (!newEmployee.email.trim()) {
+      validationErrors.push(t('validation.email_required', 'Email is required'))
+    } else if (!validateEmail(newEmployee.email)) {
+      validationErrors.push(t('validation.email_invalid', 'Please enter a valid email address'))
+    }
+    
+    const passwordErrors = validatePassword(newEmployee.password)
+    validationErrors.push(...passwordErrors)
+    
+    if (validationErrors.length > 0) {
+      toast.error(validationErrors.join('. '))
+      return
+    }
+    
     setIsSaving(true)
     try {
       await employeeService.create(newEmployee)
-      toast.success(t('common.save'))
+      toast.success(t('employees.created_success', 'Employee created successfully'))
       setIsDialogOpen(false)
       loadEmployees()
     } catch (error) {
-      toast.error(t('common.unknown_error'))
+      const message = error instanceof Error ? error.message : t('common.unknown_error')
+      toast.error(message)
       console.error(error)
     } finally {
       setIsSaving(false)
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm(t('common.confirm_delete'))) return
+  const handleDeleteClick = (employee: Employee) => {
+    setEmployeeToDelete(employee)
+    setDeleteDialogOpen(true)
+  }
 
+  const handleDeleteConfirm = async () => {
+    if (!employeeToDelete) return
+    
+    setIsDeleting(true)
     try {
-      await employeeService.delete(id)
-      toast.success(t('common.remove'))
+      await employeeService.delete(employeeToDelete.id)
+      toast.success(t('employees.deleted_success', 'Employee deleted successfully'))
       loadEmployees()
     } catch (error) {
-      toast.error(t('common.unknown_error'))
+      const message = error instanceof Error ? error.message : t('common.unknown_error')
+      toast.error(message)
+    } finally {
+      setIsDeleting(false)
+      setDeleteDialogOpen(false)
+      setEmployeeToDelete(null)
     }
   }
 
@@ -158,7 +229,7 @@ export default function EmployeesPage() {
               <TableHead className="text-muted-foreground">{t('employees.role')}</TableHead>
               <TableHead className="text-muted-foreground">{t('auth.phone')}</TableHead>
               <TableHead className="text-muted-foreground">{t('common.status')}</TableHead>
-              <TableHead className="text-right text-muted-foreground">{t('common.actions')}</TableHead>
+              <TableHead className="text-center text-muted-foreground">{t('common.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -200,20 +271,17 @@ export default function EmployeesPage() {
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-popover border-border text-popover-foreground">
-                        <DropdownMenuItem onClick={() => handleDelete(emp.id)} className="text-destructive focus:text-destructive cursor-pointer">
-                          <Trash className="w-4 h-4 mr-2" />
-                          {t('common.remove')}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        className="h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                        onClick={() => handleDeleteClick(emp)}
+                      >
+                        <Trash className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -291,6 +359,39 @@ export default function EmployeesPage() {
           </form>
         </DialogContent>
       </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-foreground">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              {t('common.confirm_delete_title', 'Delete Employee')}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              {t('employees.delete_confirmation', 'Are you sure you want to delete this employee? This action cannot be undone.')}
+              {employeeToDelete && (
+                <span className="block mt-2 font-medium text-foreground">
+                  {employeeToDelete.full_name} ({employeeToDelete.email})
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-border text-foreground hover:bg-muted">
+              {t('common.cancel', 'Cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {t('common.delete', 'Delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -7,7 +7,6 @@ import {
   Edit, 
   Trash, 
   AlertTriangle, 
-  MoreVertical, 
   ChevronLeft, 
   ChevronRight,
   Loader2
@@ -33,11 +32,15 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { useAuth } from '@/context'
 import { inventoryService } from '@/services'
 import type { InventoryItem, CreateInventoryItemRequest, UnitOfMeasure } from '@/types'
@@ -57,6 +60,11 @@ export default function InventoryPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [currentItem, setCurrentItem] = useState<Partial<CreateInventoryItemRequest> & { id?: string }>({})
   const [isSaving, setIsSaving] = useState(false)
+  
+  // Delete confirmation state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const loadItems = async () => {
     setIsLoading(true)
@@ -68,7 +76,8 @@ export default function InventoryPage() {
       setItems(response.items)
       setTotalPages(response.totalPages)
     } catch (error) {
-      toast.error(t('common.unknown_error'))
+      const message = error instanceof Error ? error.message : t('common.unknown_error')
+      toast.error(message)
     } finally {
       setIsLoading(false)
     }
@@ -109,6 +118,28 @@ export default function InventoryPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Client-side validation
+    const validationErrors: string[] = []
+    
+    if (!currentItem.name?.trim()) {
+      validationErrors.push(t('validation.name_required', 'Name is required'))
+    }
+    if (currentItem.quantity === undefined || currentItem.quantity < 0) {
+      validationErrors.push(t('validation.quantity_invalid', 'Quantity must be 0 or greater'))
+    }
+    if (currentItem.min_quantity != null && currentItem.min_quantity < 0) {
+      validationErrors.push(t('validation.min_quantity_invalid', 'Minimum quantity must be 0 or greater'))
+    }
+    if (currentItem.unit_price != null && currentItem.unit_price < 0) {
+      validationErrors.push(t('validation.price_invalid', 'Price must be 0 or greater'))
+    }
+    
+    if (validationErrors.length > 0) {
+      toast.error(validationErrors.join('. '))
+      return
+    }
+    
     setIsSaving(true)
     try {
       if (isEditing && currentItem.id) {
@@ -145,22 +176,34 @@ export default function InventoryPage() {
       setIsDialogOpen(false)
       loadItems()
     } catch (error) {
-      toast.error(t('common.unknown_error'))
+      const message = error instanceof Error ? error.message : t('common.unknown_error')
+      toast.error(message)
       console.error(error)
     } finally {
       setIsSaving(false)
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm(t('common.confirm_delete'))) return
+  const handleDeleteClick = (item: InventoryItem) => {
+    setItemToDelete(item)
+    setDeleteDialogOpen(true)
+  }
 
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete) return
+    
+    setIsDeleting(true)
     try {
-      await inventoryService.delete(id)
+      await inventoryService.delete(itemToDelete.id)
       toast.success(t('inventory.item_deleted'))
       loadItems()
     } catch (error) {
-      toast.error(t('common.unknown_error'))
+      const message = error instanceof Error ? error.message : t('common.unknown_error')
+      toast.error(message)
+    } finally {
+      setIsDeleting(false)
+      setDeleteDialogOpen(false)
+      setItemToDelete(null)
     }
   }
 
@@ -205,7 +248,7 @@ export default function InventoryPage() {
               <TableHead className="text-muted-foreground">{t('common.unit_price')}</TableHead>
               <TableHead className="text-muted-foreground">{t('common.location')}</TableHead>
               <TableHead className="text-muted-foreground">{t('common.status')}</TableHead>
-              <TableHead className="text-right text-muted-foreground">{t('common.actions')}</TableHead>
+              <TableHead className="text-center text-muted-foreground">{t('common.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -247,24 +290,25 @@ export default function InventoryPage() {
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-popover border-border text-popover-foreground">
-                        <DropdownMenuItem onClick={() => handleEdit(item)} className="cursor-pointer">
-                          <Edit className="w-4 h-4 mr-2" />
-                          {t('common.edit')}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDelete(item.id)} className="text-destructive focus:text-destructive cursor-pointer">
-                          <Trash className="w-4 h-4 mr-2" />
-                          {t('common.delete')}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
+                        onClick={() => handleEdit(item)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        className="h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                        onClick={() => handleDeleteClick(item)}
+                      >
+                        <Trash className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -396,6 +440,39 @@ export default function InventoryPage() {
           </form>
         </DialogContent>
       </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-foreground">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              {t('common.confirm_delete_title', 'Delete Item')}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              {t('inventory.delete_confirmation', 'Are you sure you want to delete this item? This action cannot be undone.')}
+              {itemToDelete && (
+                <span className="block mt-2 font-medium text-foreground">
+                  {itemToDelete.name}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-border text-foreground hover:bg-muted">
+              {t('common.cancel', 'Cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {t('common.delete', 'Delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -55,19 +55,49 @@ export default function RegisterPage() {
   }
 
   const validateStep1 = (): boolean => {
-    if (!formData.email || !formData.password || !formData.confirmPassword || 
-        !formData.firstName || !formData.lastName) {
-      toast.error('Please fill in all required fields')
-      return false
+    const errors: string[] = []
+    
+    if (!formData.firstName.trim()) {
+      errors.push('First name is required')
+    }
+    if (!formData.lastName.trim()) {
+      errors.push('Last name is required')
+    }
+    if (!formData.email.trim()) {
+      errors.push('Email is required')
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.push('Please enter a valid email address')
     }
     
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match')
-      return false
+    if (!formData.password) {
+      errors.push('Password is required')
+    } else {
+      // Password strength validation
+      if (formData.password.length < 8) {
+        errors.push('Password must be at least 8 characters')
+      }
+      if (!/[A-Z]/.test(formData.password)) {
+        errors.push('Password must contain at least one uppercase letter')
+      }
+      if (!/[a-z]/.test(formData.password)) {
+        errors.push('Password must contain at least one lowercase letter')
+      }
+      if (!/[0-9]/.test(formData.password)) {
+        errors.push('Password must contain at least one number')
+      }
+      if (!/[^a-zA-Z0-9]/.test(formData.password)) {
+        errors.push('Password must contain at least one special character (!@#$%^&*)')
+      }
     }
     
-    if (formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters')
+    if (!formData.confirmPassword) {
+      errors.push('Please confirm your password')
+    } else if (formData.password !== formData.confirmPassword) {
+      errors.push('Passwords do not match')
+    }
+    
+    if (errors.length > 0) {
+      toast.error(errors.join('. '))
       return false
     }
     
@@ -240,7 +270,7 @@ export default function RegisterPage() {
                         className="bg-white/10 border-white/20 text-white placeholder:text-gray-500 pl-10"
                       />
                     </div>
-                    <p className="text-xs text-gray-500">Min 6 chars, 1 uppercase, 1 lowercase, 1 digit</p>
+                    <p className="text-xs text-gray-500">Min 8 chars, 1 uppercase, 1 lowercase, 1 digit, 1 special char</p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="confirmPassword" className="text-white">Confirm Password *</Label>

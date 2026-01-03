@@ -7,13 +7,16 @@ import {
   Users, 
   Snowflake, 
   Settings, 
-  LogOut
+  LogOut,
+  AlertCircle,
+  Building2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/context'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { ModeToggle } from '@/components/mode-toggle'
+import { SubscriptionExpiredModal } from '@/components/SubscriptionExpiredModal'
 
 export default function DashboardLayout() {
   const { user, logout } = useAuth()
@@ -30,6 +33,17 @@ export default function DashboardLayout() {
     navigate(path)
   }
 
+  const isAdmin = user?.roles.includes('Admin')
+  const isManager = user?.roles.includes('Manager')
+  
+  // Check if subscription is expired (bypass for Admin users)
+  const isSubscriptionExpired = !isAdmin && (
+    user?.subscription_status === 'Expired' || 
+    user?.subscription_status === 'Cancelled' ||
+    // Also check if trial has ended
+    (user?.subscription_status === 'Trial' && user?.trial_end_date && new Date(user.trial_end_date) < new Date())
+  )
+
   return (
     <div className="min-h-screen bg-background">
       {/* Sidebar - Glass Effect */}
@@ -42,6 +56,7 @@ export default function DashboardLayout() {
         </div>
 
         <nav className="space-y-2 flex-1">
+          {/* Main Navigation */}
           <NavItem 
             icon={LayoutDashboard} 
             label={t('nav.dashboard')}
@@ -51,7 +66,7 @@ export default function DashboardLayout() {
           <NavItem 
             icon={ClipboardList} 
             label={t('nav.montages')}
-            active={location.pathname === '/montages'}
+            active={location.pathname === '/montages' || location.pathname.startsWith('/montages/')}
             onClick={() => handleNavClick('/montages')} 
           />
           <NavItem 
@@ -60,7 +75,9 @@ export default function DashboardLayout() {
             active={location.pathname === '/inventory'}
             onClick={() => handleNavClick('/inventory')}
           />
-          {user?.roles.includes('Manager') && (
+          
+          {/* Employee Management - Managers & Admins */}
+          {(isManager || isAdmin) && (
             <NavItem 
               icon={Users} 
               label={t('nav.employees')}
@@ -68,13 +85,43 @@ export default function DashboardLayout() {
               onClick={() => handleNavClick('/employees')}
             />
           )}
-          <NavItem 
-            icon={Snowflake} 
-            label={t('nav.air_conditioners')}
-            active={location.pathname === '/air-conditioners'}
-            onClick={() => handleNavClick('/air-conditioners')}
-          />
-          <div className="pt-4 mt-4 border-t border-sidebar-border/50">
+          
+          {/* AC Database Section */}
+          <div className="pt-3 mt-3 border-t border-sidebar-border/50">
+            <p className="px-4 text-xs text-muted-foreground uppercase tracking-wider mb-2">
+              {t('nav.database', 'Database')}
+            </p>
+            <NavItem 
+              icon={Snowflake} 
+              label={t('nav.air_conditioners')}
+              active={location.pathname === '/air-conditioners' || location.pathname.startsWith('/air-conditioners/')}
+              onClick={() => handleNavClick('/air-conditioners')}
+            />
+            <NavItem 
+              icon={AlertCircle} 
+              label={t('nav.error_codes', 'Error Codes')}
+              active={location.pathname === '/error-codes'}
+              onClick={() => handleNavClick('/error-codes')}
+            />
+          </div>
+          
+          {/* Admin Section */}
+          {isAdmin && (
+            <div className="pt-3 mt-3 border-t border-sidebar-border/50">
+              <p className="px-4 text-xs text-muted-foreground uppercase tracking-wider mb-2">
+                {t('nav.admin', 'Admin')}
+              </p>
+              <NavItem 
+                icon={Building2} 
+                label={t('nav.companies', 'Companies')}
+                active={location.pathname === '/companies'}
+                onClick={() => handleNavClick('/companies')}
+              />
+            </div>
+          )}
+          
+          {/* Settings */}
+          <div className="pt-3 mt-3 border-t border-sidebar-border/50">
              <NavItem 
               icon={Settings} 
               label={t('common.settings')}
@@ -115,6 +162,9 @@ export default function DashboardLayout() {
 
       {/* Main Content Area */}
       <Outlet />
+      
+      {/* Subscription Expired Modal */}
+      <SubscriptionExpiredModal isOpen={!!isSubscriptionExpired} />
     </div>
   )
 }
@@ -141,3 +191,4 @@ function NavItem({ icon: Icon, label, active = false, onClick }: NavItemProps) {
       </button>
   )
 }
+

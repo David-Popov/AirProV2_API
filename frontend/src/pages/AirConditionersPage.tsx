@@ -11,7 +11,8 @@ import {
   ChevronRight,
   Loader2,
   Zap,
-  MoreVertical
+  MoreVertical,
+  AlertTriangle
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -26,17 +27,30 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { airConditionerService } from '@/services'
+import { useAuth } from '@/context'
 import type { AirConditioner, CreateAirConditionerRequest } from '@/types'
 
 export default function AirConditionersPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const isAdmin = user?.roles.includes('Admin')
   const [items, setItems] = useState<AirConditioner[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -48,6 +62,11 @@ export default function AirConditionersPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [currentItem, setCurrentItem] = useState<Partial<CreateAirConditionerRequest> & { id?: string }>({})
   const [isSaving, setIsSaving] = useState(false)
+  
+  // Delete confirmation state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [itemToDelete, setItemToDelete] = useState<AirConditioner | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const loadItems = async () => {
     setIsLoading(true)
@@ -58,7 +77,8 @@ export default function AirConditionersPage() {
       // Ensure backend returns correct total_pages based on pageSize=12
       setTotalPages(response.totalPages)
     } catch (error) {
-      toast.error(t('common.unknown_error'))
+      const message = error instanceof Error ? error.message : t('common.unknown_error')
+      toast.error(message)
       console.error(error)
     } finally {
       setIsLoading(false)
@@ -99,6 +119,25 @@ export default function AirConditionersPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Client-side validation
+    const validationErrors: string[] = []
+    
+    if (!currentItem.name?.trim()) {
+      validationErrors.push(t('validation.name_required', 'Name is required'))
+    }
+    if (currentItem.kilowatts != null && currentItem.kilowatts < 0) {
+      validationErrors.push(t('validation.kilowatts_invalid', 'Kilowatts must be 0 or greater'))
+    }
+    if (currentItem.price != null && currentItem.price < 0) {
+      validationErrors.push(t('validation.price_invalid', 'Price must be 0 or greater'))
+    }
+    
+    if (validationErrors.length > 0) {
+      toast.error(validationErrors.join('. '))
+      return
+    }
+    
     setIsSaving(true)
     try {
       if (isEditing && currentItem.id) {
@@ -127,23 +166,35 @@ export default function AirConditionersPage() {
       setIsDialogOpen(false)
       loadItems()
     } catch (error) {
-      toast.error(t('common.unknown_error'))
+      const message = error instanceof Error ? error.message : t('common.unknown_error')
+      toast.error(message)
       console.error(error)
     } finally {
       setIsSaving(false)
     }
   }
 
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation() 
-    if (!confirm(t('common.confirm_delete'))) return
+  const handleDeleteClick = (e: React.MouseEvent, item: AirConditioner) => {
+    e.stopPropagation()
+    setItemToDelete(item)
+    setDeleteDialogOpen(true)
+  }
 
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete) return
+    
+    setIsDeleting(true)
     try {
-      await airConditionerService.delete(id)
+      await airConditionerService.delete(itemToDelete.id)
       toast.success(t('air_conditioners.ac_deleted'))
       loadItems()
     } catch (error) {
-      toast.error(t('common.unknown_error'))
+      const message = error instanceof Error ? error.message : t('common.unknown_error')
+      toast.error(message)
+    } finally {
+      setIsDeleting(false)
+      setDeleteDialogOpen(false)
+      setItemToDelete(null)
     }
   }
 
@@ -166,10 +217,12 @@ export default function AirConditionersPage() {
           </h1>
           <p className="text-muted-foreground">{t('air_conditioners.subtitle')}</p>
         </div>
-        <Button onClick={handleCreate} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
-          <Plus className="w-4 h-4 mr-2" />
-          {t('air_conditioners.add_ac')}
-        </Button>
+        {isAdmin && (
+          <Button onClick={handleCreate} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
+            <Plus className="w-4 h-4 mr-2" />
+            {t('air_conditioners.add_ac')}
+          </Button>
+        )}
       </div>
 
       {/* Search */}
@@ -210,26 +263,28 @@ export default function AirConditionersPage() {
                    <Snowflake className="w-12 h-12 text-muted-foreground/50" />
                  )}
                  
-                 {/* Actions Overlay */}
-                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="secondary" size="icon" className="h-8 w-8 bg-black/50 hover:bg-black/70 text-white border-0">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-popover border-border text-popover-foreground">
-                        <DropdownMenuItem onClick={(e) => handleEdit(e, item)} className="cursor-pointer">
-                          <Edit className="w-4 h-4 mr-2" />
-                          {t('common.edit')}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => handleDelete(e, item.id)} className="text-destructive focus:text-destructive cursor-pointer">
-                          <Trash className="w-4 h-4 mr-2" />
-                          {t('common.delete')}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                 </div>
+                 {/* Actions Overlay - Admin Only */}
+                 {isAdmin && (
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                     <DropdownMenu>
+                       <DropdownMenuTrigger asChild>
+                         <Button variant="secondary" size="icon" className="h-8 w-8 bg-black/50 hover:bg-black/70 text-white border-0">
+                           <MoreVertical className="w-4 h-4" />
+                         </Button>
+                       </DropdownMenuTrigger>
+                       <DropdownMenuContent align="end" className="bg-popover border-border text-popover-foreground">
+                         <DropdownMenuItem onClick={(e) => handleEdit(e, item)} className="cursor-pointer">
+                           <Edit className="w-4 h-4 mr-2" />
+                           {t('common.edit')}
+                         </DropdownMenuItem>
+                         <DropdownMenuItem onClick={(e) => handleDeleteClick(e, item)} className="text-destructive focus:text-destructive cursor-pointer">
+                           <Trash className="w-4 h-4 mr-2" />
+                           {t('common.delete')}
+                         </DropdownMenuItem>
+                       </DropdownMenuContent>
+                     </DropdownMenu>
+                  </div>
+                 )}
               </div>
 
               <CardContent className="p-4">
@@ -364,6 +419,39 @@ export default function AirConditionersPage() {
           </form>
         </DialogContent>
       </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-foreground">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              {t('common.confirm_delete_title', 'Delete Air Conditioner')}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              {t('air_conditioners.delete_confirmation', 'Are you sure you want to delete this air conditioner? This action cannot be undone.')}
+              {itemToDelete && (
+                <span className="block mt-2 font-medium text-foreground">
+                  {itemToDelete.brand} {itemToDelete.name}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-border text-foreground hover:bg-muted">
+              {t('common.cancel', 'Cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {t('common.delete', 'Delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { AuthProvider } from '@/context'
 import HomePage from '@/pages/HomePage'
@@ -11,6 +11,9 @@ import MontageDetailsPage from '@/pages/MontageDetailsPage'
 import EmployeesPage from '@/pages/EmployeesPage'
 import AirConditionersPage from '@/pages/AirConditionersPage'
 import AirConditionerDetailsPage from '@/pages/AirConditionerDetailsPage'
+import CompaniesPage from '@/pages/CompaniesPage'
+import ErrorCodesPage from '@/pages/ErrorCodesPage'
+import SettingsPage from '@/pages/SettingsPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 import { ProtectedRoute, DashboardLayout } from '@/components/layout'
 import { ThemeProvider } from '@/components/theme-provider'
@@ -41,8 +44,9 @@ function App() {
               <Route path="/employees" element={<EmployeesPage />} />
               <Route path="/air-conditioners" element={<AirConditionersPage />} />
               <Route path="/air-conditioners/:id" element={<AirConditionerDetailsPage />} />
-              {/* Redirect /settings for now */}
-              <Route path="/settings" element={<Navigate to="/dashboard" />} />
+              <Route path="/error-codes" element={<ErrorCodesPage />} />
+              <Route path="/companies" element={<CompaniesPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
             </Route>
 
             {/* 404 */}
@@ -56,3 +60,4 @@ function App() {
 }
 
 export default App
+
