@@ -11,6 +11,7 @@ using API.Services.Auth;
 using API.Services.Companies;
 using API.Services.Inventory;
 using API.Services.Montages;
+using API.Services.MontageInventory;
 using API.Validators.AirConditioners;
 using API.Validators.Auth;
 using API.Validators.Companies;
@@ -85,6 +86,7 @@ builder.Services.AddScoped<IAirConditionerService, AirConditionerService>();
 builder.Services.AddScoped<IMontageService, MontageService>();
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<IMontageInventoryService, MontageInventoryService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Register background services

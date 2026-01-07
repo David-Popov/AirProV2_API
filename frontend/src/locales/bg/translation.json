@@ -141,7 +141,15 @@
     "edit_details": "Редактиране",
     "mark_complete": "Маркирай като завършен",
     "unassigned": "Неназначен",
-    "no_montages": "Няма намерени монтажи."
+    "no_montages": "Няма намерени монтажи.",
+    "materials": "Използвани Материали",
+    "add_materials": "Добави Материали",
+    "select_materials": "Избери Материали",
+    "quantity_used": "Използвано Количество",
+    "no_materials": "Все още няма добавени материали",
+    "material_added": "Материалът е добавен успешно",
+    "material_removed": "Материалът е премахнат успешно",
+    "insufficient_stock": "Недостатъчна наличност"
   },
   "employees": {
     "title": "Служители",

@@ -144,6 +144,8 @@ public class MontageService : IMontageService
         {
             var query = _context.Montages
                 .Include(m => m.AirConditioner)
+                .Include(m => m.UsedMaterials)
+                    .ThenInclude(um => um.InventoryItem)
                 .OrderByDescending(m => m.InstallationDate)
                 .Select(m => new MontageDto
                 {
@@ -197,6 +199,8 @@ public class MontageService : IMontageService
         {
             var query = _context.Montages
                 .Include(m => m.AirConditioner)
+                .Include(m => m.UsedMaterials)
+                    .ThenInclude(um => um.InventoryItem)
                 .Where(m => m.CompanyId == companyId)
                 .OrderByDescending(m => m.InstallationDate)
                 .Select(m => new MontageDto
@@ -249,6 +253,8 @@ public class MontageService : IMontageService
         {
             var query = _context.Montages
                 .Include(m => m.AirConditioner)
+                .Include(m => m.UsedMaterials)
+                    .ThenInclude(um => um.InventoryItem)
                 .Where(m => m.UserId == userId)
                 .OrderByDescending(m => m.InstallationDate)
                 .Select(m => new MontageDto
@@ -301,6 +307,8 @@ public class MontageService : IMontageService
         {
             var query = _context.Montages
                 .Include(m => m.AirConditioner)
+                .Include(m => m.UsedMaterials)
+                    .ThenInclude(um => um.InventoryItem)
                 .Where(m => m.CompanyId == companyId && m.UserId == userId)
                 .OrderByDescending(m => m.InstallationDate)
                 .Select(m => new MontageDto
@@ -353,6 +361,8 @@ public class MontageService : IMontageService
         {
             var query = _context.Montages
                 .Include(m => m.AirConditioner)
+                .Include(m => m.UsedMaterials)
+                    .ThenInclude(um => um.InventoryItem)
                 .Where(m => m.Status.ToString().ToLower() == status.ToLower())
                 .OrderByDescending(m => m.InstallationDate)
                 .Select(m => new MontageDto
@@ -405,6 +415,8 @@ public class MontageService : IMontageService
         {
             var query = _context.Montages
                 .Include(m => m.AirConditioner)
+                .Include(m => m.UsedMaterials)
+                    .ThenInclude(um => um.InventoryItem)
                 .Where(m => m.InstallationDate >= startDate && m.InstallationDate <= endDate)
                 .OrderByDescending(m => m.InstallationDate)
                 .Select(m => new MontageDto
@@ -477,6 +489,19 @@ public class MontageService : IMontageService
            Notes = montage.Notes,
            CreatedAt = montage.CreatedAt,
            UpdatedAt = montage.UpdatedAt,
+           UsedMaterials = montage.UsedMaterials?.Select(m => new MontageInventoryItemDto
+           {
+               Id = m.Id,
+               MontageId = m.MontageId,
+               InventoryItemId = m.InventoryItemId,
+               QuantityUsed = m.QuantityUsed,
+               UnitPriceAtTime = m.UnitPriceAtTime,
+               Notes = m.Notes,
+               CreatedAt = m.CreatedAt,
+               ItemName = m.InventoryItem?.Name,
+               ItemSku = m.InventoryItem?.Sku,
+               UnitOfMeasure = m.InventoryItem?.UnitOfMeasure.ToString()
+           }).ToList() ?? new List<MontageInventoryItemDto>(),
            AirConditioner = montage.AirConditioner != null
                ? new AirConditionerDto
                {

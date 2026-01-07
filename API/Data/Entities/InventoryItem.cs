@@ -66,4 +66,9 @@ public class InventoryItem
     // Navigation properties
     [ForeignKey("CompanyId")]
     public virtual Company? Company { get; set; }
+
+    /// <summary>
+    /// Montages where this inventory item was used
+    /// </summary>
+    public virtual ICollection<MontageInventoryItem> MontageUsages { get; set; } = new List<MontageInventoryItem>();
 }

@@ -88,4 +88,9 @@ public class Montage
 
     [ForeignKey("AirConditionerId")]
     public virtual AirConditioner? AirConditioner { get; set; }
+
+    /// <summary>
+    /// Materials used in this montage installation
+    /// </summary>
+    public virtual ICollection<MontageInventoryItem> UsedMaterials { get; set; } = new List<MontageInventoryItem>();
 }

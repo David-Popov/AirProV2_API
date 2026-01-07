@@ -1,5 +1,18 @@
 import type { AirConditioner } from './air-conditioner';
 
+export interface MontageInventoryItem {
+  id: string;
+  montage_id: string;
+  inventory_item_id: string;
+  quantity_used: number;
+  unit_price_at_time?: number;
+  notes?: string;
+  created_at: string;
+  item_name?: string;
+  item_sku?: string;
+  unit_of_measure?: string;
+}
+
 export interface Montage {
   id: string;
   company_id?: string | null;
@@ -12,6 +25,7 @@ export interface Montage {
   client_city?: string | null;
   installation_date: string; // DateOnly as string
   completion_date?: string | null; // DateOnly as string
+  next_maintenance_date?: string | null; // DateOnly as string
   status?: string | null;
   indoor_unit_serial?: string | null;
   outdoor_unit_serial?: string | null;
@@ -22,6 +36,7 @@ export interface Montage {
   created_at: string;
   updated_at?: string | null;
   air_conditioner?: AirConditioner | null;
+  used_materials?: MontageInventoryItem[];
 }
 
 export interface CreateMontageRequest {

@@ -23,6 +23,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Company> Companies { get; set; }
     
     public DbSet<InventoryItem> InventoryItems { get; set; }
+    
+    public DbSet<MontageInventoryItem> MontageInventoryItems { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -115,6 +117,27 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                   .WithMany(c => c.InventoryItems)
                   .HasForeignKey(e => e.CompanyId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // MontageInventoryItem configuration - links montages to inventory items
+        builder.Entity<MontageInventoryItem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+            
+            entity.HasIndex(e => e.MontageId).HasDatabaseName("idx_montage_inventory_montage_id");
+            entity.HasIndex(e => e.InventoryItemId).HasDatabaseName("idx_montage_inventory_item_id");
+            
+            entity.HasOne(e => e.Montage)
+                  .WithMany(m => m.UsedMaterials)
+                  .HasForeignKey(e => e.MontageId)
+                  .OnDelete(DeleteBehavior.Cascade);
+                  
+            entity.HasOne(e => e.InventoryItem)
+                  .WithMany(i => i.MontageUsages)
+                  .HasForeignKey(e => e.InventoryItemId)
+                  .OnDelete(DeleteBehavior.Restrict); // Cannot delete inventory item if used in montage
         });
     }
 }

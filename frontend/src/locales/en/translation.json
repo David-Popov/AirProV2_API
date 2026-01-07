@@ -141,7 +141,15 @@
     "edit_details": "Edit Details",
     "mark_complete": "Mark Complete",
     "unassigned": "Unassigned",
-    "no_montages": "No montages found."
+    "no_montages": "No montages found.",
+    "materials": "Materials Used",
+    "add_materials": "Add Materials",
+    "select_materials": "Select Materials",
+    "quantity_used": "Quantity Used",
+    "no_materials": "No materials added yet",
+    "material_added": "Material added successfully",
+    "material_removed": "Material removed successfully",
+    "insufficient_stock": "Insufficient stock"
   },
   "employees": {
     "title": "Employees",

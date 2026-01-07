@@ -61,7 +61,11 @@ public class MontageRepository : IMontageRepository
     {
         try
         {
-            return await _context.Montages.FirstOrDefaultAsync(m => m.Id == montageId);
+            return await _context.Montages
+                .Include(m => m.AirConditioner)
+                .Include(m => m.UsedMaterials)
+                    .ThenInclude(um => um.InventoryItem)
+                .FirstOrDefaultAsync(m => m.Id == montageId);
         }
         catch (Exception e)
         {

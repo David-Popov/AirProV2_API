@@ -5,3 +5,5 @@ export * from './montages';
 export * from './employees';
 export * from './air-conditioner';
 export * from './companies';
+export * from './montage-inventory';
+
