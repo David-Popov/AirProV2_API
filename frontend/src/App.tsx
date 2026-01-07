@@ -9,6 +9,7 @@ import InventoryPage from '@/pages/InventoryPage'
 import MontagesPage from '@/pages/MontagesPage'
 import MontageDetailsPage from '@/pages/MontageDetailsPage'
 import EmployeesPage from '@/pages/EmployeesPage'
+import EmployeeDetailsPage from '@/pages/EmployeeDetailsPage'
 import AirConditionersPage from '@/pages/AirConditionersPage'
 import AirConditionerDetailsPage from '@/pages/AirConditionerDetailsPage'
 import CompaniesPage from '@/pages/CompaniesPage'
@@ -42,6 +43,7 @@ function App() {
               <Route path="/montages" element={<MontagesPage />} />
               <Route path="/montages/:id" element={<MontageDetailsPage />} />
               <Route path="/employees" element={<EmployeesPage />} />
+              <Route path="/employees/:id" element={<EmployeeDetailsPage />} />
               <Route path="/air-conditioners" element={<AirConditionersPage />} />
               <Route path="/air-conditioners/:id" element={<AirConditionerDetailsPage />} />
               <Route path="/error-codes" element={<ErrorCodesPage />} />

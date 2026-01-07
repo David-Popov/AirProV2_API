@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { 
   Users, 
@@ -43,6 +44,7 @@ import type { Employee, CreateEmployeeRequest } from '@/types'
 
 export default function EmployeesPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [employees, setEmployees] = useState<Employee[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -249,7 +251,11 @@ export default function EmployeesPage() {
               </TableRow>
             ) : (
               filteredEmployees.map((emp) => (
-                <TableRow key={emp.id} className="border-border hover:bg-muted/30 transition-colors">
+                <TableRow 
+                  key={emp.id} 
+                  className="border-border hover:bg-muted/30 transition-colors cursor-pointer"
+                  onClick={() => navigate(`/employees/${emp.id}`)}
+                >
                   <TableCell className="font-medium text-foreground">{emp.full_name}</TableCell>
                   <TableCell className="text-muted-foreground">{emp.email}</TableCell>
                   <TableCell>
@@ -277,7 +283,7 @@ export default function EmployeesPage() {
                         variant="ghost" 
                         size="icon"
                         className="h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10"
-                        onClick={() => handleDeleteClick(emp)}
+                        onClick={(e) => { e.stopPropagation(); handleDeleteClick(emp) }}
                       >
                         <Trash className="w-4 h-4" />
                       </Button>

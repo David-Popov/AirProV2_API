@@ -177,6 +177,26 @@
     "search_placeholder": "Search team members...",
     "role": "Role",
     "no_employees": "No employees found.",
-    "create_account": "Create Account"
+    "create_account": "Create Account",
+    "details": "Employee Details",
+    "personal_info": "Personal Information",
+    "contact_info": "Contact Information",
+    "status_roles": "Status & Roles",
+    "performance": "Performance",
+    "recent_montages": "Recent Montages",
+    "completed_montages": "Completed Montages",
+    "active_montages": "Active Montages",
+    "total_montages": "Total Montages",
+    "joined": "Joined",
+    "edit_employee": "Edit Employee",
+    "updated_success": "Employee updated successfully",
+    "deleted_success": "Employee deleted successfully",
+    "not_found": "Employee not found",
+    "reset_password": "Reset Password",
+    "reset_password_desc": "Set a new password for {{name}}",
+    "new_password": "New Password",
+    "confirm_password": "Confirm Password",
+    "set_password": "Set Password",
+    "password_reset_success": "Password has been reset successfully"
   }
 }

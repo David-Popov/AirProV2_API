@@ -177,6 +177,26 @@
     "search_placeholder": "Търси служители...",
     "role": "Роля",
     "no_employees": "Няма намерени служители.",
-    "create_account": "Създай Акаунт"
+    "create_account": "Създай Акаунт",
+    "details": "Детайли за служителя",
+    "personal_info": "Лична Информация",
+    "contact_info": "Информация за Контакт",
+    "status_roles": "Статус и Роли",
+    "performance": "Представяне",
+    "recent_montages": "Последни Монтажи",
+    "completed_montages": "Завършени Монтажи",
+    "active_montages": "Активни Монтажи",
+    "total_montages": "Общо Монтажи",
+    "joined": "Присъединен",
+    "edit_employee": "Редактирай Служител",
+    "updated_success": "Служителят е обновен успешно",
+    "deleted_success": "Служителят е изтрит успешно",
+    "not_found": "Служителят не е намерен",
+    "reset_password": "Промяна на паролата",
+    "reset_password_desc": "Задай нова парола за {{name}}",
+    "new_password": "Нова Парола",
+    "confirm_password": "Потвърди Паролата",
+    "set_password": "Задай Парола",
+    "password_reset_success": "Паролата е променена успешно"
   }
 }
