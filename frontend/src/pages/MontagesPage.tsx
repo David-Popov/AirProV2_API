@@ -14,13 +14,16 @@ import {
   MapPin,
   CreditCard,
   Snowflake,
-  AlertTriangle
+  AlertTriangle,
+  Phone,
+  Wrench
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
   Select, 
   SelectContent, 
@@ -78,6 +81,12 @@ export default function MontagesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [maintenanceReminders, setMaintenanceReminders] = useState<{
+    montage: Montage
+    maintenanceDate: Date
+    daysUntil: number
+    isOverdue: boolean
+  }[]>([])
 
   // Dialog State
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -121,7 +130,38 @@ export default function MontagesPage() {
     try {
       const response = await montageService.getAll(page, 10)
       setItems(response.items)
-      setTotalPages(response.totalPages) 
+      setTotalPages(response.totalPages)
+      
+      // Calculate maintenance reminders
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      
+      // Need all montages for maintenance calculation, not just current page
+      const allMontagesResponse = await montageService.getAll(1, 100)
+      const allMontages = allMontagesResponse.items
+      
+      const reminders = allMontages
+        .filter(m => m.status === 'Completed' || m.payment_status === 'Paid')
+        .map(m => {
+          const installDate = new Date(m.completion_date || m.installation_date)
+          const maintenanceDate = new Date(installDate)
+          maintenanceDate.setFullYear(maintenanceDate.getFullYear() + 1)
+          
+          const timeDiff = maintenanceDate.getTime() - today.getTime()
+          const daysUntil = Math.ceil(timeDiff / (1000 * 60 * 60 * 24))
+          
+          return {
+            montage: m,
+            maintenanceDate,
+            daysUntil,
+            isOverdue: daysUntil < 0
+          }
+        })
+        .filter(r => r.daysUntil <= 60)
+        .sort((a, b) => a.daysUntil - b.daysUntil)
+        .slice(0, 5)
+      
+      setMaintenanceReminders(reminders)
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
@@ -282,6 +322,78 @@ export default function MontagesPage() {
           />
         </div>
       </div>
+
+      {/* Maintenance Reminders */}
+      <Card className="glass-card mb-6 border-orange-500/20">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-foreground flex items-center gap-2 text-lg">
+            <Wrench className="w-5 h-5 text-orange-400" />
+            {t('dashboard.maintenance_reminders', 'Maintenance Reminders')}
+            {maintenanceReminders.length > 0 && (
+              <Badge variant="outline" className="ml-2 bg-orange-500/10 text-orange-500 border-orange-500/20">
+                {maintenanceReminders.length}
+              </Badge>
+            )}
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            {t('dashboard.maintenance_reminders_desc', 'Clients due for annual AC maintenance service')}
+          </p>
+        </CardHeader>
+        <CardContent>
+          {maintenanceReminders.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+              {maintenanceReminders.map(({ montage, maintenanceDate, daysUntil, isOverdue }) => (
+                <div 
+                  key={montage.id} 
+                  onClick={() => navigate(`/montages/${montage.id}`)}
+                  className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                    isOverdue 
+                      ? 'border-red-500/50 bg-red-500/5 hover:border-red-500' 
+                      : daysUntil <= 14 
+                        ? 'border-orange-500/50 bg-orange-500/5 hover:border-orange-500'
+                        : 'border-border bg-background/50 hover:border-primary/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className={`p-2 rounded-full ${
+                      isOverdue ? 'bg-red-500/10' : daysUntil <= 14 ? 'bg-orange-500/10' : 'bg-primary/10'
+                    }`}>
+                      <Phone className={`w-4 h-4 ${
+                        isOverdue ? 'text-red-500' : daysUntil <= 14 ? 'text-orange-500' : 'text-primary'
+                      }`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-foreground truncate">{montage.client_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {montage.client_phone || t('common.no_phone', 'No phone')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className={`text-xs font-medium ${
+                    isOverdue ? 'text-red-500' : daysUntil <= 14 ? 'text-orange-500' : 'text-muted-foreground'
+                  }`}>
+                    {isOverdue 
+                      ? t('dashboard.overdue_days', '{{days}} days overdue', { days: Math.abs(daysUntil) })
+                      : daysUntil === 0 
+                        ? t('dashboard.due_today', 'Due today')
+                        : t('dashboard.due_in_days', 'In {{days}} days', { days: daysUntil })
+                    }
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {maintenanceDate.toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-6 text-muted-foreground">
+              <Wrench className="w-8 h-8 mx-auto mb-2 opacity-20" />
+              <p>{t('dashboard.no_maintenance_due', 'No maintenance due in the next 60 days')}</p>
+              <p className="text-sm mt-1">{t('dashboard.maintenance_auto_calc', 'Maintenance is calculated 1 year after installation')}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Table */}
       <div className="glass-card rounded-xl overflow-hidden">
