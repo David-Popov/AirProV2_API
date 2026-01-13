@@ -69,4 +69,7 @@ public class MontageDto
 
     [JsonPropertyName("used_materials")]
     public List<MontageInventoryItemDto>? UsedMaterials { get; set; }
+    
+    [JsonPropertyName("photos")]
+    public List<MontagePhotoDto>? Photos { get; set; }
 }

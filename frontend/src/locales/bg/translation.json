@@ -31,7 +31,10 @@
     "notes": "Бележки",
     "status": "Статус",
     "date": "Дата",
-    "location": "Локация"
+    "location": "Локация",
+    "upload": "Качи",
+    "download": "Изтегли",
+    "description": "Описание"
   },
   "nav": {
     "dashboard": "Табло",
@@ -168,7 +171,21 @@
     "no_materials": "Все още няма добавени материали",
     "material_added": "Материалът е добавен успешно",
     "material_removed": "Материалът е премахнат успешно",
-    "insufficient_stock": "Недостатъчна наличност"
+    "insufficient_stock": "Недостатъчна наличност",
+    "photos": {
+      "title": "Снимки",
+      "add_photo": "Добави снимка",
+      "upload_photo": "Качи снимка",
+      "upload_photos": "Качи {{count}} снимки",
+      "upload_success": "Снимката е качена успешно",
+      "upload_success_multiple": "{{count}} снимки са качени успешно",
+      "delete_success": "Снимката е изтрита успешно",
+      "no_photos": "Все още няма снимки към този монтаж",
+      "upload_first": "Качете първата снимка",
+      "add_more": "Добави още {{count}}",
+      "description_placeholder": "Описание на снимката (незадължително)...",
+      "validation_info": "Макс. {{maxSize}}MB на файл. Формати: {{formats}}"
+    }
   },
   "employees": {
     "title": "Служители",

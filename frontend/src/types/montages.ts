@@ -13,6 +13,27 @@ export interface MontageInventoryItem {
   unit_of_measure?: string;
 }
 
+export interface MontagePhoto {
+  id: string;
+  montage_id: string;
+  file_name: string;
+  original_file_name: string;
+  content_type: string;
+  file_size: number;
+  url: string;
+  description?: string;
+  display_order: number;
+  created_at: string;
+}
+
+export interface PhotoValidationInfo {
+  maxPhotosPerMontage: number;
+  maxFileSizeMB: number;
+  maxFileSizeBytes: number;
+  allowedContentTypes: string[];
+  allowedExtensions: string[];
+}
+
 export interface Montage {
   id: string;
   company_id?: string | null;
@@ -37,6 +58,7 @@ export interface Montage {
   updated_at?: string | null;
   air_conditioner?: AirConditioner | null;
   used_materials?: MontageInventoryItem[];
+  photos?: MontagePhoto[];
 }
 
 export interface CreateMontageRequest {

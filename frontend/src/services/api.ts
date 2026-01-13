@@ -185,6 +185,84 @@ class ApiClient {
       await this.handleErrorResponse(response);
     }
   }
+
+  async uploadFile<T>(
+    endpoint: string,
+    file: File,
+    additionalData?: Record<string, string | number>,
+    includeAuth: boolean = true
+  ): Promise<T> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    if (additionalData) {
+      Object.entries(additionalData).forEach(([key, value]) => {
+        formData.append(key, String(value));
+      });
+    }
+
+    const headers: HeadersInit = {};
+    if (includeAuth) {
+      const token = this.getAuthToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    if (!response.ok) {
+      await this.handleErrorResponse(response);
+    }
+
+    return response.json();
+  }
+
+  async uploadFiles<T>(
+    endpoint: string,
+    files: File[],
+    additionalData?: Record<string, string | number>,
+    includeAuth: boolean = true
+  ): Promise<T> {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('files', file);
+    });
+
+    if (additionalData) {
+      Object.entries(additionalData).forEach(([key, value]) => {
+        formData.append(key, String(value));
+      });
+    }
+
+    const headers: HeadersInit = {};
+    if (includeAuth) {
+      const token = this.getAuthToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    if (!response.ok) {
+      await this.handleErrorResponse(response);
+    }
+
+    return response.json();
+  }
+
+  getBaseUrl(): string {
+    return this.baseUrl;
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

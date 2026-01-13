@@ -514,7 +514,20 @@ public class MontageService : IMontageService
                    Price = montage.AirConditioner.Price,
                    ImageUrl = montage.AirConditioner.ImageUrl,
                }
-               : null
+               : null,
+           Photos = montage.Photos?.Select(p => new MontagePhotoDto
+           {
+               Id = p.Id,
+               MontageId = p.MontageId,
+               FileName = p.FileName,
+               OriginalFileName = p.OriginalFileName,
+               ContentType = p.ContentType,
+               FileSize = p.FileSize,
+               Url = $"/api/montagephotos/{p.Id}/download",
+               Description = p.Description,
+               DisplayOrder = p.DisplayOrder,
+               CreatedAt = p.CreatedAt
+           }).OrderBy(p => p.DisplayOrder).ThenBy(p => p.CreatedAt).ToList()
        };
     }
 }

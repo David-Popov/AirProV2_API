@@ -146,7 +146,7 @@ export default function AirConditionerDetailsPage() {
               {errorCodes.map((code) => (
                 <div key={code.id} className="p-4 rounded-xl bg-background/50 border border-border hover:border-primary/50 transition-colors">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-mono text-xl font-bold text-destructive">{code.code}</span>
+                    <span className="font-mono text-xl font-bold text-destructive">{code.error_code}</span>
                   </div>
                   <p className="text-foreground/80 text-sm">{code.description}</p>
                 </div>

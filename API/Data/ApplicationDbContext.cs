@@ -25,6 +25,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<InventoryItem> InventoryItems { get; set; }
     
     public DbSet<MontageInventoryItem> MontageInventoryItems { get; set; }
+    
+    public DbSet<MontagePhoto> MontagePhotos { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -138,6 +140,22 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                   .WithMany(i => i.MontageUsages)
                   .HasForeignKey(e => e.InventoryItemId)
                   .OnDelete(DeleteBehavior.Restrict); // Cannot delete inventory item if used in montage
+        });
+
+        // MontagePhoto configuration - photos attached to montages
+        builder.Entity<MontagePhoto>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+            
+            entity.HasIndex(e => e.MontageId).HasDatabaseName("idx_montage_photos_montage_id");
+            entity.HasIndex(e => new { e.MontageId, e.DisplayOrder }).HasDatabaseName("idx_montage_photos_order");
+            
+            entity.HasOne(e => e.Montage)
+                  .WithMany(m => m.Photos)
+                  .HasForeignKey(e => e.MontageId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

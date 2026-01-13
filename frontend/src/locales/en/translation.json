@@ -31,7 +31,10 @@
     "notes": "Notes",
     "status": "Status",
     "date": "Date",
-     "location": "Location"
+    "location": "Location",
+    "upload": "Upload",
+    "download": "Download",
+    "description": "Description"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -168,7 +171,21 @@
     "no_materials": "No materials added yet",
     "material_added": "Material added successfully",
     "material_removed": "Material removed successfully",
-    "insufficient_stock": "Insufficient stock"
+    "insufficient_stock": "Insufficient stock",
+    "photos": {
+      "title": "Photos",
+      "add_photo": "Add Photo",
+      "upload_photo": "Upload Photo",
+      "upload_photos": "Upload {{count}} Photos",
+      "upload_success": "Photo uploaded successfully",
+      "upload_success_multiple": "{{count}} photos uploaded successfully",
+      "delete_success": "Photo deleted successfully",
+      "no_photos": "No photos attached to this montage yet",
+      "upload_first": "Upload your first photo",
+      "add_more": "Add {{count}} more",
+      "description_placeholder": "Optional description for this photo...",
+      "validation_info": "Max {{maxSize}}MB per file. Formats: {{formats}}"
+    }
   },
   "employees": {
     "title": "Employees",

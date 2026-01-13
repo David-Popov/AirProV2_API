@@ -23,7 +23,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Minio;
 using Scalar.AspNetCore;
+using API.Models;
+using API.Services.MontagePhotos;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -87,7 +90,21 @@ builder.Services.AddScoped<IMontageService, MontageService>();
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IMontageInventoryService, MontageInventoryService>();
+builder.Services.AddScoped<IMontagePhotoService, MontagePhotoService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+// Configure MinIO
+var minioSettings = builder.Configuration.GetSection("MinioSettings").Get<MinioSettings>();
+if (minioSettings != null)
+{
+    builder.Services.Configure<MinioSettings>(builder.Configuration.GetSection("MinioSettings"));
+    builder.Services.AddSingleton<IMinioClient>(_ =>
+        new MinioClient()
+            .WithEndpoint(minioSettings.Endpoint)
+            .WithCredentials(minioSettings.AccessKey, minioSettings.SecretKey)
+            .WithSSL(minioSettings.UseSSL)
+            .Build());
+}
 
 // Register background services
 builder.Services.AddHostedService<API.Services.Background.TrialCleanupService>();

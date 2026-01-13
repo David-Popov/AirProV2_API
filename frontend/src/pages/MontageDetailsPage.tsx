@@ -39,6 +39,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { montageService, inventoryService, montageInventoryService } from '@/services'
 import { type Montage, type InventoryItem, MONTAGE_STATUS_OPTIONS, PAYMENT_STATUS_OPTIONS } from '@/types'
+import { MontagePhotosSection } from '@/components/montage'
 
 export default function MontageDetailsPage() {
   const { id } = useParams()
@@ -348,7 +349,7 @@ export default function MontageDetailsPage() {
         </Card>
 
         {/* Materials Used */}
-        <Card className="glass-card h-fit lg:col-span-3">
+        <Card className="glass-card h-fit lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-foreground flex items-center gap-2">
               <Package className="w-5 h-5 text-blue-500" />
@@ -462,6 +463,17 @@ export default function MontageDetailsPage() {
              )}
           </CardContent>
         </Card>
+
+        {/* Photos Section */}
+        <MontagePhotosSection
+          montageId={montage.id}
+          photos={montage.photos}
+          onPhotosChange={async () => {
+            // Refresh montage data to get updated photos
+            const updatedMontage = await montageService.getById(montage.id)
+            setMontage(updatedMontage)
+          }}
+        />
 
       </div>
     </div>

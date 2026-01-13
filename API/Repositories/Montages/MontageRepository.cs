@@ -65,6 +65,7 @@ public class MontageRepository : IMontageRepository
                 .Include(m => m.AirConditioner)
                 .Include(m => m.UsedMaterials)
                     .ThenInclude(um => um.InventoryItem)
+                .Include(m => m.Photos)
                 .FirstOrDefaultAsync(m => m.Id == montageId);
         }
         catch (Exception e)

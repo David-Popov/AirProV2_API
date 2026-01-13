@@ -93,4 +93,9 @@ public class Montage
     /// Materials used in this montage installation
     /// </summary>
     public virtual ICollection<MontageInventoryItem> UsedMaterials { get; set; } = new List<MontageInventoryItem>();
+    
+    /// <summary>
+    /// Photos attached to this montage (max 5)
+    /// </summary>
+    public virtual ICollection<MontagePhoto> Photos { get; set; } = new List<MontagePhoto>();
 }
