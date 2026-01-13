@@ -39,7 +39,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { montageService, inventoryService, montageInventoryService } from '@/services'
 import { type Montage, type InventoryItem, MONTAGE_STATUS_OPTIONS, PAYMENT_STATUS_OPTIONS } from '@/types'
-import { MontagePhotosSection } from '@/components/montage'
+import { MontagePhotosSection, MontageLocationMap } from '@/components/montage'
 
 export default function MontageDetailsPage() {
   const { id } = useParams()
@@ -473,6 +473,13 @@ export default function MontageDetailsPage() {
             const updatedMontage = await montageService.getById(montage.id)
             setMontage(updatedMontage)
           }}
+        />
+
+        {/* Location Map Section */}
+        <MontageLocationMap
+          address={montage.client_address}
+          city={montage.client_city}
+          clientName={montage.client_name}
         />
 
       </div>

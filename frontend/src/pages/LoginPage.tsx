@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Snowflake, Mail, Lock, Loader2 } from 'lucide-react'
+import { Snowflake, Mail, Lock, Loader2, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/context'
+import { ModeToggle } from '@/components/mode-toggle'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -47,29 +48,40 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-blue-50/30 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 flex items-center justify-center p-4">
+      {/* Decorative background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 -left-40 w-80 h-80 bg-blue-400/10 rounded-full blur-3xl" />
+      </div>
+      
+      {/* Theme toggle */}
+      <div className="absolute top-4 right-4">
+        <ModeToggle />
+      </div>
+      
+      <div className="relative w-full max-w-md">
         {/* Logo */}
-        <Link to="/" className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+        <Link to="/" className="flex items-center justify-center gap-3 mb-8">
+          <div className="w-12 h-12 bg-gradient-to-br from-primary to-blue-600 dark:from-primary dark:to-blue-400 rounded-xl flex items-center justify-center shadow-lg shadow-primary/25">
             <Snowflake className="w-6 h-6 text-white" />
           </div>
-          <span className="text-white font-bold text-xl">AirPro</span>
+          <span className="font-bold text-2xl text-foreground">AirPro</span>
         </Link>
 
-        <Card className="bg-white/5 backdrop-blur-lg border-white/10">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-white">Welcome Back</CardTitle>
-            <CardDescription className="text-gray-400">
+        <Card className="bg-card/80 backdrop-blur-xl border-border/50 shadow-2xl shadow-primary/5">
+          <CardHeader className="text-center pb-2">
+            <CardTitle className="text-2xl font-bold text-foreground">Welcome Back</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Sign in to your account to continue
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <CardContent className="pt-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-white">Email</Label>
+                <Label htmlFor="email" className="text-foreground font-medium">Email</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     id="email"
                     type="email"
@@ -77,14 +89,14 @@ export default function LoginPage() {
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     required
-                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-500 pl-10"
+                    className="pl-10 h-11 bg-background border-border"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-white">Password</Label>
+                <Label htmlFor="password" className="text-foreground font-medium">Password</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     id="password"
                     type="password"
@@ -92,13 +104,13 @@ export default function LoginPage() {
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required
-                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-500 pl-10"
+                    className="pl-10 h-11 bg-background border-border"
                   />
                 </div>
               </div>
               <Button 
                 type="submit" 
-                className="w-full bg-purple-600 hover:bg-purple-700"
+                className="w-full h-11 bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 shadow-lg shadow-primary/25 font-medium"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -107,21 +119,31 @@ export default function LoginPage() {
                     Signing in...
                   </>
                 ) : (
-                  'Sign In'
+                  <>
+                    Sign In
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
                 )}
               </Button>
             </form>
 
             <div className="mt-6 text-center">
-              <p className="text-gray-400">
+              <p className="text-muted-foreground">
                 Don't have an account?{' '}
-                <Link to="/register" className="text-purple-400 hover:text-purple-300">
+                <Link to="/register" className="text-primary hover:text-primary/80 font-medium transition-colors">
                   Register
                 </Link>
               </p>
             </div>
           </CardContent>
         </Card>
+        
+        {/* Back to home */}
+        <div className="mt-6 text-center">
+          <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            ← Back to home
+          </Link>
+        </div>
       </div>
     </div>
   )
