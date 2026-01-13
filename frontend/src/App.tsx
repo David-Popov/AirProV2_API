@@ -16,6 +16,7 @@ import CompaniesPage from '@/pages/CompaniesPage'
 import ErrorCodesPage from '@/pages/ErrorCodesPage'
 import SettingsPage from '@/pages/SettingsPage'
 import NotFoundPage from '@/pages/NotFoundPage'
+import { SubscriptionPage, SubscriptionSuccessPage } from '@/pages/subscription'
 import { ProtectedRoute, DashboardLayout } from '@/components/layout'
 import { ThemeProvider } from '@/components/theme-provider'
 
@@ -49,6 +50,8 @@ function App() {
               <Route path="/error-codes" element={<ErrorCodesPage />} />
               <Route path="/companies" element={<CompaniesPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/subscription" element={<SubscriptionPage />} />
+              <Route path="/subscription/success" element={<SubscriptionSuccessPage />} />
             </Route>
 
             {/* 404 */}
@@ -62,4 +65,3 @@ function App() {
 }
 
 export default App
-

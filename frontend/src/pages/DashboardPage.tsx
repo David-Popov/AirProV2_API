@@ -238,8 +238,9 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Trial Warning */}
-      {user?.subscription_plan === 'FreeTrial' && user.trial_end_date && (
+
+      {/* Trial Warning - Only show if user is on FreeTrial AND not Premium */}
+      {user?.subscription_plan === 'FreeTrial' && user?.subscription_status === 'Trial' && user.trial_end_date && (
         <div className="mb-8 p-4 bg-primary/10 border border-primary/20 rounded-xl flex items-center gap-4">
           <div className="p-2 bg-primary/20 rounded-full">
               <AlertTriangle className="w-5 h-5 text-primary" />
@@ -253,7 +254,11 @@ export default function DashboardPage() {
               })}
             </p>
           </div>
-          <Button variant="outline" className="ml-auto border-primary/50 text-primary hover:bg-primary/10">
+          <Button 
+            variant="outline" 
+            className="ml-auto border-primary/50 text-primary hover:bg-primary/10"
+            onClick={() => navigate('/settings?tab=subscription')}
+          >
             {t('dashboard.upgrade_plan')}
           </Button>
         </div>

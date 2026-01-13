@@ -80,6 +80,18 @@ public class Company
     [Column("updated_at")]
     public DateTime? UpdatedAt { get; set; }
 
+    // Stripe integration fields
+    [Column("stripe_customer_id")]
+    [MaxLength(100)]
+    public string? StripeCustomerId { get; set; }
+
+    [Column("stripe_subscription_id")]
+    [MaxLength(100)]
+    public string? StripeSubscriptionId { get; set; }
+
+    [Column("subscription_current_period_end")]
+    public DateTime? SubscriptionCurrentPeriodEnd { get; set; }
+
     // Navigation properties
     public virtual ICollection<ApplicationUser> Users { get; set; } = new List<ApplicationUser>();
     public virtual ICollection<Montage> Montages { get; set; } = new List<Montage>();

@@ -5,3 +5,4 @@ export * from './common';
 export * from './montages';
 export * from './air-conditioner';
 export * from './company';
+export * from './subscription';

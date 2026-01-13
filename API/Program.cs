@@ -27,6 +27,7 @@ using Minio;
 using Scalar.AspNetCore;
 using API.Models;
 using API.Services.MontagePhotos;
+using API.Services.Stripe;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -105,6 +106,10 @@ if (minioSettings != null)
             .WithSSL(minioSettings.UseSSL)
             .Build());
 }
+
+// Configure Stripe
+builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("StripeSettings"));
+builder.Services.AddScoped<IStripeService, StripeService>();
 
 // Register background services
 builder.Services.AddHostedService<API.Services.Background.TrialCleanupService>();

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { 
   Settings, 
@@ -10,10 +11,6 @@ import {
   Shield,
   Palette,
   Globe,
-  Crown,
-  Calendar,
-  CheckCircle,
-  AlertTriangle,
   Moon,
   Sun
 } from 'lucide-react'
@@ -34,11 +31,13 @@ import { useAuth } from '@/context'
 import { useTheme } from '@/components/theme-provider'
 import { companyService } from '@/services'
 import type { Company } from '@/types'
+import { SubscriptionSection } from '@/components/subscription'
 
 export default function SettingsPage() {
   const { user } = useAuth()
   const { t, i18n } = useTranslation()
   const { theme, setTheme } = useTheme()
+  const [searchParams, setSearchParams] = useSearchParams()
   
   const [company, setCompany] = useState<Company | null>(null)
   const [loading, setLoading] = useState(true)
@@ -51,6 +50,23 @@ export default function SettingsPage() {
     emailSubscription: true,
     pushEnabled: false
   })
+  
+  // Handle URL params for tab switching
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab && ['profile', 'company', 'subscription', 'preferences'].includes(tab)) {
+      setActiveTab(tab as typeof activeTab)
+    }
+    
+    // Show success message if coming from Stripe
+    const success = searchParams.get('success')
+    if (success === 'true') {
+      toast.success(t('subscription.payment_success'))
+      // Clean up URL
+      searchParams.delete('success')
+      setSearchParams(searchParams)
+    }
+  }, [searchParams, t])
   
   useEffect(() => {
     if (user?.company_id) {
@@ -70,25 +86,6 @@ export default function SettingsPage() {
       console.error('Failed to load company')
     } finally {
       setLoading(false)
-    }
-  }
-  
-  const getSubscriptionDaysRemaining = () => {
-    if (!company?.subscription_end_date) return null
-    const end = new Date(company.subscription_end_date)
-    const now = new Date()
-    const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-    return diff
-  }
-  
-  const daysRemaining = getSubscriptionDaysRemaining()
-  
-  const getStatusColor = (status: string | null | undefined) => {
-    switch (status) {
-      case 'Active': return 'text-green-500'
-      case 'Trial': return 'text-blue-500'
-      case 'Expired': return 'text-red-500'
-      default: return 'text-muted-foreground'
     }
   }
   
@@ -273,115 +270,7 @@ export default function SettingsPage() {
           
           {/* Subscription Tab */}
           {activeTab === 'subscription' && (
-            <div className="space-y-6">
-              <Card className="glass-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Crown className="w-5 h-5 text-amber-500" />
-                    {t('settings.current_plan', 'Current Plan')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      {t('common.loading', 'Loading...')}
-                    </div>
-                  ) : (
-                    <div className="space-y-6">
-                      {/* Plan Card */}
-                      <div className="p-6 rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20">
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <Badge className="bg-primary/20 text-primary border-primary/30 text-lg py-1 px-4 mb-2">
-                              {company?.subscription_plan || user?.subscription_plan || 'Free Trial'}
-                            </Badge>
-                            <p className={`text-sm font-medium ${getStatusColor(company?.subscription_status || user?.subscription_status)}`}>
-                              {company?.subscription_status || user?.subscription_status || 'Trial'}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            {daysRemaining !== null && (
-                              <div className={`text-3xl font-bold ${daysRemaining <= 7 ? 'text-red-500' : 'text-foreground'}`}>
-                                {daysRemaining}
-                                <span className="text-sm font-normal text-muted-foreground ml-1">
-                                  {t('settings.days_left', 'days left')}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        
-                        {/* Progress Bar */}
-                        {daysRemaining !== null && company?.subscription_start_date && company?.subscription_end_date && (
-                          <div className="mb-4">
-                            <div className="h-2 rounded-full bg-muted overflow-hidden">
-                              <div 
-                                className={`h-full rounded-full transition-all ${daysRemaining <= 7 ? 'bg-red-500' : 'bg-primary'}`}
-                                style={{ 
-                                  width: `${Math.max(0, Math.min(100, (daysRemaining / 30) * 100))}%` 
-                                }}
-                              />
-                            </div>
-                          </div>
-                        )}
-                        
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Calendar className="w-4 h-4" />
-                            <span>{t('settings.start_date', 'Start')}: {company?.subscription_start_date ? new Date(company.subscription_start_date).toLocaleDateString() : '-'}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Calendar className="w-4 h-4" />
-                            <span>{t('settings.end_date', 'End')}: {company?.subscription_end_date ? new Date(company.subscription_end_date).toLocaleDateString() : '-'}</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Warning for expiring soon */}
-                      {daysRemaining !== null && daysRemaining <= 7 && daysRemaining > 0 && (
-                        <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center gap-4">
-                          <div className="p-2 bg-orange-500/20 rounded-full">
-                            <AlertTriangle className="w-5 h-5 text-orange-500" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium text-foreground">{t('settings.expiring_soon', 'Your subscription is expiring soon')}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {t('settings.expiring_desc', 'Renew now to avoid service interruption')}
-                            </p>
-                          </div>
-                          <Button className="bg-orange-500 hover:bg-orange-600">
-                            {t('settings.renew_now', 'Renew Now')}
-                          </Button>
-                        </div>
-                      )}
-                      
-                      {/* Plan Features */}
-                      <div className="space-y-2">
-                        <h4 className="font-medium text-foreground">{t('settings.plan_includes', 'Your plan includes:')}</h4>
-                        <ul className="space-y-2">
-                          {[
-                            t('settings.feature_montages', 'Unlimited montages'),
-                            t('settings.feature_inventory', 'Inventory management'),
-                            t('settings.feature_employees', 'Employee management'),
-                            t('settings.feature_ac', 'Air conditioner database'),
-                            t('settings.feature_reports', 'Basic reports')
-                          ].map((feature, idx) => (
-                            <li key={idx} className="flex items-center gap-2 text-muted-foreground">
-                              <CheckCircle className="w-4 h-4 text-green-500" />
-                              {feature}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      
-                      <Button variant="outline" className="w-full" onClick={() => toast.info(t('settings.coming_soon', 'Coming soon!'))}>
-                        {t('settings.upgrade_plan', 'Upgrade Plan')}
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+            <SubscriptionSection />
           )}
           
           {/* Preferences Tab */}

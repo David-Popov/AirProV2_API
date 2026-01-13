@@ -218,5 +218,29 @@
     "confirm_password": "Confirm Password",
     "set_password": "Set Password",
     "password_reset_success": "Password has been reset successfully"
+  },
+  "subscription": {
+    "title": "Subscription Plans",
+    "subtitle": "Choose the best plan for your business needs",
+    "perfect_for_business": "Perfect for growing businesses",
+    "month": "month",
+    "current_plan": "Current Plan",
+    "renews_on": "Renews on {{date}}",
+    "trial_ends": "Trial ends on {{date}}",
+    "manage": "Manage Subscription",
+    "popular": "Most Popular",
+    "redirecting": "Redirecting...",
+    "current": "Current Plan",
+    "coming_soon": "Coming Soon",
+    "subscribe": "Subscribe Now",
+    "payment_success": "Payment successful! Your subscription is now active.",
+    "checkout_error": "Failed to initiate checkout. Please try again.",
+    "portal_error": "Failed to open customer portal. Please try again.",
+    "price_not_configured": "This plan is not currently available for purchase.",
+    "secure_payment": "Payments are securely processed by Stripe. You can cancel anytime.",
+    "success_title": "Payment Successful!",
+    "success_message": "Thank you for subscribing to AirPro. Your account has been upgraded and you now have access to all premium features.",
+    "go_to_dashboard": "Go to Dashboard",
+    "view_plans": "View Plans"
   }
 }
