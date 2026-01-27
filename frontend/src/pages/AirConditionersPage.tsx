@@ -207,18 +207,18 @@ export default function AirConditionersPage() {
     : items
 
   return (
-    <div className="min-h-screen bg-background p-8 ml-64 transition-colors duration-300">
+    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-            <Snowflake className="w-8 h-8 text-primary" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
+            <Snowflake className="w-6 sm:w-8 h-6 sm:h-8 text-primary" />
             {t('air_conditioners.title')}
           </h1>
-          <p className="text-muted-foreground">{t('air_conditioners.subtitle')}</p>
+          <p className="text-sm sm:text-base text-muted-foreground">{t('air_conditioners.subtitle')}</p>
         </div>
         {isAdmin && (
-          <Button onClick={handleCreate} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
+          <Button onClick={handleCreate} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
             <Plus className="w-4 h-4 mr-2" />
             {t('air_conditioners.add_ac')}
           </Button>
@@ -322,7 +322,7 @@ export default function AirConditionersPage() {
           <ChevronLeft className="w-4 h-4" />
           {t('common.previous')}
         </Button>
-        <span className="text-sm text-muted-foreground">
+        <span className="text-sm text-sm sm:text-base text-muted-foreground">
           {t('common.page', { current: page, total: totalPages || 1 })}
         </span>
         <Button
@@ -428,7 +428,7 @@ export default function AirConditionersPage() {
               <AlertTriangle className="w-5 h-5 text-destructive" />
               {t('common.confirm_delete_title', 'Delete Air Conditioner')}
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground">
+            <AlertDialogDescription className="text-sm sm:text-base text-muted-foreground">
               {t('air_conditioners.delete_confirmation', 'Are you sure you want to delete this air conditioner? This action cannot be undone.')}
               {itemToDelete && (
                 <span className="block mt-2 font-medium text-foreground">

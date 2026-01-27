@@ -263,12 +263,12 @@ export default function CompaniesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-8 ml-64 transition-colors duration-300">
+    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">{t('companies.title', 'Companies')}</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t('companies.title', 'Companies')}</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             {t('companies.subtitle', 'Manage companies and their subscriptions')}
           </p>
         </div>
@@ -358,11 +358,11 @@ export default function CompaniesPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-sm sm:text-base text-muted-foreground">
               {t('common.loading', 'Loading...')}
             </div>
           ) : filteredCompanies.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-sm sm:text-base text-muted-foreground">
               {t('companies.no_companies', 'No companies found')}
             </div>
           ) : (
@@ -396,13 +396,13 @@ export default function CompaniesPage() {
                       <td className="py-4 px-4">
                         <div>
                           <p className="font-medium text-foreground">{company.name}</p>
-                          <p className="text-sm text-muted-foreground">{company.bulstat || 'No BULSTAT'}</p>
+                          <p className="text-sm text-sm sm:text-base text-muted-foreground">{company.bulstat || 'No BULSTAT'}</p>
                         </div>
                       </td>
-                      <td className="py-4 px-4 text-muted-foreground">
+                      <td className="py-4 px-4 text-sm sm:text-base text-muted-foreground">
                         {COMPANY_TYPE_OPTIONS.find(t => t.value === company.company_type)?.label || company.company_type}
                       </td>
-                      <td className="py-4 px-4 text-muted-foreground">
+                      <td className="py-4 px-4 text-sm sm:text-base text-muted-foreground">
                         {company.city || '-'}
                       </td>
                       <td className="py-4 px-4">
@@ -468,7 +468,7 @@ export default function CompaniesPage() {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-6 pt-4 border-t border-border/50">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-sm sm:text-base text-muted-foreground">
                 {t('common.page_of', { current: currentPage, total: totalPages })}
               </p>
               <div className="flex gap-2">
@@ -631,7 +631,7 @@ export default function CompaniesPage() {
           <DialogHeader>
             <DialogTitle>{t('companies.delete_confirm', 'Delete Company?')}</DialogTitle>
           </DialogHeader>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground">
             {t('companies.delete_warning', 'This action cannot be undone. All users and data associated with this company will be deleted.')}
           </p>
           <DialogFooter>
@@ -655,7 +655,7 @@ export default function CompaniesPage() {
           </DialogHeader>
           <div className="max-h-[400px] overflow-y-auto">
             {companyUsers.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">
+              <p className="text-center py-8 text-sm sm:text-base text-muted-foreground">
                 {t('companies.no_users', 'No users found')}
               </p>
             ) : (
@@ -664,7 +664,7 @@ export default function CompaniesPage() {
                   <div key={user.id} className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-background/50">
                     <div>
                       <p className="font-medium text-foreground">{user.full_name}</p>
-                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                      <p className="text-sm text-sm sm:text-base text-muted-foreground">{user.email}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       {user.roles.map(role => (

@@ -1,5 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useState } from 'react'
 import { 
   LayoutDashboard, 
   ClipboardList, 
@@ -9,7 +10,9 @@ import {
   Settings, 
   LogOut,
   AlertCircle,
-  Building2
+  Building2,
+  Menu,
+  X
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -23,14 +26,11 @@ export default function DashboardLayout() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   const handleLogout = () => {
     logout()
     navigate('/login')
-  }
-
-  const handleNavClick = (path: string) => {
-    navigate(path)
   }
 
   const isAdmin = user?.roles.includes('Admin')
@@ -44,10 +44,38 @@ export default function DashboardLayout() {
     (user?.subscription_status === 'Trial' && user?.trial_end_date && new Date(user.trial_end_date) < new Date())
   )
 
+  const handleNavClick = (path: string) => {
+    navigate(path)
+    setIsSidebarOpen(false) // Close sidebar on mobile after navigation
+  }
+
   return (
     <div className="min-h-screen bg-background">
+      {/* Mobile Menu Button - Top Right */}
+      <button
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className="fixed top-4 right-4 z-50 lg:hidden p-2 rounded-lg bg-card border border-border shadow-lg hover:bg-accent transition-colors"
+        aria-label="Toggle menu"
+      >
+        {isSidebarOpen ? (
+          <X className="w-6 h-6 text-foreground" />
+        ) : (
+          <Menu className="w-6 h-6 text-foreground" />
+        )}
+      </button>
+
+      {/* Mobile Overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar - Glass Effect */}
-      <aside className="fixed left-0 top-0 h-full w-64 glass-sidebar p-4 z-50 flex flex-col transition-all duration-300">
+      <aside className={`fixed left-0 top-0 h-full w-64 glass-sidebar p-4 z-50 flex flex-col transition-transform duration-300 ${
+        isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      }`}>
         <div className="flex items-center gap-2 mb-8 cursor-pointer" onClick={() => navigate('/dashboard')}>
           <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/25 ring-1 ring-white/10">
             <Snowflake className="w-6 h-6 text-primary-foreground" />

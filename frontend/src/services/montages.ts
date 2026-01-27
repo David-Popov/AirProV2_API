@@ -43,6 +43,13 @@ export const montageService = {
   },
 
   /**
+   * Update montage status only
+   */
+  async updateStatus(id: string, status: string): Promise<void> {
+    return apiClient.patch<void>(`/Montages/${id}/status`, { status });
+  },
+
+  /**
    * Delete montage
    */
   async delete(id: string): Promise<void> {

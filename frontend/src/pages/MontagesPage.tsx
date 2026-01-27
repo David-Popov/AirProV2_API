@@ -296,25 +296,25 @@ export default function MontagesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-8 ml-64 transition-colors duration-300">
+    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-            <ClipboardList className="w-8 h-8 text-primary" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
+            <ClipboardList className="w-6 sm:w-8 h-6 sm:h-8 text-primary" />
             {t('montages.title')}
           </h1>
-          <p className="text-muted-foreground">{t('montages.subtitle')}</p>
+          <p className="text-sm sm:text-base text-muted-foreground">{t('montages.subtitle')}</p>
         </div>
-        <Button onClick={handleCreate} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
+        <Button onClick={handleCreate} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
           <Plus className="w-4 h-4 mr-2" />
           {t('montages.new_montage')}
         </Button>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4 mb-6">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex gap-4 mb-4 sm:mb-6">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input 
             placeholder={t('montages.search_placeholder')}
@@ -324,9 +324,9 @@ export default function MontagesPage() {
       </div>
 
       {/* Maintenance Reminders */}
-      <Card className="glass-card mb-6 border-orange-500/20">
+      <Card className="glass-card mb-4 sm:mb-6 border-orange-500/20">
         <CardHeader className="pb-3">
-          <CardTitle className="text-foreground flex items-center gap-2 text-lg">
+          <CardTitle className="text-foreground flex items-center gap-2 text-base sm:text-lg flex-wrap">
             <Wrench className="w-5 h-5 text-orange-400" />
             {t('dashboard.maintenance_reminders', 'Maintenance Reminders')}
             {maintenanceReminders.length > 0 && (
@@ -335,13 +335,13 @@ export default function MontagesPage() {
               </Badge>
             )}
           </CardTitle>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             {t('dashboard.maintenance_reminders_desc', 'Clients due for annual AC maintenance service')}
           </p>
         </CardHeader>
         <CardContent>
           {maintenanceReminders.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4">
               {maintenanceReminders.map(({ montage, maintenanceDate, daysUntil, isOverdue }) => (
                 <div 
                   key={montage.id} 
@@ -395,8 +395,8 @@ export default function MontagesPage() {
         </CardContent>
       </Card>
 
-      {/* Table */}
-      <div className="glass-card rounded-xl overflow-hidden">
+      {/* Table - Desktop */}
+      <div className="hidden md:block glass-card rounded-xl overflow-hidden">
         <Table>
           <TableHeader className="bg-muted/30">
             <TableRow className="border-border hover:bg-muted/30">
@@ -443,10 +443,12 @@ export default function MontagesPage() {
                        {new Date(item.installation_date).toLocaleDateString()}
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-3 h-3 text-muted-foreground" />
-                      {item.client_city}, {item.client_address}
+                  <TableCell className="text-muted-foreground w-[220px]">
+                    <div className="flex items-center gap-2 max-w-[200px]">
+                      <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
+                      <span className="truncate" title={`${item.client_city}, ${item.client_address}`}>
+                        {item.client_city}, {item.client_address}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell className="text-foreground/80">
@@ -462,9 +464,62 @@ export default function MontagesPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={statusColors[item.status || 'Planned'] || statusColors['Planned']}>
-                      {getStatusLabel(item.status)}
-                    </Badge>
+                    <div className="flex items-center gap-1">
+                      {/* Previous Status Arrow */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 hover:bg-muted"
+                        onClick={async (e) => {
+                          e.stopPropagation()
+                          const currentIndex = MONTAGE_STATUS_OPTIONS.findIndex(opt => opt.value === (item.status || 'Planned'))
+                          if (currentIndex > 0) {
+                            const newStatus = MONTAGE_STATUS_OPTIONS[currentIndex - 1].value
+                            try {
+                              await montageService.updateStatus(item.id, newStatus)
+                              toast.success(t('montages.status_updated', 'Status updated'))
+                              loadItems()
+                            } catch (error) {
+                              console.error('Status update error:', error)
+                              toast.error(t('common.unknown_error'))
+                            }
+                          }
+                        }}
+                        disabled={MONTAGE_STATUS_OPTIONS.findIndex(opt => opt.value === (item.status || 'Planned')) === 0}
+                      >
+                        <ChevronLeft className="w-3 h-3" />
+                      </Button>
+
+                      {/* Status Badge */}
+                      <Badge variant="outline" className={statusColors[item.status || 'Planned'] || statusColors['Planned']}>
+                        {getStatusLabel(item.status)}
+                      </Badge>
+
+                      {/* Next Status Arrow */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 hover:bg-muted"
+                        onClick={async (e) => {
+                          e.stopPropagation()
+                          const currentIndex = MONTAGE_STATUS_OPTIONS.findIndex(opt => opt.value === (item.status || 'Planned'))
+                          if (currentIndex >= 0 && currentIndex < MONTAGE_STATUS_OPTIONS.length - 1) {
+                            const newStatus = MONTAGE_STATUS_OPTIONS[currentIndex + 1].value
+                            try {
+                              await montageService.updateStatus(item.id, newStatus)
+                              toast.success(t('montages.status_updated', 'Status updated'))
+                              loadItems()
+                            } catch (error) {
+                              console.error('Status update error:', error)
+                              toast.error(t('common.unknown_error'))
+                            }
+                          }
+                        }}
+                        disabled={MONTAGE_STATUS_OPTIONS.findIndex(opt => opt.value === (item.status || 'Planned')) === MONTAGE_STATUS_OPTIONS.length - 1}
+                      >
+                        <ChevronRight className="w-3 h-3" />
+                      </Button>
+                    </div>
                   </TableCell>
                   <TableCell>
                      <div className="flex flex-col">
@@ -504,8 +559,87 @@ export default function MontagesPage() {
         </Table>
       </div>
 
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-3">
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : items.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-20" />
+            <p>{t('montages.no_montages')}</p>
+          </div>
+        ) : (
+          items.map((item) => (
+            <Card 
+              key={item.id} 
+              className="glass-card cursor-pointer hover:border-primary/50 transition-all"
+              onClick={() => navigate(`/montages/${item.id}`)}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-foreground truncate">{item.client_name}</h3>
+                    <p className="text-xs text-muted-foreground">{item.client_phone}</p>
+                  </div>
+                  <Badge variant="outline" className={statusColors[item.status || 'Planned'] || statusColors['Planned']}>
+                    {getStatusLabel(item.status)}
+                  </Badge>
+                </div>
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Calendar className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{new Date(item.installation_date).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <MapPin className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{item.client_city}, {item.client_address}</span>
+                  </div>
+                  {item.air_conditioner && (
+                    <div className="flex items-center gap-2 text-foreground">
+                      <Snowflake className="w-3 h-3 shrink-0 text-primary" />
+                      <span className="truncate">{item.air_conditioner.brand} {item.air_conditioner.model}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 text-foreground font-medium">
+                    <CreditCard className="w-3 h-3 shrink-0 text-green-500" />
+                    <span>${item.total_price || 0}</span>
+                    <span className={`text-xs ml-auto ${item.payment_status === 'Paid' ? 'text-green-500' : 'text-yellow-500'}`}>
+                      {getPaymentStatusLabel(item.payment_status)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 mt-3 pt-3 border-t border-border">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="flex-1 text-xs"
+                    onClick={(e) => handleEditClick(e, item)}
+                  >
+                    <Edit className="w-3 h-3 mr-1" />
+                    {t('common.edit', 'Edit')}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="flex-1 text-xs text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                    onClick={(e) => handleDeleteClick(e, item)}
+                  >
+                    <Trash className="w-3 h-3 mr-1" />
+                    {t('common.delete', 'Delete')}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
      {/* Pagination */}
-      <div className="flex items-center justify-end space-x-2 py-4">
+      <div className="flex items-center justify-center sm:justify-end space-x-2 py-4">
         <Button
           variant="outline"
           size="sm"
@@ -514,9 +648,9 @@ export default function MontagesPage() {
           className="border-border text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           <ChevronLeft className="w-4 h-4" />
-          {t('common.previous')}
+          <span className="hidden sm:inline ml-1">{t('common.previous')}</span>
         </Button>
-        <span className="text-sm text-muted-foreground">
+        <span className="text-xs sm:text-sm text-muted-foreground px-2">
           {t('common.page', { current: page, total: totalPages || 1 })}
         </span>
         <Button
@@ -528,18 +662,18 @@ export default function MontagesPage() {
           disabled={page >= totalPages}
           className="border-border text-muted-foreground hover:bg-muted hover:text-foreground"
         >
-          {t('common.next')}
+          <span className="hidden sm:inline mr-1">{t('common.next')}</span>
           <ChevronRight className="w-4 h-4" />
         </Button>
       </div>
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-card border-border text-card-foreground sm:max-w-[700px] max-h-[90vh] overflow-y-auto shadow-2xl">
+        <DialogContent className="bg-card border-border text-card-foreground max-w-[95vw] sm:max-w-[700px] max-h-[90vh] overflow-y-auto shadow-2xl">
           <DialogHeader>
-            <DialogTitle>{isEditing ? t('montages.edit_details') : t('montages.new_montage')}</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">{isEditing ? t('montages.edit_details') : t('montages.new_montage')}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSave} className="grid gap-6 py-4">
+          <form onSubmit={handleSave} className="grid gap-4 sm:gap-6 py-4">
             
             {/* Client Info */}
             <div className="space-y-4">

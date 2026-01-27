@@ -267,6 +267,37 @@ public class MontagesController : ControllerBase
     }
 
     /// <summary>
+    /// Update montage status only
+    /// </summary>
+    [HttpPatch("{id}/status")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> UpdateStatus(Guid id, [FromBody] UpdateMontageStatusDto dto)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(dto.Status))
+            {
+                return BadRequest(new { message = "Status is required" });
+            }
+
+            await _service.UpdateMontageStatusAsync(id, dto.Status);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Delete montage
     /// </summary>
     [HttpDelete("{id}")]

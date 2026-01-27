@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { 
   Table, 
   TableBody, 
@@ -192,25 +193,25 @@ export default function EmployeesPage() {
   )
 
   return (
-    <div className="min-h-screen bg-background p-8 ml-64 transition-colors duration-300">
+    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-            <Users className="w-8 h-8 text-primary" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
+            <Users className="w-6 sm:w-8 h-6 sm:h-8 text-primary" />
             {t('employees.title')}
           </h1>
-          <p className="text-muted-foreground">{t('employees.subtitle')}</p>
+          <p className="text-sm sm:text-base text-muted-foreground">{t('employees.subtitle')}</p>
         </div>
-        <Button onClick={handleCreate} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
+        <Button onClick={handleCreate} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
           <Plus className="w-4 h-4 mr-2" />
           {t('employees.add_employee')}
         </Button>
       </div>
 
       {/* Search */}
-      <div className="flex gap-4 mb-6">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex gap-4 mb-4 sm:mb-6">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input 
             placeholder={t('employees.search_placeholder')}
@@ -221,17 +222,17 @@ export default function EmployeesPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="glass-card rounded-xl overflow-hidden">
+      {/* Table - Desktop */}
+      <div className="hidden md:block glass-card rounded-xl overflow-hidden">
         <Table>
           <TableHeader className="bg-muted/30">
             <TableRow className="border-border hover:bg-muted/30">
-              <TableHead className="text-muted-foreground">{t('inventory.name')}</TableHead>
-              <TableHead className="text-muted-foreground">{t('auth.email')}</TableHead>
-              <TableHead className="text-muted-foreground">{t('employees.role')}</TableHead>
-              <TableHead className="text-muted-foreground">{t('auth.phone')}</TableHead>
-              <TableHead className="text-muted-foreground">{t('common.status')}</TableHead>
-              <TableHead className="text-center text-muted-foreground">{t('common.actions')}</TableHead>
+              <TableHead className="text-sm sm:text-base text-muted-foreground">{t('inventory.name')}</TableHead>
+              <TableHead className="text-sm sm:text-base text-muted-foreground">{t('auth.email')}</TableHead>
+              <TableHead className="text-sm sm:text-base text-muted-foreground">{t('employees.role')}</TableHead>
+              <TableHead className="text-sm sm:text-base text-muted-foreground">{t('auth.phone')}</TableHead>
+              <TableHead className="text-sm sm:text-base text-muted-foreground">{t('common.status')}</TableHead>
+              <TableHead className="text-center text-sm sm:text-base text-muted-foreground">{t('common.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -245,7 +246,7 @@ export default function EmployeesPage() {
               </TableRow>
             ) : filteredEmployees.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={6} className="h-24 text-center text-sm sm:text-base text-muted-foreground">
                   {t('employees.no_employees')}
                 </TableCell>
               </TableRow>
@@ -257,7 +258,7 @@ export default function EmployeesPage() {
                   onClick={() => navigate(`/employees/${emp.id}`)}
                 >
                   <TableCell className="font-medium text-foreground">{emp.full_name}</TableCell>
-                  <TableCell className="text-muted-foreground">{emp.email}</TableCell>
+                  <TableCell className="text-sm sm:text-base text-muted-foreground">{emp.email}</TableCell>
                   <TableCell>
                     {emp.roles.map(role => (
                       <Badge key={role} variant="secondary" className="mr-1">
@@ -265,7 +266,7 @@ export default function EmployeesPage() {
                       </Badge>
                     ))}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{emp.phone_number || '-'}</TableCell>
+                  <TableCell className="text-sm sm:text-base text-muted-foreground">{emp.phone_number || '-'}</TableCell>
                   <TableCell>
                     {emp.is_active ? (
                       <Badge className="bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20 border-green-500/20">
@@ -294,6 +295,77 @@ export default function EmployeesPage() {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-3">
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : filteredEmployees.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <Users className="w-12 h-12 mx-auto mb-3 opacity-20" />
+            <p>{t('employees.no_employees')}</p>
+          </div>
+        ) : (
+          filteredEmployees.map((emp) => (
+            <Card 
+              key={emp.id} 
+              className="glass-card cursor-pointer hover:border-primary/50 transition-all"
+              onClick={() => navigate(`/employees/${emp.id}`)}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-foreground truncate">{emp.full_name}</h3>
+                    <p className="text-xs text-muted-foreground truncate">{emp.email}</p>
+                  </div>
+                  {emp.is_active ? (
+                    <Badge className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 shrink-0">
+                      {t('common.active')}
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20 shrink-0">
+                      {t('common.inactive')}
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="space-y-2 text-sm">
+                  {emp.phone_number && (
+                    <div className="flex items-center justify-between text-muted-foreground">
+                      <span>{t('auth.phone')}:</span>
+                      <span className="text-foreground">{emp.phone_number}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">{t('employees.role')}:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {emp.roles.map(role => (
+                        <Badge key={role} variant="secondary" className="text-xs">
+                          {role}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 mt-3 pt-3 border-t border-border">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="flex-1 text-red-500 border-red-500/20 hover:bg-red-500/10 hover:text-red-400"
+                    onClick={(e) => { e.stopPropagation(); handleDeleteClick(emp) }}
+                  >
+                    <Trash className="w-3 h-3 mr-1" />
+                    {t('common.delete')}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
 
       {/* Create Dialog */}
@@ -374,7 +446,7 @@ export default function EmployeesPage() {
               <AlertTriangle className="w-5 h-5 text-destructive" />
               {t('common.confirm_delete_title', 'Delete Employee')}
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground">
+            <AlertDialogDescription className="text-sm sm:text-base text-muted-foreground">
               {t('employees.delete_confirmation', 'Are you sure you want to delete this employee? This action cannot be undone.')}
               {employeeToDelete && (
                 <span className="block mt-2 font-medium text-foreground">

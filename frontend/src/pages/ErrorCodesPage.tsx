@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
@@ -22,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogTrigger,
 } from '@/components/ui/dialog'
 import {
   Select,
@@ -213,19 +215,19 @@ export default function ErrorCodesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-8 ml-64 transition-colors duration-300">
+    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">{t('error_codes.title', 'Error Codes')}</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t('error_codes.title', 'Error Codes')}</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             {t('error_codes.subtitle', 'Manage air conditioner error codes and solutions')}
           </p>
         </div>
         {isAdmin && (
           <Button 
             onClick={() => { resetForm(); setIsCreateDialogOpen(true) }}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
+            className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
           >
             <Plus className="w-4 h-4 mr-2" />
             {t('error_codes.add_error_code', 'Add Error Code')}
@@ -234,48 +236,42 @@ export default function ErrorCodesPage() {
       </div>
       
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <Card className="glass-card">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-muted-foreground text-sm font-medium">{t('error_codes.total', 'Total Error Codes')}</p>
-              <div className="p-2 rounded-lg bg-red-500/10">
-                <AlertCircle className="w-5 h-5 text-red-500" />
-              </div>
+          <CardContent className="p-3 sm:p-4 flex flex-col items-center text-center">
+            <div className="p-1.5 sm:p-2 rounded-lg bg-red-500/10 mb-1.5 sm:mb-2">
+              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
             </div>
-            <p className="text-3xl font-bold text-foreground tracking-tight">{totalCount}</p>
+            <p className="text-muted-foreground text-[10px] sm:text-xs font-medium mb-1">{t('error_codes.total', 'Total Error Codes')}</p>
+            <p className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{totalCount}</p>
           </CardContent>
         </Card>
         <Card className="glass-card">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-muted-foreground text-sm font-medium">{t('error_codes.with_solutions', 'With Solutions')}</p>
-              <div className="p-2 rounded-lg bg-green-500/10">
-                <Lightbulb className="w-5 h-5 text-green-500" />
-              </div>
+          <CardContent className="p-3 sm:p-4 flex flex-col items-center text-center">
+            <div className="p-1.5 sm:p-2 rounded-lg bg-green-500/10 mb-1.5 sm:mb-2">
+              <Lightbulb className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
             </div>
-            <p className="text-3xl font-bold text-foreground tracking-tight">
+            <p className="text-muted-foreground text-[10px] sm:text-xs font-medium mb-1">{t('error_codes.with_solutions', 'With Solutions')}</p>
+            <p className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
               {(errorCodes || []).filter(ec => ec?.solution).length}
             </p>
           </CardContent>
         </Card>
         <Card className="glass-card">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-muted-foreground text-sm font-medium">{t('error_codes.air_conditioners', 'Air Conditioners')}</p>
-              <div className="p-2 rounded-lg bg-blue-500/10">
-                <Snowflake className="w-5 h-5 text-blue-500" />
-              </div>
+          <CardContent className="p-3 sm:p-4 flex flex-col items-center text-center">
+            <div className="p-1.5 sm:p-2 rounded-lg bg-blue-500/10 mb-1.5 sm:mb-2">
+              <Snowflake className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
             </div>
-            <p className="text-3xl font-bold text-foreground tracking-tight">
+            <p className="text-muted-foreground text-[10px] sm:text-xs font-medium mb-1">{t('error_codes.air_conditioners', 'Air Conditioners')}</p>
+            <p className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
               {new Set((errorCodes || []).map(ec => ec?.air_conditioner_id).filter(Boolean)).size}
             </p>
           </CardContent>
         </Card>
       </div>
       
-      {/* Filters */}
-      <div className="flex gap-4 mb-6">
+      {/* Filters - Desktop Only */}
+      <div className="hidden md:flex gap-4 mb-6">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
@@ -299,6 +295,53 @@ export default function ErrorCodesPage() {
           </SelectContent>
         </Select>
       </div>
+
+      {/* Mobile Filter Button - Bottom Left */}
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button 
+            className="md:hidden fixed bottom-4 left-4 z-50 rounded-full w-14 h-14 shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground"
+            size="icon"
+          >
+            <Search className="w-5 h-5" />
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="bg-card border-border text-card-foreground max-w-[95vw] sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>{t('common.filters', 'Filters')}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label>{t('common.search', 'Search')}</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  placeholder={t('error_codes.search', 'Search by code or description...')}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label>{t('error_codes.filter_by_ac', 'Filter by Air Conditioner')}</Label>
+              <Select value={filterAcId} onValueChange={setFilterAcId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('common.all', 'All')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('common.all', 'All')}</SelectItem>
+                  {airConditioners.map(ac => (
+                    <SelectItem key={ac.id} value={ac.id}>
+                      {ac.brand} {ac.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       
       {/* Error Codes Grid */}
       <Card className="glass-card">

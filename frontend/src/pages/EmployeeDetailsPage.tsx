@@ -202,7 +202,7 @@ export default function EmployeeDetailsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background p-8 ml-64 flex items-center justify-center">
+      <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
@@ -210,7 +210,7 @@ export default function EmployeeDetailsPage() {
 
   if (!employee) {
     return (
-      <div className="min-h-screen bg-background p-8 ml-64">
+      <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8">
         <p className="text-muted-foreground">{t('employees.not_found', 'Employee not found')}</p>
       </div>
     )
@@ -220,26 +220,34 @@ export default function EmployeeDetailsPage() {
   const activeMontages = employeeMontages.filter(m => m.status === 'InProgress' || m.status === 'Planned').length
 
   return (
-    <div className="min-h-screen bg-background p-8 ml-64 transition-colors duration-300">
+    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
+      {/* Back Button - Top Left at same level as hamburger */}
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        onClick={() => navigate('/employees')} 
+        className="fixed top-4 left-4 lg:left-[272px] z-40 text-muted-foreground hover:text-foreground bg-card border border-border shadow-lg"
+      >
+        <ChevronLeft className="w-5 h-5" />
+      </Button>
+
       {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/employees')} className="text-muted-foreground hover:text-foreground">
-          <ChevronLeft className="w-5 h-5" />
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold text-foreground">{employee.full_name}</h1>
-          <p className="text-muted-foreground">{t('employees.details', 'Employee Details')}</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setIsResettingPassword(true)} className="gap-2">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-1">{employee.full_name}</h1>
+        <p className="text-sm sm:text-base text-muted-foreground mb-4">{t('employees.details', 'Employee Details')}</p>
+        
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setIsResettingPassword(true)} className="gap-2 text-sm">
             <KeyRound className="w-4 h-4" />
-            {t('employees.reset_password', 'Reset Password')}
+            <span className="hidden sm:inline">{t('employees.reset_password', 'Reset Password')}</span>
+            <span className="sm:hidden">{t('employees.reset', 'Reset')}</span>
           </Button>
-          <Button variant="outline" onClick={() => setIsEditing(true)} className="gap-2">
+          <Button variant="outline" onClick={() => setIsEditing(true)} className="gap-2 text-sm">
             <Edit className="w-4 h-4" />
             {t('common.edit')}
           </Button>
-          <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)} className="gap-2">
+          <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)} className="gap-2 text-sm">
             <Trash2 className="w-4 h-4" />
             {t('common.delete')}
           </Button>

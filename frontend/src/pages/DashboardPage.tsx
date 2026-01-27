@@ -218,36 +218,28 @@ export default function DashboardPage() {
   }, [revenueData])
 
   return (
-    <div className="min-h-screen bg-background p-8 ml-64 transition-colors duration-300">
+    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">{t('common.dashboard')}</h1>
-          <p className="text-muted-foreground">
-            {t('common.welcome', { name: user?.first_name })}
-            {user?.company_name && (
-              <span className="text-primary font-medium"> • {user.company_name}</span>
-            )}
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <Button onClick={() => navigate('/montages')} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
-            <Plus className="w-4 h-4 mr-2" />
-            {t('montages.new_montage')}
-          </Button>
-        </div>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t('common.dashboard')}</h1>
+        <p className="text-muted-foreground text-sm sm:text-base">
+          {t('common.welcome', { name: user?.first_name })}
+          {user?.company_name && (
+            <span className="text-primary font-medium"> • {user.company_name}</span>
+          )}
+        </p>
       </div>
 
 
       {/* Trial Warning - Only show if user is on FreeTrial AND not Premium */}
       {user?.subscription_plan === 'FreeTrial' && user?.subscription_status === 'Trial' && user.trial_end_date && (
-        <div className="mb-8 p-4 bg-primary/10 border border-primary/20 rounded-xl flex items-center gap-4">
-          <div className="p-2 bg-primary/20 rounded-full">
+        <div className="mb-6 sm:mb-8 p-4 bg-primary/10 border border-primary/20 rounded-xl flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+          <div className="p-2 bg-primary/20 rounded-full shrink-0">
               <AlertTriangle className="w-5 h-5 text-primary" />
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <h3 className="text-foreground font-medium">{t('dashboard.free_trial_title')}</h3>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-sm break-words">
               {t('dashboard.free_trial_desc', { 
                 date: new Date(user.trial_end_date).toLocaleDateString(),
                 days: Math.ceil((new Date(user.trial_end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
@@ -256,7 +248,7 @@ export default function DashboardPage() {
           </div>
           <Button 
             variant="outline" 
-            className="ml-auto border-primary/50 text-primary hover:bg-primary/10"
+            className="w-full sm:w-auto border-primary/50 text-primary hover:bg-primary/10 shrink-0"
             onClick={() => navigate('/settings?tab=subscription')}
           >
             {t('dashboard.upgrade_plan')}
@@ -264,39 +256,9 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-4 gap-6 mb-8">
-        <StatCard 
-          title={t('dashboard.active_montages')} 
-          value={stats.activeMontages.toString()} 
-          change={t('dashboard.current')} 
-          icon={ClipboardList}
-        />
-        <StatCard 
-          title={t('dashboard.completed_montages')} 
-          value={stats.completedMontages.toString()} 
-          change={t('dashboard.total')} 
-          icon={TrendingUp}
-        />
-        <StatCard 
-          title={t('dashboard.inventory_items')} 
-          value={stats.inventoryCount.toString()} 
-          change={t('dashboard.low_stock_count', { count: stats.lowStockCount })}
-          icon={Package}
-          warning={stats.lowStockCount > 0}
-        />
-        <StatCard 
-          title={t('dashboard.team_members')} 
-          value={stats.employeeCount.toString()} 
-          change={t('common.active')} 
-          icon={Users}
-        />
-      </div>
-
       {/* Revenue Chart */}
-      <Card className="glass-card mb-8">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <div className="flex items-center gap-3">
+      <Card className="glass-card mb-6 sm:mb-8">
+        <CardHeader className="flex flex-col lg:flex-row items-start lg:items-center justify-between pb-2 gap-4">          <div className="flex items-center gap-3">
             <div className="p-2 bg-green-500/10 rounded-lg">
               <BarChart3 className="w-5 h-5 text-green-500" />
             </div>
@@ -309,7 +271,7 @@ export default function DashboardPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto">
             <Button 
               variant={timePeriod === '1month' ? 'default' : 'outline'} 
               size="sm"
@@ -354,7 +316,7 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           {/* Summary Stats */}
-          <div className="grid grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
             <div className="flex items-center gap-4 p-4 rounded-xl bg-green-500/5 border border-green-500/10">
               <div className="p-3 bg-green-500/10 rounded-full">
                 <DollarSign className="w-6 h-6 text-green-500" />
@@ -378,7 +340,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Chart */}
-          <div className="h-[300px] mt-4">
+          <div className="h-[250px] sm:h-[300px] mt-4">
             {revenueData.some(d => d.revenue > 0) ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={revenueData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
@@ -439,27 +401,58 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+
+      {/* Stats Grid - 2x2 Layout */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
+        <StatCard 
+          title={t('dashboard.active_montages')} 
+          value={stats.activeMontages.toString()} 
+          change={t('dashboard.current')} 
+          icon={ClipboardList}
+        />
+        <StatCard 
+          title={t('dashboard.completed_montages')} 
+          value={stats.completedMontages.toString()} 
+          change={t('dashboard.total')} 
+          icon={TrendingUp}
+        />
+        <StatCard 
+          title={t('dashboard.inventory_items')} 
+          value={stats.inventoryCount.toString()} 
+          change={t('dashboard.low_stock_count', { count: stats.lowStockCount })}
+          icon={Package}
+          warning={stats.lowStockCount > 0}
+        />
+        <StatCard 
+          title={t('dashboard.team_members')} 
+          value={stats.employeeCount.toString()} 
+          change={t('common.active')} 
+          icon={Users}
+        />
+      </div>
+
+
         {/* Maintenance Reminders - Due for annual service */}
         <div className="lg:col-span-2">
           <Card className="glass-card h-full">
             <CardHeader>
-              <CardTitle className="text-foreground flex items-center gap-2">
+              <CardTitle className="text-foreground flex items-center gap-2 text-base sm:text-lg">
                 <AlertTriangle className="w-5 h-5 text-orange-400" />
                 {t('dashboard.maintenance_reminders', 'Maintenance Reminders')}
               </CardTitle>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 {t('dashboard.maintenance_reminders_desc', 'Clients due for annual AC maintenance service')}
               </p>
             </CardHeader>
             <CardContent>
               {maintenanceReminders.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {maintenanceReminders.map(({ montage, maintenanceDate, daysUntil, isOverdue }) => (
                     <div 
                       key={montage.id} 
                       onClick={() => navigate(`/montages/${montage.id}`)}
-                      className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${
+                      className={`flex items-center justify-between p-3 sm:p-4 rounded-xl border cursor-pointer transition-all ${
                         isOverdue 
                           ? 'border-red-500/50 bg-red-500/5 hover:border-red-500' 
                           : daysUntil <= 14 
@@ -467,23 +460,23 @@ export default function DashboardPage() {
                             : 'border-border bg-background/50 hover:border-primary/50'
                       }`}
                     >
-                      <div className="flex items-center gap-4">
-                        <div className={`p-2 rounded-full ${
+                      <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                        <div className={`p-2 rounded-full shrink-0 ${
                           isOverdue ? 'bg-red-500/10' : daysUntil <= 14 ? 'bg-orange-500/10' : 'bg-primary/10'
                         }`}>
                           <Phone className={`w-4 h-4 ${
                             isOverdue ? 'text-red-500' : daysUntil <= 14 ? 'text-orange-500' : 'text-primary'
                           }`} />
                         </div>
-                        <div>
-                          <p className="font-semibold text-foreground">{montage.client_name}</p>
-                          <p className="text-sm text-muted-foreground">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-foreground truncate text-sm sm:text-base">{montage.client_name}</p>
+                          <p className="text-xs text-muted-foreground truncate">
                             {montage.client_phone || t('common.no_phone', 'No phone')} • {montage.client_city || 'N/A'}
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className={`text-sm font-medium ${
+                      <div className="text-right shrink-0 ml-2">
+                        <p className={`text-xs sm:text-sm font-medium ${
                           isOverdue ? 'text-red-500' : daysUntil <= 14 ? 'text-orange-500' : 'text-primary'
                         }`}>
                           {maintenanceDate.toLocaleDateString()}
@@ -503,10 +496,10 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <AlertTriangle className="w-10 h-10 mx-auto mb-3 opacity-20" />
-                  <p>{t('dashboard.no_maintenance_due', 'No maintenance due in the next 60 days')}</p>
-                  <p className="text-sm mt-1">{t('dashboard.maintenance_auto_calc', 'Maintenance is calculated 1 year after installation')}</p>
+                <div className="text-center py-6 sm:py-8 text-muted-foreground">
+                  <AlertTriangle className="w-8 sm:w-10 h-8 sm:h-10 mx-auto mb-3 opacity-20" />
+                  <p className="text-sm sm:text-base">{t('dashboard.no_maintenance_due', 'No maintenance due in the next 60 days')}</p>
+                  <p className="text-xs sm:text-sm mt-1">{t('dashboard.maintenance_auto_calc', 'Maintenance is calculated 1 year after installation')}</p>
                 </div>
               )}
             </CardContent>
@@ -516,19 +509,19 @@ export default function DashboardPage() {
         {/* Quick Actions (Moved here for layout balance) */}
         <Card className="glass-card h-full">
           <CardHeader>
-             <CardTitle className="text-foreground flex items-center gap-2">
+             <CardTitle className="text-foreground flex items-center gap-2 text-base sm:text-lg">
                 <ClipboardList className="w-5 h-5 text-primary" />
                 {t('dashboard.quick_actions', 'Quick Actions')}
              </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-             <Button variant="outline" className="w-full justify-start h-12 text-foreground hover:bg-primary/10 hover:text-primary transition-all" onClick={() => navigate('/montages')}>
+          <CardContent className="space-y-3 sm:space-y-4">
+             <Button variant="outline" className="w-full justify-start h-11 sm:h-12 text-sm sm:text-base text-foreground hover:bg-primary/10 hover:text-primary transition-all" onClick={() => navigate('/montages')}>
                 <Plus className="w-4 h-4 mr-3" /> {t('montages.new_montage')}
              </Button>
-             <Button variant="outline" className="w-full justify-start h-12 text-foreground hover:bg-primary/10 hover:text-primary transition-all" onClick={() => navigate('/air-conditioners')}>
+             <Button variant="outline" className="w-full justify-start h-11 sm:h-12 text-sm sm:text-base text-foreground hover:bg-primary/10 hover:text-primary transition-all" onClick={() => navigate('/air-conditioners')}>
                 <Package className="w-4 h-4 mr-3" /> {t('air_conditioners.add_ac')}
              </Button>
-             <Button variant="outline" className="w-full justify-start h-12 text-foreground hover:bg-primary/10 hover:text-primary transition-all" onClick={() => navigate('/inventory')}>
+             <Button variant="outline" className="w-full justify-start h-11 sm:h-12 text-sm sm:text-base text-foreground hover:bg-primary/10 hover:text-primary transition-all" onClick={() => navigate('/inventory')}>
                 <ClipboardList className="w-4 h-4 mr-3" /> {t('inventory.add_item')}
              </Button>
           </CardContent>

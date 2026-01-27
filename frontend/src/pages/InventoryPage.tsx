@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { 
   Table, 
   TableBody, 
@@ -208,25 +209,25 @@ export default function InventoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-8 ml-64 transition-colors duration-300">
+    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-            <Package className="w-8 h-8 text-primary" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
+            <Package className="w-6 sm:w-8 h-6 sm:h-8 text-primary" />
             {t('inventory.title')}
           </h1>
-          <p className="text-muted-foreground">{t('inventory.subtitle')}</p>
+          <p className="text-sm sm:text-base text-muted-foreground">{t('inventory.subtitle')}</p>
         </div>
-        <Button onClick={handleCreate} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
+        <Button onClick={handleCreate} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
           <Plus className="w-4 h-4 mr-2" />
           {t('inventory.add_item')}
         </Button>
       </div>
 
       {/* Search */}
-      <div className="flex gap-4 mb-6">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex gap-4 mb-4 sm:mb-6">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input 
             placeholder={t('inventory.search_placeholder')} 
@@ -237,8 +238,8 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="glass-card rounded-xl overflow-hidden">
+      {/* Table - Desktop */}
+      <div className="hidden md:block glass-card rounded-xl overflow-hidden">
         <Table>
           <TableHeader className="bg-muted/30">
             <TableRow className="border-border hover:bg-muted/30">
@@ -317,8 +318,85 @@ export default function InventoryPage() {
         </Table>
       </div>
 
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-3">
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : items.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <Package className="w-12 h-12 mx-auto mb-3 opacity-20" />
+            <p>{t('inventory.no_items')}</p>
+          </div>
+        ) : (
+          items.map((item) => (
+            <Card key={item.id} className="glass-card">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-foreground truncate">{item.name}</h3>
+                    <p className="text-xs text-muted-foreground">{item.sku || 'No SKU'}</p>
+                  </div>
+                  {item.is_low_stock ? (
+                    <Badge variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20 shrink-0">
+                      <AlertTriangle className="w-3 h-3 mr-1" />
+                      {t('inventory.low_stock')}
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 shrink-0">
+                      {t('inventory.in_stock')}
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span>{t('inventory.quantity')}:</span>
+                    <span className="text-foreground font-medium">{item.quantity} {item.unit_of_measure}</span>
+                  </div>
+                  {item.unit_price && (
+                    <div className="flex items-center justify-between text-muted-foreground">
+                      <span>{t('common.unit_price')}:</span>
+                      <span className="text-green-500 font-medium">${item.unit_price}</span>
+                    </div>
+                  )}
+                  {item.location && (
+                    <div className="flex items-center justify-between text-muted-foreground">
+                      <span>{t('common.location')}:</span>
+                      <span className="text-foreground">{item.location}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-2 mt-3 pt-3 border-t border-border">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => handleEdit(item)}
+                  >
+                    <Edit className="w-3 h-3 mr-1" />
+                    {t('common.edit')}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="flex-1 text-red-500 border-red-500/20 hover:bg-red-500/10 hover:text-red-400"
+                    onClick={() => handleDeleteClick(item)}
+                  >
+                    <Trash className="w-3 h-3 mr-1" />
+                    {t('common.delete')}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
       {/* Pagination */}
-      <div className="flex items-center justify-end space-x-2 py-4">
+      <div className="flex items-center justify-center sm:justify-end space-x-2 py-4">
         <Button
           variant="outline"
           size="sm"
@@ -327,9 +405,9 @@ export default function InventoryPage() {
           className="border-border text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           <ChevronLeft className="w-4 h-4" />
-          {t('common.previous')}
+          <span className="hidden sm:inline ml-1">{t('common.previous')}</span>
         </Button>
-        <span className="text-sm text-muted-foreground">
+        <span className="text-xs sm:text-sm text-muted-foreground px-2">
           {t('common.page', { current: page, total: totalPages || 1 })}
         </span>
         <Button
@@ -339,14 +417,14 @@ export default function InventoryPage() {
           disabled={page === totalPages}
           className="border-border text-muted-foreground hover:bg-muted hover:text-foreground"
         >
-          {t('common.next')}
+          <span className="hidden sm:inline mr-1">{t('common.next')}</span>
           <ChevronRight className="w-4 h-4" />
         </Button>
       </div>
 
       {/* Item Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-card border-border text-card-foreground sm:max-w-[425px]">
+        <DialogContent className="bg-card border-border text-card-foreground max-w-[95vw] sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isEditing ? t('inventory.edit_item') : t('inventory.new_item')}</DialogTitle>
           </DialogHeader>

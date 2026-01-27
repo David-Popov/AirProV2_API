@@ -93,6 +93,28 @@ public class MontageService : IMontageService
         }
     }
 
+    public async Task UpdateMontageStatusAsync(Guid montageId, string status)
+    {
+        try
+        {
+            var montage = await _repository.GetByIdAsync(montageId);
+            if (montage == null)
+            {
+                throw new InvalidOperationException("Montage not found");
+            }
+
+            montage.Status = Enum.TryParse(status, out MontageStatus montageStatus) ? montageStatus : MontageStatus.Planned;
+            montage.UpdatedAt = DateTime.UtcNow;
+
+            await _repository.UpdateMontageAsync(montage);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, e.Message);
+            throw;
+        }
+    }
+
     public async Task DeleteMontageAsync(Guid montageId)
     {
         try

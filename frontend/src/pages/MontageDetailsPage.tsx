@@ -164,7 +164,7 @@ export default function MontageDetailsPage() {
 
   if (!montage) {
     return (
-      <div className="min-h-screen bg-background p-8 ml-64 text-foreground">
+      <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 text-foreground">
         Montage not found
       </div>
     )
@@ -189,25 +189,24 @@ export default function MontageDetailsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-8 ml-64 transition-colors duration-300">
+    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
+      {/* Back Button - Top Left at same level as hamburger */}
+      <Button 
+        variant="ghost" 
+        size="icon"
+        onClick={() => navigate('/montages')}
+        className="fixed top-4 left-4 lg:left-[272px] z-40 text-muted-foreground hover:text-foreground bg-card border border-border shadow-lg"
+      >
+        <ChevronLeft className="w-5 h-5" />
+      </Button>
+
       {/* Header */}
-      <div className="mb-8">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate('/montages')}
-          className="text-muted-foreground hover:text-foreground mb-4 pl-0"
-        >
-          <ChevronLeft className="w-4 h-4 mr-2" />
-          {t('montages.title')}
-        </Button>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-3xl font-bold text-foreground">{montage.client_name}</h1>
-            <Badge variant="outline" className={statusColors[montage.status || 'Planned']}>
-              {getStatusLabel(montage.status)}
-            </Badge>
-          </div>
-          {/* We could add Edit button here if needed */}
+      <div className="mb-6 sm:mb-8">
+        <div className="flex flex-wrap items-center gap-3 mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{montage.client_name}</h1>
+          <Badge variant="outline" className={statusColors[montage.status || 'Planned']}>
+            {getStatusLabel(montage.status)}
+          </Badge>
         </div>
       </div>
 
