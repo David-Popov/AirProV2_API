@@ -63,6 +63,23 @@ public class MontageInventoryController : ControllerBase
     }
 
     /// <summary>
+    /// Update material quantity
+    /// </summary>
+    [HttpPut("materials/{materialId}")]
+    public async Task<IActionResult> UpdateMaterial(Guid materialId, [FromBody] UpdateMontageMaterialDto request)
+    {
+        try
+        {
+            await _service.UpdateMaterialQuantityAsync(materialId, request.QuantityUsed);
+            return Ok();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Get usage history for a specific inventory item
     /// </summary>
     [HttpGet("item/{inventoryItemId}/usage")]

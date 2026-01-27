@@ -5,7 +5,6 @@ import {
   ClipboardList, 
   Package, 
   Users, 
-  Plus,
   TrendingUp,
   AlertTriangle,
   DollarSign,
@@ -506,26 +505,6 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Quick Actions (Moved here for layout balance) */}
-        <Card className="glass-card h-full">
-          <CardHeader>
-             <CardTitle className="text-foreground flex items-center gap-2 text-base sm:text-lg">
-                <ClipboardList className="w-5 h-5 text-primary" />
-                {t('dashboard.quick_actions', 'Quick Actions')}
-             </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 sm:space-y-4">
-             <Button variant="outline" className="w-full justify-start h-11 sm:h-12 text-sm sm:text-base text-foreground hover:bg-primary/10 hover:text-primary transition-all" onClick={() => navigate('/montages')}>
-                <Plus className="w-4 h-4 mr-3" /> {t('montages.new_montage')}
-             </Button>
-             <Button variant="outline" className="w-full justify-start h-11 sm:h-12 text-sm sm:text-base text-foreground hover:bg-primary/10 hover:text-primary transition-all" onClick={() => navigate('/air-conditioners')}>
-                <Package className="w-4 h-4 mr-3" /> {t('air_conditioners.add_ac')}
-             </Button>
-             <Button variant="outline" className="w-full justify-start h-11 sm:h-12 text-sm sm:text-base text-foreground hover:bg-primary/10 hover:text-primary transition-all" onClick={() => navigate('/inventory')}>
-                <ClipboardList className="w-4 h-4 mr-3" /> {t('inventory.add_item')}
-             </Button>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '@/context'
 import { 
   ChevronLeft, 
   Loader2,
@@ -46,6 +47,7 @@ export default function EmployeeDetailsPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const { user, refreshUser } = useAuth()
   const [employee, setEmployee] = useState<Employee | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [employeeMontages, setEmployeeMontages] = useState<Montage[]>([])
@@ -114,9 +116,25 @@ export default function EmployeeDetailsPage() {
 
     setIsSaving(true)
     try {
-      await employeeService.update(employee.id, editForm)
+      // Include email and other required fields from the existing employee object
+      const updatePayload = {
+        ...editForm,
+        email: employee.email,
+        middle_name: employee.middle_name,
+        // Ensure we don't sending null for optional fields if they are empty strings in form
+        address: editForm.address || null,
+        phone_number: editForm.phone_number || null,
+      }
+      
+      await employeeService.update(employee.id, updatePayload)
       const updated = await employeeService.getById(employee.id)
       setEmployee(updated)
+      
+      // If updating the currently logged in user, refresh the auth context
+      if (user?.id === employee.id) {
+        await refreshUser()
+      }
+
       setIsEditing(false)
       toast.success(t('employees.updated_success', 'Employee updated successfully'))
     } catch (error) {
@@ -221,15 +239,17 @@ export default function EmployeeDetailsPage() {
 
   return (
     <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
-      {/* Back Button - Top Left at same level as hamburger */}
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        onClick={() => navigate('/employees')} 
-        className="fixed top-4 left-4 lg:left-[272px] z-40 text-muted-foreground hover:text-foreground bg-card border border-border shadow-lg"
-      >
-        <ChevronLeft className="w-5 h-5" />
-      </Button>
+      {/* Back Button */}
+      <div className="mb-4">
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={() => navigate('/employees')} 
+          className="bg-card text-muted-foreground hover:text-foreground shadow-sm"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </Button>
+      </div>
 
       {/* Header */}
       <div className="mb-6 sm:mb-8">

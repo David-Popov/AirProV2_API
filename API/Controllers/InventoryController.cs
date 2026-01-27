@@ -51,6 +51,26 @@ public class InventoryController : ControllerBase
     }
 
     /// <summary>
+    /// Get all low stock items
+    /// </summary>
+    [HttpGet("low-stock")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<PagedList<InventoryItemDto>>> GetLowStock([FromQuery] PageParameters pageParameters)
+    {
+        try
+        {
+            var result = await _service.GetLowStockAsync(pageParameters);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Get inventory item by ID
     /// </summary>
     [HttpGet("{id}")]
@@ -271,6 +291,31 @@ public class InventoryController : ControllerBase
             {
                 return NotFound(new { message = ex.Message });
             }
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Update inventory item status
+    /// </summary>
+    [HttpPatch("{id}/status")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateInventoryItemStatusDto request)
+    {
+        try
+        {
+            await _service.UpdateStatusAsync(id, request.IsActive);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
             return BadRequest(new { message = ex.Message });
         }
         catch (Exception ex)

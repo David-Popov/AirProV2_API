@@ -15,7 +15,8 @@ import {
   Package,
   Plus,
   Trash2,
-  Search
+  Search,
+  Edit
 } from 'lucide-react'
 import {
   Dialog,
@@ -23,6 +24,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog"
 import {
   Select,
@@ -38,7 +41,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { montageService, inventoryService, montageInventoryService } from '@/services'
-import { type Montage, type InventoryItem, MONTAGE_STATUS_OPTIONS, PAYMENT_STATUS_OPTIONS } from '@/types'
+import { type Montage, type InventoryItem, type MontageInventoryItem, MONTAGE_STATUS_OPTIONS, PAYMENT_STATUS_OPTIONS } from '@/types'
 import { MontagePhotosSection, MontageLocationMap } from '@/components/montage'
 
 export default function MontageDetailsPage() {
@@ -56,6 +59,8 @@ export default function MontageDetailsPage() {
   const [notes, setNotes] = useState('')
   const [isSubmittingMaterial, setIsSubmittingMaterial] = useState(false)
   const [materialSearch, setMaterialSearch] = useState('')
+  const [editingMaterial, setEditingMaterial] = useState<MontageInventoryItem | null>(null)
+  const [editQuantity, setEditQuantity] = useState(0)
 
   // Filter items based on search term
   const filteredItems = availableItems.filter(item => {
@@ -154,6 +159,29 @@ export default function MontageDetailsPage() {
     }
   }
 
+  const handleEditSave = async () => {
+    if (!editingMaterial || !montage?.id) return
+    setIsSubmittingMaterial(true)
+    try {
+      await montageInventoryService.updateQuantity(editingMaterial.id, editQuantity)
+      toast.success(t('montages.material_updated', 'Material updated'))
+      setEditingMaterial(null)
+      // Refresh montage data
+      const updatedMontage = await montageService.getById(montage.id)
+      setMontage(updatedMontage)
+    } catch (error) {
+       console.error(error)
+       toast.error(t('common.error'))
+    } finally {
+       setIsSubmittingMaterial(false)
+    }
+  }
+
+  const openEditDialog = (item: MontageInventoryItem) => {
+    setEditingMaterial(item)
+    setEditQuantity(item.quantity_used)
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center ml-64">
@@ -190,15 +218,17 @@ export default function MontageDetailsPage() {
 
   return (
     <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
-      {/* Back Button - Top Left at same level as hamburger */}
-      <Button 
-        variant="ghost" 
-        size="icon"
-        onClick={() => navigate('/montages')}
-        className="fixed top-4 left-4 lg:left-[272px] z-40 text-muted-foreground hover:text-foreground bg-card border border-border shadow-lg"
-      >
-        <ChevronLeft className="w-5 h-5" />
-      </Button>
+      {/* Back Button */}
+      <div className="mb-4">
+        <Button 
+          variant="outline" 
+          size="icon"
+          onClick={() => navigate('/montages')}
+          className="bg-card text-muted-foreground hover:text-foreground shadow-sm"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </Button>
+      </div>
 
       {/* Header */}
       <div className="mb-6 sm:mb-8">
@@ -364,6 +394,7 @@ export default function MontageDetailsPage() {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>{t('montages.add_materials')}</DialogTitle>
+                  <DialogDescription className="hidden">Add materials to montage</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
@@ -426,6 +457,40 @@ export default function MontageDetailsPage() {
                 </div>
               </DialogContent>
             </Dialog>
+
+            {/* Edit Material Dialog */}
+            <Dialog open={!!editingMaterial} onOpenChange={(open) => !open && setEditingMaterial(null)}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{t('montages.edit_material', 'Edit Material')}</DialogTitle>
+                  <DialogDescription className="hidden">Edit material quantity</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label>{t('montages.select_materials')}</Label>
+                    <Input value={editingMaterial?.item_name || ''} disabled />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-quantity">{t('montages.quantity_used')}</Label>
+                    <Input
+                      id="edit-quantity"
+                      type="number"
+                      min="0.1"
+                      step="0.1"
+                      value={editQuantity}
+                      onChange={(e) => setEditQuantity(Number(e.target.value))}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                   <Button variant="outline" onClick={() => setEditingMaterial(null)}>{t('common.cancel')}</Button>
+                   <Button onClick={handleEditSave} disabled={isSubmittingMaterial}>
+                     {isSubmittingMaterial && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                     {t('common.save')}
+                   </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </CardHeader>
           <CardContent>
              {montage.used_materials && montage.used_materials.length > 0 ? (
@@ -437,11 +502,19 @@ export default function MontageDetailsPage() {
                        <p className="text-sm text-muted-foreground">{item.item_sku}</p>
                        {item.notes && <p className="text-sm italic text-muted-foreground mt-1">"{item.notes}"</p>}
                      </div>
-                     <div className="flex items-center gap-4">
+                     <div className="flex items-center gap-2">
                        <div className="text-right">
                          <p className="font-bold text-foreground">{item.quantity_used} {item.unit_of_measure}</p>
                          <p className="text-xs text-muted-foreground">{new Date(item.created_at).toLocaleDateString()}</p>
                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-primary"
+                          onClick={() => openEditDialog(item)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
                        <Button
                          variant="ghost"
                          size="icon"

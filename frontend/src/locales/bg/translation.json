@@ -12,6 +12,7 @@
     "next": "Напред",
     "previous": "Назад",
     "page": "Страница {{current}} от {{total}}",
+    "page_of": "Страница {{current}} от {{total}}",
     "dashboard": "Табло",
     "settings": "Настройки",
     "logout": "Изход",
@@ -36,14 +37,18 @@
     "download": "Изтегли",
     "description": "Описание",
     "filters": "Филтри",
-    "all": "Всички"
+    "all": "Всички",
+    "no_results": "Няма намерени резултати",
+    "error": "Възникна грешка"
   },
   "nav": {
     "dashboard": "Табло",
     "montages": "Монтажи",
     "inventory": "Склад",
     "employees": "Служители",
-    "air_conditioners": "Климатици"
+    "air_conditioners": "Климатици",
+    "database": "База Данни",
+    "error_codes": "Кодове за Грешки"
   },
   "auth": {
     "login_title": "Вход в системата",
@@ -51,13 +56,15 @@
     "email": "Имейл",
     "password": "Парола",
     "first_name": "Име",
+    "middle_name": "Презиме",
     "last_name": "Фамилия",
     "phone": "Телефон",
     "address": "Адрес",
     "login_button": "Вход",
     "register_button": "Регистрация",
     "dont_have_account": "Нямате акаунт?",
-    "already_have_account": "Вече имате акаунт?"
+    "already_have_account": "Вече имате акаунт?",
+    "logout": "Изход"
   },
   "air_conditioners": {
     "title": "Климатици",
@@ -158,17 +165,26 @@
     "search_placeholder": "Търси по име или SKU...",
     "name": "Име",
     "sku": "SKU",
+    "generate_sku": "Генерирай SKU",
     "quantity": "Количество",
     "unit": "Мярка",
     "min_quantity": "Мин. Кол.",
     "in_stock": "В Наличност",
     "low_stock": "Изчерпване",
+    "low_stock_alerts": "Изчерпващи се наличности",
+    "low_stock_desc": "Артикули с наличност под минимума",
+    "remaining_stock": "Остават: {{count}}",
+    "min_req": "Мин: {{count}}",
+    "no_low_stock": "Няма артикули с изчерпваща се наличност",
     "no_items": "Няма намерени артикули. Добавете първия си артикул.",
     "edit_item": "Редактирай Артикул",
     "new_item": "Нов Артикул",
     "item_created": "Артикулът е създаден успешно",
     "item_updated": "Артикулът е обновен успешно",
-    "item_deleted": "Артикулът е изтрит"
+    "item_deleted": "Артикулът е изтрит",
+    "item_activated": "Артикулът е активиран",
+    "item_deactivated": "Артикулът е деактивиран",
+    "delete_confirmation": "Сигурни ли сте, че искате да изтриете този артикул? Това действие е необратимо."
   },
   "montages": {
     "title": "Монтажи",
@@ -208,6 +224,8 @@
     "no_materials": "Все още няма добавени материали",
     "material_added": "Материалът е добавен успешно",
     "material_removed": "Материалът е премахнат успешно",
+    "edit_material": "Редактирай материал",
+    "material_updated": "Материалът е обновен успешно",
     "insufficient_stock": "Недостатъчна наличност",
     "photos": {
       "title": "Снимки",
@@ -255,10 +273,28 @@
     "new_password": "Нова Парола",
     "confirm_password": "Потвърди Паролата",
     "set_password": "Задай Парола",
-    "password_reset_success": "Паролата е променена успешно"
+    "password_reset_success": "Паролата е променена успешно",
+    "reset": "Възстанови",
+    "delete_confirmation": "Сигурни ли сте, че искате да изтриете този служител? Това действие е необратимо."
+  },
+  "validation": {
+    "password_requirements": "Мин 8 символа, 1 главна, 1 малка буква, 1 цифра, 1 специален символ"
   },
   "subscription": {
     "title": "Абонаментни Планове",
+    "expired_title": "Абонаментът изтече",
+    "expired_description": "Вашият абонамент изтече. Моля, изберете една от следните опции, за да продължите.",
+    "renew_option": "Подновете абонамента",
+    "renew_description": "Продължете да използвате всички функции, като подновите абонамента си.",
+    "renew_button": "Подновете сега",
+    "delete_option": "Изтриване на акаунта",
+    "delete_description": "Изтрийте акаунта си и всички свързани данни завинаги.",
+    "delete_button": "Изтрийте акаунта",
+    "logout_option": "Изход засега",
+    "logout_description": "Върнете се по-късно, за да вземете решение. Вашите данни ще бъдат запазени.",
+    "delete_confirm_title": "Абсолютно сигурни ли сте?",
+    "delete_confirm_description": "Това действие е необратимо. То ще изтрие завинаги вашия акаунт, компания и всички свързани данни, включително монтажи, склад и записи на служители.",
+    "delete_confirm_button": "Да, изтрийте акаунта ми",
     "subtitle": "Изберете най-добрия план за вашия бизнес",
     "perfect_for_business": "Перфектен за растящ бизнес",
     "month": "месец",

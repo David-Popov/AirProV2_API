@@ -18,6 +18,10 @@ export const montageInventoryService = {
     return await apiClient.get<MontageInventoryItem[]>(`${BASE_URL}/${montageId}/materials`)
   },
 
+  updateQuantity: async (materialId: string, quantityUsed: number): Promise<void> => {
+    return await apiClient.put<void>(`${BASE_URL}/materials/${materialId}`, { quantityUsed })
+  },
+
   removeMaterial: async (materialId: string): Promise<void> => {
     await apiClient.delete(`${BASE_URL}/materials/${materialId}`)
   }

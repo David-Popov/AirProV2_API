@@ -64,14 +64,17 @@ export default function AirConditionerDetailsPage() {
   return (
     <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
       {/* Back Button - Top Left at same level as hamburger */}
-      <Button 
-        variant="ghost" 
-        size="icon"
-        onClick={() => navigate('/air-conditioners')}
-        className="fixed top-4 left-4 lg:left-[272px] z-40 text-muted-foreground hover:text-foreground bg-card border border-border shadow-lg"
-      >
-        <ChevronLeft className="w-5 h-5" />
-      </Button>
+      {/* Back Button */}
+      <div className="mb-4">
+        <Button 
+          variant="outline" 
+          size="icon"
+          onClick={() => navigate('/air-conditioners')}
+          className="bg-card text-muted-foreground hover:text-foreground shadow-sm"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </Button>
+      </div>
 
       {/* Header */}
       <div className="mb-6 sm:mb-8">

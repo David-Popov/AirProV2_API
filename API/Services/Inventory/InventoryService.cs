@@ -238,6 +238,44 @@ public class InventoryService : IInventoryService
         }
     }
 
+    public async Task<PagedList<InventoryItemDto>> GetLowStockAsync(PageParameters pageParameters)
+    {
+        try
+        {
+            var query = _context.InventoryItems
+                .Where(i => i.MinQuantity.HasValue 
+                            && i.Quantity <= i.MinQuantity.Value
+                            && i.IsActive)
+                .OrderBy(i => i.Quantity)
+                .Select(i => new InventoryItemDto
+                {
+                    Id = i.Id,
+                    CompanyId = i.CompanyId,
+                    Name = i.Name,
+                    Description = i.Description,
+                    Sku = i.Sku,
+                    Quantity = i.Quantity,
+                    UnitOfMeasure = i.UnitOfMeasure.ToString(),
+                    MinQuantity = i.MinQuantity,
+                    UnitPrice = i.UnitPrice,
+                    Supplier = i.Supplier,
+                    Location = i.Location,
+                    Notes = i.Notes,
+                    IsActive = i.IsActive,
+                    IsLowStock = true,
+                    CreatedAt = i.CreatedAt,
+                    UpdatedAt = i.UpdatedAt
+                });
+
+            return await PagedList<InventoryItemDto>.CreateAsync(query, pageParameters);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, e.Message);
+            throw;
+        }
+    }
+
     public async Task<InventoryItemDto?> GetBySkuAndCompanyIdAsync(string sku, Guid companyId)
     {
         try
@@ -334,6 +372,26 @@ public class InventoryService : IInventoryService
                 });
 
             return await PagedList<InventoryItemDto>.CreateAsync(query, pageParameters);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, e.Message);
+            throw;
+        }
+    }
+
+    public async Task UpdateStatusAsync(Guid itemId, bool isActive)
+    {
+        try
+        {
+            var item = await _repository.GetByIdAsync(itemId);
+            if (item == null)
+            {
+                throw new InvalidOperationException("Inventory item not found");
+            }
+
+            item.IsActive = isActive;
+            await _repository.UpdateAsync(item);
         }
         catch (Exception e)
         {

@@ -17,6 +17,11 @@ public interface IMontageInventoryService
     /// Remove a material from a montage and restore to inventory
     /// </summary>
     Task RemoveMaterialAsync(Guid materialId);
+
+    /// <summary>
+    /// Update material quantity and adjust inventory
+    /// </summary>
+    Task UpdateMaterialQuantityAsync(Guid materialId, decimal newQuantity);
     
     /// <summary>
     /// Get all materials used in a specific montage
@@ -142,6 +147,59 @@ public class MontageInventoryService : IMontageInventoryService
             _context.MontageInventoryItems.Remove(montageItem);
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+    public async Task UpdateMaterialQuantityAsync(Guid materialId, decimal newQuantity)
+    {
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            var montageItem = await _context.MontageInventoryItems
+                .Include(x => x.InventoryItem)
+                .FirstOrDefaultAsync(x => x.Id == materialId);
+
+            if (montageItem == null)
+            {
+                throw new InvalidOperationException("Material record not found");
+            }
+
+            if (montageItem.InventoryItem == null)
+            {
+                throw new InvalidOperationException("Inventory item no longer exists");
+            }
+            
+            decimal diff = newQuantity - montageItem.QuantityUsed;
+            
+            if (Math.Abs(diff) < 0.001m) return; // No change
+
+            if (diff > 0)
+            {
+                 // Need more stock
+                 if (montageItem.InventoryItem.Quantity < diff)
+                 {
+                      throw new InvalidOperationException($"Insufficient stock. Available: {montageItem.InventoryItem.Quantity}, Needed additional: {diff}");
+                 }
+                 montageItem.InventoryItem.Quantity -= diff;
+            }
+            else
+            {
+                 // Returning stock
+                 montageItem.InventoryItem.Quantity += Math.Abs(diff);
+            }
+            
+            montageItem.InventoryItem.UpdatedAt = DateTime.UtcNow;
+            montageItem.QuantityUsed = newQuantity;
+            
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+            
+            _logger.LogInformation("Updated material {Id} quantity to {Qty} (Diff: {Diff})", materialId, newQuantity, diff);
         }
         catch
         {

@@ -62,5 +62,11 @@ export const inventoryService = {
    */
   async getLowStock(pageNumber = 1, pageSize = 10): Promise<PagedList<InventoryItem>> {
     return apiClient.get<PagedList<InventoryItem>>(`/Inventory/low-stock?PageNumber=${pageNumber}&PageSize=${pageSize}`);
+  },
+  /**
+   * Update item status
+   */
+  async updateStatus(id: string, isActive: boolean): Promise<void> {
+    return apiClient.patch<void>(`/Inventory/${id}/status`, { isActive });
   }
 };

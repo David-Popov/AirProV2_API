@@ -9,14 +9,15 @@ import {
   AlertTriangle, 
   ChevronLeft, 
   ChevronRight,
-  Loader2
+  Loader2,
+  Wand2
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
   Table, 
   TableBody, 
@@ -55,6 +56,7 @@ export default function InventoryPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [lowStockItems, setLowStockItems] = useState<InventoryItem[]>([])
 
   // Dialog State
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -76,6 +78,10 @@ export default function InventoryPage() {
       
       setItems(response.items)
       setTotalPages(response.totalPages)
+
+      // Always fetch low stock items for the alert window
+      const lowStockRes = await inventoryService.getLowStock(1, 100)
+      setLowStockItems(lowStockRes.items)
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
@@ -208,6 +214,30 @@ export default function InventoryPage() {
     }
   }
 
+  const handleStatusChange = async (item: InventoryItem, isActive: boolean) => {
+    try {
+      await inventoryService.updateStatus(item.id, isActive)
+      setItems(items.map(i => i.id === item.id ? { ...i, is_active: isActive } : i))
+      toast.success(isActive ? t('inventory.item_activated') : t('inventory.item_deactivated'))
+    } catch (error) {
+       const message = error instanceof Error ? error.message : t('common.unknown_error')
+       toast.error(message)
+    }
+  }
+
+  const generateSku = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    let result = ''
+    for (let i = 0; i < 8; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    const p1 = result.substring(0, 4)
+    const p2 = result.substring(4, 8)
+    const sku = `INV-${p1}-${p2}`
+    
+    setCurrentItem(prev => ({ ...prev, sku }))
+  }
+
   return (
     <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
       {/* Header */}
@@ -237,6 +267,60 @@ export default function InventoryPage() {
           />
         </div>
       </div>
+
+      {/* Low Stock Alerts */}
+      <Card className="glass-card mb-4 sm:mb-6 border-orange-500/20">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-foreground flex items-center gap-2 text-base sm:text-lg flex-wrap">
+            <AlertTriangle className="w-5 h-5 text-orange-400" />
+            {t('inventory.low_stock_alerts', 'Low Stock Alerts')}
+            {lowStockItems.length > 0 && (
+              <Badge variant="outline" className="ml-2 bg-orange-500/10 text-orange-500 border-orange-500/20">
+                {lowStockItems.length}
+              </Badge>
+            )}
+          </CardTitle>
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            {t('inventory.low_stock_desc', 'Items running low on stock')}
+          </p>
+        </CardHeader>
+        <CardContent>
+          {lowStockItems.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+              {lowStockItems.map((item) => (
+                <div 
+                  key={item.id} 
+                  onClick={() => handleEdit(item)}
+                  className="p-4 rounded-xl border border-orange-500/50 bg-orange-500/5 hover:border-orange-500 cursor-pointer transition-all"
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 rounded-full bg-orange-500/10">
+                      <Package className="w-4 h-4 text-orange-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-foreground truncate">{item.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        SKU: {item.sku || '-'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-xs font-medium text-orange-500">
+                    {t('inventory.remaining_stock', { count: item.quantity })}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {t('inventory.min_req', { count: item.min_quantity || 0 })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-6 text-muted-foreground">
+              <Package className="w-8 h-8 mx-auto mb-2 opacity-20" />
+              <p>{t('inventory.no_low_stock', 'No items running low')}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Table - Desktop */}
       <div className="hidden md:block glass-card rounded-xl overflow-hidden">
@@ -276,20 +360,46 @@ export default function InventoryPage() {
                     {item.quantity} {item.unit_of_measure}
                   </TableCell>
                    <TableCell className="text-muted-foreground">
-                    {item.unit_price ? `$${item.unit_price}` : '-'}
+                    {item.unit_price ? `€${item.unit_price}` : '-'}
                   </TableCell>
                   <TableCell className="text-muted-foreground">{item.location || '-'}</TableCell>
                   <TableCell>
-                    {item.is_low_stock ? (
-                      <Badge variant="destructive" className="bg-destructive/10 text-destructive hover:bg-destructive/20 border-destructive/20">
-                        <AlertTriangle className="w-3 h-3 mr-1" />
-                        {t('inventory.low_stock')}
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary" className="bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20 border-green-500/20">
-                        {t('inventory.in_stock')}
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6 rounded-full"
+                        disabled={!item.is_active}
+                        onClick={() => handleStatusChange(item, false)}
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </Button>
+
+                      {!item.is_active ? (
+                        <Badge variant="outline" className="text-muted-foreground border-muted-foreground whitespace-nowrap">
+                          Неактивен
+                        </Badge>
+                      ) : item.is_low_stock ? (
+                        <Badge variant="destructive" className="bg-destructive/10 text-destructive hover:bg-destructive/20 border-destructive/20 whitespace-nowrap">
+                          <AlertTriangle className="w-3 h-3 mr-1" />
+                          {t('inventory.low_stock')}
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20 border-green-500/20 whitespace-nowrap">
+                          {t('inventory.in_stock')}
+                        </Badge>
+                      )}
+
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6 rounded-full"
+                        disabled={item.is_active}
+                        onClick={() => handleStatusChange(item, true)}
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-2">
@@ -358,7 +468,7 @@ export default function InventoryPage() {
                   {item.unit_price && (
                     <div className="flex items-center justify-between text-muted-foreground">
                       <span>{t('common.unit_price')}:</span>
-                      <span className="text-green-500 font-medium">${item.unit_price}</span>
+                      <span className="text-green-500 font-medium">€{item.unit_price}</span>
                     </div>
                   )}
                   {item.location && (
@@ -480,12 +590,24 @@ export default function InventoryPage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="sku">{t('inventory.sku')}</Label>
-                <Input
-                  id="sku"
-                  value={currentItem.sku || ''}
-                  onChange={(e) => setCurrentItem({ ...currentItem, sku: e.target.value })}
-                  className="bg-background border-input"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="sku"
+                    value={currentItem.sku || ''}
+                    onChange={(e) => setCurrentItem({ ...currentItem, sku: e.target.value })}
+                    className="bg-background border-input flex-1"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={generateSku}
+                    title={t('inventory.generate_sku')}
+                    className="bg-background shrink-0"
+                  >
+                    <Wand2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             </div>
              <div className="grid grid-cols-2 gap-4">

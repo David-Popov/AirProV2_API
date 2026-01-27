@@ -19,9 +19,13 @@ public interface IInventoryService
     
     Task<PagedList<InventoryItemDto>> GetLowStockByCompanyIdAsync(Guid companyId, PageParameters pageParameters);
     
+    Task<PagedList<InventoryItemDto>> GetLowStockAsync(PageParameters pageParameters);
+    
     Task<InventoryItemDto?> GetBySkuAndCompanyIdAsync(string sku, Guid companyId);
     
     Task<InventoryItemDto?> AdjustQuantityAsync(Guid itemId, AdjustInventoryQuantityDto dto);
     
     Task<PagedList<InventoryItemDto>> SearchByCompanyIdAsync(Guid companyId, string searchTerm, PageParameters pageParameters);
+    
+    Task UpdateStatusAsync(Guid itemId, bool isActive);
 }
