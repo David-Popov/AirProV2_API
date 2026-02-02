@@ -51,4 +51,10 @@ public class InventoryItemDto
     
     [JsonPropertyName("updated_at")]
     public DateTime? UpdatedAt { get; set; }
+
+    [JsonPropertyName("is_archived")]
+    public bool IsArchived { get; set; }
+
+    [JsonPropertyName("archived_at")]
+    public DateTime? ArchivedAt { get; set; }
 }

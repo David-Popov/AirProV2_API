@@ -61,7 +61,7 @@ public class AirConditionerRepository : IAirConditionerRepository
     {
         try
         {
-            return await _context.AirConditioners.FirstOrDefaultAsync(a => a.Id == airConditionerId);
+            return await _context.AirConditioners.AsNoTracking().FirstOrDefaultAsync(a => a.Id == airConditionerId);
         }
         catch (Exception e)
         {
@@ -74,7 +74,7 @@ public class AirConditionerRepository : IAirConditionerRepository
     {
         try
         {
-            return await _context.AirConditioners.ToListAsync();
+            return await _context.AirConditioners.AsNoTracking().ToListAsync();
         }
         catch (Exception e)
         {
@@ -129,7 +129,7 @@ public class AirConditionerRepository : IAirConditionerRepository
     {
         try
         {
-            return await _context.ErrorCodes.FirstOrDefaultAsync(e => e.Id == errorCodeId);
+            return await _context.ErrorCodes.AsNoTracking().FirstOrDefaultAsync(e => e.Id == errorCodeId);
         }
         catch (Exception e)
         {
@@ -143,6 +143,7 @@ public class AirConditionerRepository : IAirConditionerRepository
         try
         {
             return await _context.ErrorCodes
+                .AsNoTracking()
                 .Where(e => e.AirConditionerId == airConditionerId)
                 .ToListAsync();
         }
@@ -157,7 +158,7 @@ public class AirConditionerRepository : IAirConditionerRepository
     {
         try
         {
-            return await _context.ErrorCodes.ToListAsync();
+            return await _context.ErrorCodes.AsNoTracking().ToListAsync();
         }
         catch (Exception e)
         {

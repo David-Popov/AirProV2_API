@@ -36,4 +36,7 @@ public class UpdateInventoryItemDto
     
     [JsonPropertyName("is_active")]
     public bool IsActive { get; set; } = true;
+
+    [JsonIgnore]
+    public string? UserId { get; set; }
 }

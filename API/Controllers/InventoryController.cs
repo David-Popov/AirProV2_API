@@ -51,6 +51,26 @@ public class InventoryController : ControllerBase
     }
 
     /// <summary>
+    /// Get all low stock items
+    /// </summary>
+    [HttpGet("low-stock")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<PagedList<InventoryItemDto>>> GetLowStock([FromQuery] PageParameters pageParameters)
+    { 
+        try
+        {
+            var result = await _service.GetLowStockAsync(pageParameters);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Get inventory item by ID
     /// </summary>
     [HttpGet("{id}")]
@@ -190,6 +210,14 @@ public class InventoryController : ControllerBase
                 return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
             }
 
+            dto.UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            
+            var companyIdClaim = User.FindFirst("company_id")?.Value;
+            if (!string.IsNullOrEmpty(companyIdClaim) && Guid.TryParse(companyIdClaim, out var companyId))
+            {
+                dto.CompanyId = companyId;
+            }
+            
             await _service.AddAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = Guid.NewGuid() }, dto);
         }
@@ -220,6 +248,18 @@ public class InventoryController : ControllerBase
             if (!validationResult.IsValid)
             {
                 return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            }
+
+            dto.UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            
+            var companyIdClaim = User.FindFirst("company_id")?.Value;
+            if (!string.IsNullOrEmpty(companyIdClaim) && Guid.TryParse(companyIdClaim, out var companyId))
+            {
+                var existingItem = await _service.GetByIdAsync(id);
+                if (existingItem != null && existingItem.CompanyId != companyId)
+                {
+                    return NotFound(new { message = "Inventory item not found" });
+                }
             }
 
             await _service.UpdateAsync(id, dto);
@@ -262,6 +302,7 @@ public class InventoryController : ControllerBase
                 return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
             }
 
+            dto.UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             var result = await _service.AdjustQuantityAsync(id, dto);
             return Ok(result);
         }
@@ -281,15 +322,118 @@ public class InventoryController : ControllerBase
     }
 
     /// <summary>
+    /// Update inventory item status
+    /// </summary>
+    [HttpPatch("{id}/status")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateInventoryItemStatusDto request)
+    {
+        try
+        {
+            await _service.UpdateStatusAsync(id, request.IsActive);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Archive an inventory item
+    /// </summary>
+    [HttpPost("{id}/archive")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> Archive(Guid id)
+    {
+        try
+        {
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            await _service.ArchiveAsync(id, userId);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Restore an archived inventory item
+    /// </summary>
+    [HttpPost("{id}/restore")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> Restore(Guid id)
+    {
+        try
+        {
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            await _service.RestoreAsync(id, userId);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Check if an inventory item can be deleted
+    /// </summary>
+    [HttpGet("{id}/can-delete")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<bool>> CanDelete(Guid id)
+    {
+        try
+        {
+            var canDelete = await _service.CanDeleteAsync(id);
+            return Ok(new { canDelete });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Delete inventory item
     /// </summary>
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> Delete(Guid id)
     {
         try
         {
+            var canDelete = await _service.CanDeleteAsync(id);
+            if (!canDelete)
+            {
+                return BadRequest(new { message = "Cannot delete this item. It has been used in montages or is older than 30 days. Please archive it instead." });
+            }
+
             await _service.DeleteAsync(id);
             return NoContent();
         }

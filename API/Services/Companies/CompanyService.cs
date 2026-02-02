@@ -33,6 +33,17 @@ public class CompanyService : ICompanyService
     {
         try
         {
+            var existing = await _context.Companies
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => 
+                    (dto.VatNumber != null && c.VatNumber == dto.VatNumber) || 
+                    (dto.Bulstat != null && c.Bulstat == dto.Bulstat));
+
+            if (existing != null)
+            {
+                throw new InvalidOperationException("A company with the same VAT number or Bulstat already exists.");
+            }
+
             if (!Enum.TryParse<CompanyType>(dto.CompanyType, out var companyType))
             {
                 throw new InvalidOperationException("Invalid company type");
@@ -145,6 +156,7 @@ public class CompanyService : ICompanyService
         try
         {
             var query = _context.Companies
+                .AsNoTracking()
                 .Include(c => c.Users)
                 .Select(c => new CompanyDto
                 {
@@ -183,6 +195,7 @@ public class CompanyService : ICompanyService
         try
         {
             var query = _context.Companies
+                .AsNoTracking()
                 .Include(c => c.Users)
                 .Where(c => c.IsActive == true)
                 .Select(c => new CompanyDto

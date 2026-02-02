@@ -66,4 +66,10 @@ public class MontageDto
     
     [JsonPropertyName("air_conditioner")]
     public AirConditionerDto? AirConditioner { get; set; }
+
+    [JsonPropertyName("used_materials")]
+    public List<MontageInventoryItemDto>? UsedMaterials { get; set; }
+    
+    [JsonPropertyName("photos")]
+    public List<MontagePhotoDto>? Photos { get; set; }
 }

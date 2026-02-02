@@ -61,7 +61,13 @@ public class MontageRepository : IMontageRepository
     {
         try
         {
-            return await _context.Montages.FirstOrDefaultAsync(m => m.Id == montageId);
+            return await _context.Montages
+                .AsNoTracking()
+                .Include(m => m.AirConditioner)
+                .Include(m => m.UsedMaterials)
+                    .ThenInclude(um => um.InventoryItem)
+                .Include(m => m.Photos)
+                .FirstOrDefaultAsync(m => m.Id == montageId);
         }
         catch (Exception e)
         {
@@ -75,6 +81,7 @@ public class MontageRepository : IMontageRepository
         try
         {
             return await _context.Montages
+                .AsNoTracking()
                 .Include(m => m.AirConditioner)
                 .FirstOrDefaultAsync(m => m.Id == montageId);
         }
@@ -90,6 +97,7 @@ public class MontageRepository : IMontageRepository
         try
         {
             return await _context.Montages
+                .AsNoTracking()
                 .Include(m => m.AirConditioner)
                 .OrderByDescending(m => m.InstallationDate)
                 .ToListAsync();
@@ -106,6 +114,7 @@ public class MontageRepository : IMontageRepository
         try
         {
             return await _context.Montages
+                .AsNoTracking()
                 .Include(m => m.AirConditioner)
                 .Where(m => m.CompanyId == companyId)
                 .OrderByDescending(m => m.InstallationDate)
@@ -123,6 +132,7 @@ public class MontageRepository : IMontageRepository
         try
         {
             return await _context.Montages
+                .AsNoTracking()
                 .Include(m => m.AirConditioner)
                 .Where(m => m.UserId == userId)
                 .OrderByDescending(m => m.InstallationDate)
@@ -140,6 +150,7 @@ public class MontageRepository : IMontageRepository
         try
         {
             return await _context.Montages
+                .AsNoTracking()
                 .Include(m => m.AirConditioner)
                 .Where(m => m.CompanyId == companyId && m.UserId == userId)
                 .OrderByDescending(m => m.InstallationDate)
@@ -157,6 +168,7 @@ public class MontageRepository : IMontageRepository
         try
         {
             return await _context.Montages
+                .AsNoTracking()
                 .Include(m => m.AirConditioner)
                 .Where(m => m.Status.ToString().ToLower() == status.ToLower())
                 .OrderByDescending(m => m.InstallationDate)
@@ -174,6 +186,7 @@ public class MontageRepository : IMontageRepository
         try
         {
             return await _context.Montages
+                .AsNoTracking()
                 .Include(m => m.AirConditioner)
                 .Where(m => m.InstallationDate >= startDate && m.InstallationDate <= endDate)
                 .OrderByDescending(m => m.InstallationDate)

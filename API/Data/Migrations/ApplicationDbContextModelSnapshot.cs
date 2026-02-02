@@ -34,6 +34,10 @@ namespace API.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("brand");
 
+                    b.Property<string>("CableSection")
+                        .HasColumnType("text")
+                        .HasColumnName("cable_section");
+
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -44,13 +48,29 @@ namespace API.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("description");
 
+                    b.Property<int?>("FactoryRefrigerantCharge")
+                        .HasColumnType("integer")
+                        .HasColumnName("factory_refrigerant_charge");
+
                     b.Property<string>("ImageUrl")
                         .HasColumnType("text")
                         .HasColumnName("image_url");
 
+                    b.Property<string>("IndoorDimensions")
+                        .HasColumnType("text")
+                        .HasColumnName("indoor_dimensions");
+
                     b.Property<int?>("Kilowatts")
                         .HasColumnType("integer")
                         .HasColumnName("kilowatts");
+
+                    b.Property<int?>("MaxHeightDifference")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_height_difference");
+
+                    b.Property<int?>("MaxPipeLength")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_pipe_length");
 
                     b.Property<string>("Model")
                         .HasColumnType("text")
@@ -61,15 +81,47 @@ namespace API.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("name");
 
+                    b.Property<string>("OutdoorDimensions")
+                        .HasColumnType("text")
+                        .HasColumnName("outdoor_dimensions");
+
+                    b.Property<string>("PipeSizeGas")
+                        .HasColumnType("text")
+                        .HasColumnName("pipe_size_gas");
+
+                    b.Property<string>("PipeSizeLiquid")
+                        .HasColumnType("text")
+                        .HasColumnName("pipe_size_liquid");
+
+                    b.Property<string>("PowerSupplyLocation")
+                        .HasColumnType("text")
+                        .HasColumnName("power_supply_location");
+
                     b.Property<decimal?>("Price")
                         .HasColumnType("numeric(10, 2)")
                         .HasColumnName("price");
+
+                    b.Property<int?>("RecommendedFuse")
+                        .HasColumnType("integer")
+                        .HasColumnName("recommended_fuse");
+
+                    b.Property<string>("RefrigerantType")
+                        .HasColumnType("text")
+                        .HasColumnName("refrigerant_type");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at")
                         .HasDefaultValueSql("now()");
+
+                    b.Property<decimal?>("WeightIndoor")
+                        .HasColumnType("decimal(5, 2)")
+                        .HasColumnName("weight_indoor");
+
+                    b.Property<decimal?>("WeightOutdoor")
+                        .HasColumnType("decimal(5, 2)")
+                        .HasColumnName("weight_outdoor");
 
                     b.HasKey("Id");
 
@@ -246,9 +298,35 @@ namespace API.Data.Migrations
                         .HasColumnType("character varying(15)")
                         .HasColumnName("postal_code");
 
+                    b.Property<string>("StripeCustomerId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("stripe_customer_id");
+
+                    b.Property<string>("StripeSubscriptionId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("stripe_subscription_id");
+
+                    b.Property<DateTime?>("SubscriptionCurrentPeriodEnd")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("subscription_current_period_end");
+
                     b.Property<int>("SubscriptionPlan")
                         .HasColumnType("integer")
                         .HasColumnName("subscription_plan");
+
+                    b.Property<int>("SubscriptionStatus")
+                        .HasColumnType("integer")
+                        .HasColumnName("subscription_status");
+
+                    b.Property<DateTime?>("TrialEndDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("trial_end_date");
+
+                    b.Property<DateTime?>("TrialStartDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("trial_start_date");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .ValueGeneratedOnAdd()
@@ -276,6 +354,86 @@ namespace API.Data.Migrations
                     b.ToTable("companies");
                 });
 
+            modelBuilder.Entity("API.Data.Entities.InventoryAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("action");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("text")
+                        .HasColumnName("details");
+
+                    b.Property<Guid>("InventoryItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inventory_item_id");
+
+                    b.Property<decimal?>("QuantityAfter")
+                        .HasColumnType("numeric(10, 2)")
+                        .HasColumnName("quantity_after");
+
+                    b.Property<decimal?>("QuantityBefore")
+                        .HasColumnType("numeric(10, 2)")
+                        .HasColumnName("quantity_before");
+
+                    b.Property<decimal?>("QuantityChanged")
+                        .HasColumnType("numeric(10, 2)")
+                        .HasColumnName("quantity_changed");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid?>("RelatedMontageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("related_montage_id");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("text")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Action")
+                        .HasDatabaseName("idx_inventory_audit_action");
+
+                    b.HasIndex("CompanyId")
+                        .HasDatabaseName("idx_inventory_audit_company_id");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("idx_inventory_audit_created_at");
+
+                    b.HasIndex("InventoryItemId")
+                        .HasDatabaseName("idx_inventory_audit_item_id");
+
+                    b.HasIndex("RelatedMontageId")
+                        .HasDatabaseName("idx_inventory_audit_montage_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("idx_inventory_audit_user_id");
+
+                    b.ToTable("inventory_audit_logs");
+                });
+
             modelBuilder.Entity("API.Data.Entities.InventoryItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -283,6 +441,14 @@ namespace API.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id")
                         .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTime?>("ArchivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("archived_at");
+
+                    b.Property<string>("ArchivedBy")
+                        .HasColumnType("text")
+                        .HasColumnName("archived_by");
 
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uuid")
@@ -302,6 +468,10 @@ namespace API.Data.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_archived");
 
                     b.Property<string>("Location")
                         .HasMaxLength(100)
@@ -492,6 +662,118 @@ namespace API.Data.Migrations
                         .HasDatabaseName("idx_montages_user_id");
 
                     b.ToTable("montages");
+                });
+
+            modelBuilder.Entity("API.Data.Entities.MontageInventoryItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid>("InventoryItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inventory_item_id");
+
+                    b.Property<Guid>("MontageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("montage_id");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("notes");
+
+                    b.Property<decimal>("QuantityUsed")
+                        .HasColumnType("numeric(10, 2)")
+                        .HasColumnName("quantity_used");
+
+                    b.Property<decimal?>("UnitPriceAtTime")
+                        .HasColumnType("numeric(10, 2)")
+                        .HasColumnName("unit_price_at_time");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InventoryItemId")
+                        .HasDatabaseName("idx_montage_inventory_item_id");
+
+                    b.HasIndex("MontageId")
+                        .HasDatabaseName("idx_montage_inventory_montage_id");
+
+                    b.ToTable("montage_inventory_items");
+                });
+
+            modelBuilder.Entity("API.Data.Entities.MontagePhoto", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("description");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("display_order");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("file_name");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("bigint")
+                        .HasColumnName("file_size");
+
+                    b.Property<Guid>("MontageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("montage_id");
+
+                    b.Property<string>("ObjectName")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("object_name");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("original_file_name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MontageId")
+                        .HasDatabaseName("idx_montage_photos_montage_id");
+
+                    b.HasIndex("MontageId", "DisplayOrder")
+                        .HasDatabaseName("idx_montage_photos_order");
+
+                    b.ToTable("montage_photos");
                 });
 
             modelBuilder.Entity("ErrorCode", b =>
@@ -692,6 +974,39 @@ namespace API.Data.Migrations
                     b.Navigation("Company");
                 });
 
+            modelBuilder.Entity("API.Data.Entities.InventoryAuditLog", b =>
+                {
+                    b.HasOne("API.Data.Entities.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("API.Data.Entities.InventoryItem", "InventoryItem")
+                        .WithMany("AuditLogs")
+                        .HasForeignKey("InventoryItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("API.Data.Entities.Montage", "RelatedMontage")
+                        .WithMany()
+                        .HasForeignKey("RelatedMontageId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("API.Data.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Company");
+
+                    b.Navigation("InventoryItem");
+
+                    b.Navigation("RelatedMontage");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("API.Data.Entities.InventoryItem", b =>
                 {
                     b.HasOne("API.Data.Entities.Company", "Company")
@@ -723,6 +1038,36 @@ namespace API.Data.Migrations
                     b.Navigation("Company");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("API.Data.Entities.MontageInventoryItem", b =>
+                {
+                    b.HasOne("API.Data.Entities.InventoryItem", "InventoryItem")
+                        .WithMany("MontageUsages")
+                        .HasForeignKey("InventoryItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("API.Data.Entities.Montage", "Montage")
+                        .WithMany("UsedMaterials")
+                        .HasForeignKey("MontageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InventoryItem");
+
+                    b.Navigation("Montage");
+                });
+
+            modelBuilder.Entity("API.Data.Entities.MontagePhoto", b =>
+                {
+                    b.HasOne("API.Data.Entities.Montage", "Montage")
+                        .WithMany("Photos")
+                        .HasForeignKey("MontageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Montage");
                 });
 
             modelBuilder.Entity("ErrorCode", b =>
@@ -798,6 +1143,20 @@ namespace API.Data.Migrations
                     b.Navigation("Montages");
 
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("API.Data.Entities.InventoryItem", b =>
+                {
+                    b.Navigation("AuditLogs");
+
+                    b.Navigation("MontageUsages");
+                });
+
+            modelBuilder.Entity("API.Data.Entities.Montage", b =>
+                {
+                    b.Navigation("Photos");
+
+                    b.Navigation("UsedMaterials");
                 });
 #pragma warning restore 612, 618
         }

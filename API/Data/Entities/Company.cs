@@ -57,7 +57,16 @@ public class Company
     public int? WarrantyDefaultMonths { get; set; } = 12;
 
     [Column("subscription_plan")]
-    public SubscriptionPlan SubscriptionPlan { get; set; } = Models.SubscriptionPlan.FreeTrial;
+    public SubscriptionPlan SubscriptionPlan { get; set; } = SubscriptionPlan.FreeTrial;
+
+    [Column("subscription_status")]
+    public SubscriptionStatus SubscriptionStatus { get; set; } = SubscriptionStatus.Trial;
+
+    [Column("trial_start_date")]
+    public DateTime? TrialStartDate { get; set; }
+
+    [Column("trial_end_date")]
+    public DateTime? TrialEndDate { get; set; }
 
     [Column("is_subscription_active")]
     public bool? IsSubscriptionActive { get; set; } = true;
@@ -70,6 +79,18 @@ public class Company
 
     [Column("updated_at")]
     public DateTime? UpdatedAt { get; set; }
+
+    // Stripe integration fields
+    [Column("stripe_customer_id")]
+    [MaxLength(100)]
+    public string? StripeCustomerId { get; set; }
+
+    [Column("stripe_subscription_id")]
+    [MaxLength(100)]
+    public string? StripeSubscriptionId { get; set; }
+
+    [Column("subscription_current_period_end")]
+    public DateTime? SubscriptionCurrentPeriodEnd { get; set; }
 
     // Navigation properties
     public virtual ICollection<ApplicationUser> Users { get; set; } = new List<ApplicationUser>();

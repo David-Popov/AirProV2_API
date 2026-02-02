@@ -62,7 +62,7 @@ public class InventoryRepository : IInventoryRepository
     {
         try
         {
-            return await _context.InventoryItems.FirstOrDefaultAsync(i => i.Id == itemId);
+            return await _context.InventoryItems.AsNoTracking().FirstOrDefaultAsync(i => i.Id == itemId);
         }
         catch (Exception e)
         {
@@ -76,6 +76,7 @@ public class InventoryRepository : IInventoryRepository
         try
         {
             return await _context.InventoryItems
+                .AsNoTracking()
                 .OrderBy(i => i.Name)
                 .ToListAsync();
         }
@@ -91,6 +92,7 @@ public class InventoryRepository : IInventoryRepository
         try
         {
             return await _context.InventoryItems
+                .AsNoTracking()
                 .Where(i => i.CompanyId == companyId)
                 .OrderBy(i => i.Name)
                 .ToListAsync();
@@ -106,7 +108,7 @@ public class InventoryRepository : IInventoryRepository
     {
         try
         {
-            return await _context.InventoryItems
+            return await _context.InventoryItems.AsNoTracking()
                 .Where(i => i.CompanyId == companyId 
                             && i.MinQuantity.HasValue 
                             && i.Quantity <= i.MinQuantity.Value
@@ -126,6 +128,7 @@ public class InventoryRepository : IInventoryRepository
         try
         {
             return await _context.InventoryItems
+                .AsNoTracking()
                 .FirstOrDefaultAsync(i => i.Sku == sku && i.CompanyId == companyId);
         }
         catch (Exception e)
@@ -140,6 +143,7 @@ public class InventoryRepository : IInventoryRepository
         try
         {
             var query = _context.InventoryItems
+                .AsNoTracking()
                 .Where(i => i.Name.ToLower() == name.ToLower() && i.CompanyId == companyId);
             
             if (excludeId.HasValue)

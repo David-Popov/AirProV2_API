@@ -60,7 +60,7 @@ public class CreateCompanyDtoValidator : AbstractValidator<CreateCompanyDto>
         return Enum.TryParse<CompanyType>(companyType, out _);
     }
 
-    private bool BeValidSubscriptionPlan(string subscriptionPlan)
+    private bool BeValidSubscriptionPlan(string? subscriptionPlan)
     {
         return Enum.TryParse<SubscriptionPlan>(subscriptionPlan, out _);
     }
