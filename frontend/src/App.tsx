@@ -6,6 +6,7 @@ import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
 import DashboardPage from '@/pages/DashboardPage'
 import InventoryPage from '@/pages/InventoryPage'
+import InventoryItemHistoryPage from '@/pages/InventoryItemHistoryPage'
 import MontagesPage from '@/pages/MontagesPage'
 import MontageDetailsPage from '@/pages/MontageDetailsPage'
 import EmployeesPage from '@/pages/EmployeesPage'
@@ -19,6 +20,7 @@ import NotFoundPage from '@/pages/NotFoundPage'
 import { SubscriptionPage, SubscriptionSuccessPage } from '@/pages/subscription'
 import { ProtectedRoute, DashboardLayout } from '@/components/layout'
 import { ThemeProvider } from '@/components/theme-provider'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 function App() {
   return (
@@ -35,23 +37,26 @@ function App() {
             <Route 
               element={
                 <ProtectedRoute>
-                  <DashboardLayout />
+                   <ErrorBoundary>
+                      <DashboardLayout />
+                   </ErrorBoundary>
                 </ProtectedRoute>
               }
             >
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/inventory" element={<InventoryPage />} />
-              <Route path="/montages" element={<MontagesPage />} />
-              <Route path="/montages/:id" element={<MontageDetailsPage />} />
-              <Route path="/employees" element={<EmployeesPage />} />
-              <Route path="/employees/:id" element={<EmployeeDetailsPage />} />
-              <Route path="/air-conditioners" element={<AirConditionersPage />} />
-              <Route path="/air-conditioners/:id" element={<AirConditionerDetailsPage />} />
-              <Route path="/error-codes" element={<ErrorCodesPage />} />
-              <Route path="/companies" element={<CompaniesPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/subscription" element={<SubscriptionPage />} />
-              <Route path="/subscription/success" element={<SubscriptionSuccessPage />} />
+              <Route path="/dashboard" element={<ErrorBoundary><DashboardPage /></ErrorBoundary>} />
+              <Route path="/inventory" element={<ErrorBoundary><InventoryPage /></ErrorBoundary>} />
+              <Route path="/inventory/:id/history" element={<ErrorBoundary><InventoryItemHistoryPage /></ErrorBoundary>} />
+              <Route path="/montages" element={<ErrorBoundary><MontagesPage /></ErrorBoundary>} />
+              <Route path="/montages/:id" element={<ErrorBoundary><MontageDetailsPage /></ErrorBoundary>} />
+              <Route path="/employees" element={<ErrorBoundary><EmployeesPage /></ErrorBoundary>} />
+              <Route path="/employees/:id" element={<ErrorBoundary><EmployeeDetailsPage /></ErrorBoundary>} />
+              <Route path="/air-conditioners" element={<ErrorBoundary><AirConditionersPage /></ErrorBoundary>} />
+              <Route path="/air-conditioners/:id" element={<ErrorBoundary><AirConditionerDetailsPage /></ErrorBoundary>} />
+              <Route path="/error-codes" element={<ErrorBoundary><ErrorCodesPage /></ErrorBoundary>} />
+              <Route path="/companies" element={<ErrorBoundary><CompaniesPage /></ErrorBoundary>} />
+              <Route path="/settings" element={<ErrorBoundary><SettingsPage /></ErrorBoundary>} />
+              <Route path="/subscription" element={<ErrorBoundary><SubscriptionPage /></ErrorBoundary>} />
+              <Route path="/subscription/success" element={<ErrorBoundary><SubscriptionSuccessPage /></ErrorBoundary>} />
             </Route>
 
             {/* 404 */}

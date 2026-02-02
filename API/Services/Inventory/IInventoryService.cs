@@ -28,4 +28,10 @@ public interface IInventoryService
     Task<PagedList<InventoryItemDto>> SearchByCompanyIdAsync(Guid companyId, string searchTerm, PageParameters pageParameters);
     
     Task UpdateStatusAsync(Guid itemId, bool isActive);
+
+    Task ArchiveAsync(Guid itemId, string? userId);
+
+    Task RestoreAsync(Guid itemId, string? userId);
+
+    Task<bool> CanDeleteAsync(Guid itemId);
 }

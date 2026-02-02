@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { 
   Package, 
@@ -10,7 +11,9 @@ import {
   ChevronLeft, 
   ChevronRight,
   Loader2,
-  Wand2
+  Wand2,
+  History,
+  Archive
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -50,6 +53,7 @@ import { UNIT_OF_MEASURE_OPTIONS } from '@/types'
 
 export default function InventoryPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const { t } = useTranslation()
   const [items, setItems] = useState<InventoryItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -68,6 +72,11 @@ export default function InventoryPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // Archive confirmation state
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
+  const [itemToArchive, setItemToArchive] = useState<InventoryItem | null>(null)
+  const [isArchiving, setIsArchiving] = useState(false)
 
   const loadItems = async () => {
     setIsLoading(true)
@@ -211,6 +220,29 @@ export default function InventoryPage() {
       setIsDeleting(false)
       setDeleteDialogOpen(false)
       setItemToDelete(null)
+    }
+  }
+
+  const handleArchiveClick = (item: InventoryItem) => {
+    setItemToArchive(item)
+    setArchiveDialogOpen(true)
+  }
+
+  const handleArchiveConfirm = async () => {
+    if (!itemToArchive) return
+    
+    setIsArchiving(true)
+    try {
+      await inventoryService.archive(itemToArchive.id)
+      toast.success(t('inventory.item_archived'))
+      loadItems()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t('common.unknown_error')
+      toast.error(message)
+    } finally {
+      setIsArchiving(false)
+      setArchiveDialogOpen(false)
+      setItemToArchive(null)
     }
   }
 
@@ -402,23 +434,45 @@ export default function InventoryPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-2">
+                    <div className="flex items-center justify-center gap-1">
+                       <Button 
+                        variant="ghost" 
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
+                        onClick={() => navigate(`/inventory/${item.id}/history`)}
+                        title={t('inventory.history', 'History')}
+                      >
+                        <History className="w-4 h-4" />
+                      </Button>
                       <Button 
                         variant="ghost" 
                         size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
                         onClick={() => handleEdit(item)}
+                        title={t('common.edit')}
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        className="h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10"
-                        onClick={() => handleDeleteClick(item)}
+                        className="h-8 w-8 text-orange-500 hover:text-orange-600 hover:bg-orange-500/10"
+                        onClick={() => handleArchiveClick(item)}
+                        title={t('common.archive', 'Archive')}
                       >
-                        <Trash className="w-4 h-4" />
+                        <Archive className="w-4 h-4" />
                       </Button>
+                      {user?.roles.includes('Manager') && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                          onClick={() => handleDeleteClick(item)}
+                          title={t('common.delete')}
+                        >
+                          <Trash className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -479,11 +533,18 @@ export default function InventoryPage() {
                   )}
                 </div>
 
-                <div className="flex gap-2 mt-3 pt-3 border-t border-border">
+                <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-border">
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="flex-1"
+                    onClick={() => navigate(`/inventory/${item.id}/history`)}
+                  >
+                    <History className="w-3 h-3 mr-1" />
+                    {t('inventory.history', 'History')}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
                     onClick={() => handleEdit(item)}
                   >
                     <Edit className="w-3 h-3 mr-1" />
@@ -492,12 +553,23 @@ export default function InventoryPage() {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="flex-1 text-red-500 border-red-500/20 hover:bg-red-500/10 hover:text-red-400"
-                    onClick={() => handleDeleteClick(item)}
+                    className="text-orange-500 border-orange-500/20 hover:bg-orange-500/10 hover:text-orange-600"
+                    onClick={() => handleArchiveClick(item)}
                   >
-                    <Trash className="w-3 h-3 mr-1" />
-                    {t('common.delete')}
+                    <Archive className="w-3 h-3 mr-1" />
+                    {t('common.archive', 'Archive')}
                   </Button>
+                  {user?.roles.includes('Manager') && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="text-red-500 border-red-500/20 hover:bg-red-500/10 hover:text-red-400"
+                      onClick={() => handleDeleteClick(item)}
+                    >
+                      <Trash className="w-3 h-3 mr-1" />
+                      {t('common.delete')}
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -641,12 +713,11 @@ export default function InventoryPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="bg-card border-border">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-foreground">
-              <AlertTriangle className="w-5 h-5 text-destructive" />
+              <Trash className="w-5 h-5 text-destructive" />
               {t('common.confirm_delete_title', 'Delete Item')}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground">
@@ -669,6 +740,39 @@ export default function InventoryPage() {
             >
               {isDeleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {t('common.delete', 'Delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Archive Confirmation Dialog */}
+      <AlertDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-foreground">
+              <Archive className="w-5 h-5 text-orange-500" />
+              {t('inventory.archive_item', 'Archive Item')}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              {t('inventory.archive_confirmation', 'Are you sure you want to archive this item? It will be hidden from the main list but preserved in history.')}
+              {itemToArchive && (
+                <span className="block mt-2 font-medium text-foreground">
+                  {itemToArchive.name}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-border text-foreground hover:bg-muted">
+              {t('common.cancel', 'Cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleArchiveConfirm}
+              disabled={isArchiving}
+              className="bg-orange-500 text-white hover:bg-orange-600 border-none"
+            >
+              {isArchiving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {t('common.archive', 'Archive')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

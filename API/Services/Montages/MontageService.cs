@@ -28,6 +28,19 @@ public class MontageService : IMontageService
     {
         try
         {
+            var existing = await _context.Montages
+                .AsNoTracking()
+                .FirstOrDefaultAsync(m => 
+                    m.CompanyId == dto.CompanyId && 
+                    m.ClientEmail == dto.ClientEmail && 
+                    m.InstallationDate == dto.InstallationDate &&
+                    m.AirConditionerId == dto.AirConditionerId);
+
+            if (existing != null)
+            {
+                throw new InvalidOperationException("A montage with the same company, client email, installation date, and air conditioner already exists.");
+            }
+
             var montage = new Montage
             {
                 CompanyId = dto.CompanyId,
@@ -103,9 +116,70 @@ public class MontageService : IMontageService
                 throw new InvalidOperationException("Montage not found");
             }
 
-            montage.Status = Enum.TryParse(status, out MontageStatus montageStatus) ? montageStatus : MontageStatus.Planned;
-            montage.UpdatedAt = DateTime.UtcNow;
+            var newStatus = Enum.TryParse(status, out MontageStatus montageStatus) 
+                ? montageStatus 
+                : MontageStatus.Planned;
+            
+            if (newStatus == MontageStatus.Completed)
+            {
+                var validation = MontageStatusValidator.CanSetStatusToCompleted(montage);
+                if (!validation.IsValid)
+                {
+                    throw new InvalidOperationException(string.Join("; ", validation.Errors));
+                }
+            }
 
+            montage.Status = newStatus;
+            montage.UpdatedAt = DateTime.UtcNow;
+            
+            if (newStatus == MontageStatus.Completed && montage.CompletionDate == null)
+            {
+                montage.CompletionDate = DateOnly.FromDateTime(DateTime.UtcNow);
+            }
+
+            await _repository.UpdateMontageAsync(montage);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, e.Message);
+            throw;
+        }
+    }
+
+    public async Task UpdatePaymentStatusAsync(Guid montageId, string paymentStatus, decimal? paidAmount = null)
+    {
+        try
+        {
+            var montage = await _repository.GetByIdAsync(montageId);
+            if (montage == null)
+            {
+                throw new InvalidOperationException("Montage not found");
+            }
+
+            var newPaymentStatus = Enum.TryParse(paymentStatus, out MontagePaymentStatus status) 
+                ? status 
+                : MontagePaymentStatus.NotPaid;
+
+            montage.PaymentStatus = newPaymentStatus;
+            
+            if (paidAmount.HasValue)
+            {
+                montage.PaidAmount = paidAmount.Value;
+            }
+            else
+            {
+                switch (newPaymentStatus)
+                {
+                    case MontagePaymentStatus.Paid:
+                        montage.PaidAmount = montage.TotalPrice;
+                        break;
+                    case MontagePaymentStatus.NotPaid:
+                        montage.PaidAmount = 0;
+                        break;
+                }
+            }
+            
+            montage.UpdatedAt = DateTime.UtcNow;
             await _repository.UpdateMontageAsync(montage);
         }
         catch (Exception e)
@@ -165,6 +239,7 @@ public class MontageService : IMontageService
         try
         {
             var query = _context.Montages
+                .AsNoTracking()
                 .Include(m => m.AirConditioner)
                 .Include(m => m.UsedMaterials)
                     .ThenInclude(um => um.InventoryItem)
@@ -220,6 +295,7 @@ public class MontageService : IMontageService
         try
         {
             var query = _context.Montages
+                .AsNoTracking()
                 .Include(m => m.AirConditioner)
                 .Include(m => m.UsedMaterials)
                     .ThenInclude(um => um.InventoryItem)
@@ -274,6 +350,7 @@ public class MontageService : IMontageService
         try
         {
             var query = _context.Montages
+                .AsNoTracking()
                 .Include(m => m.AirConditioner)
                 .Include(m => m.UsedMaterials)
                     .ThenInclude(um => um.InventoryItem)
@@ -328,6 +405,7 @@ public class MontageService : IMontageService
         try
         {
             var query = _context.Montages
+                .AsNoTracking()
                 .Include(m => m.AirConditioner)
                 .Include(m => m.UsedMaterials)
                     .ThenInclude(um => um.InventoryItem)
@@ -382,6 +460,7 @@ public class MontageService : IMontageService
         try
         {
             var query = _context.Montages
+                .AsNoTracking()
                 .Include(m => m.AirConditioner)
                 .Include(m => m.UsedMaterials)
                     .ThenInclude(um => um.InventoryItem)
@@ -436,6 +515,7 @@ public class MontageService : IMontageService
         try
         {
             var query = _context.Montages
+                .AsNoTracking()
                 .Include(m => m.AirConditioner)
                 .Include(m => m.UsedMaterials)
                     .ThenInclude(um => um.InventoryItem)

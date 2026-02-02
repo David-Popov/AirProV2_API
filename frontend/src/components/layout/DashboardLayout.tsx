@@ -104,8 +104,8 @@ export default function DashboardLayout() {
             onClick={() => handleNavClick('/inventory')}
           />
           
-          {/* Employee Management - Managers & Admins */}
-          {(isManager || isAdmin) && (
+          {/* Employee Management - Managers Only */}
+          {(!isAdmin && isManager) && (
             <NavItem 
               icon={Users} 
               label={t('nav.employees')}

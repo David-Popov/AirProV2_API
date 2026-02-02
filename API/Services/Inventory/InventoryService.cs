@@ -13,15 +13,18 @@ public class InventoryService : IInventoryService
     private readonly IInventoryRepository _repository;
     private readonly ApplicationDbContext _context;
     private readonly ILogger<InventoryService> _logger;
+    private readonly IInventoryAuditService _auditService;
 
     public InventoryService(
         IInventoryRepository repository,
         ApplicationDbContext context,
-        ILogger<InventoryService> logger)
+        ILogger<InventoryService> logger,
+        IInventoryAuditService auditService)
     {
         _repository = repository;
         _context = context;
         _logger = logger;
+        _auditService = auditService;
     }
 
     public async Task AddAsync(CreateInventoryItemDto dto)
@@ -51,6 +54,17 @@ public class InventoryService : IInventoryService
             };
 
             await _repository.AddAsync(item);
+
+            await _auditService.LogActionAsync(new InventoryAuditLog
+            {
+                CompanyId = item.CompanyId,
+                InventoryItemId = item.Id,
+                Action = "Created",
+                UserId = dto.UserId, // Assuming we add UserId to CreateInventoryItemDto
+                QuantityAfter = item.Quantity,
+                QuantityChanged = item.Quantity,
+                Reason = "Initial creation"
+            });
         }
         catch (Exception e)
         {
@@ -69,12 +83,15 @@ public class InventoryService : IInventoryService
                 throw new InvalidOperationException("Inventory item not found");
             }
 
-            // Check for duplicate name within the same company (excluding current item)
+
+            // Check for duplicate name within the same company
             var exists = await _repository.ExistsByNameAndCompanyIdAsync(dto.Name, item.CompanyId, itemId);
             if (exists)
             {
                 throw new InvalidOperationException($"An inventory item with name '{dto.Name}' already exists for this company");
             }
+
+            var oldQuantity = item.Quantity;
 
             item.Name = dto.Name;
             item.Description = dto.Description;
@@ -89,6 +106,22 @@ public class InventoryService : IInventoryService
             item.IsActive = dto.IsActive;
 
             await _repository.UpdateAsync(item);
+
+            // Log the update if quantity changed
+            if (oldQuantity != item.Quantity)
+            {
+                await _auditService.LogActionAsync(new InventoryAuditLog
+                {
+                    CompanyId = item.CompanyId,
+                    InventoryItemId = item.Id,
+                    Action = "Updated",
+                    UserId = dto.UserId,
+                    QuantityBefore = oldQuantity,
+                    QuantityAfter = item.Quantity,
+                    QuantityChanged = item.Quantity - oldQuantity,
+                    Reason = "Inventory item updated"
+                });
+            }
         }
         catch (Exception e)
         {
@@ -133,6 +166,7 @@ public class InventoryService : IInventoryService
         try
         {
             var query = _context.InventoryItems
+                .AsNoTracking()
                 .OrderBy(i => i.Name)
                 .Select(i => new InventoryItemDto
                 {
@@ -151,7 +185,9 @@ public class InventoryService : IInventoryService
                     IsActive = i.IsActive,
                     IsLowStock = i.MinQuantity.HasValue && i.Quantity <= i.MinQuantity.Value,
                     CreatedAt = i.CreatedAt,
-                    UpdatedAt = i.UpdatedAt
+                    UpdatedAt = i.UpdatedAt,
+                    IsArchived = i.IsArchived,
+                    ArchivedAt = i.ArchivedAt
                 });
 
             return await PagedList<InventoryItemDto>.CreateAsync(query, pageParameters);
@@ -168,6 +204,7 @@ public class InventoryService : IInventoryService
         try
         {
             var query = _context.InventoryItems
+                .AsNoTracking()
                 .Where(i => i.CompanyId == companyId)
                 .OrderBy(i => i.Name)
                 .Select(i => new InventoryItemDto
@@ -187,7 +224,9 @@ public class InventoryService : IInventoryService
                     IsActive = i.IsActive,
                     IsLowStock = i.MinQuantity.HasValue && i.Quantity <= i.MinQuantity.Value,
                     CreatedAt = i.CreatedAt,
-                    UpdatedAt = i.UpdatedAt
+                    UpdatedAt = i.UpdatedAt,
+                    IsArchived = i.IsArchived,
+                    ArchivedAt = i.ArchivedAt
                 });
 
             return await PagedList<InventoryItemDto>.CreateAsync(query, pageParameters);
@@ -204,6 +243,7 @@ public class InventoryService : IInventoryService
         try
         {
             var query = _context.InventoryItems
+                .AsNoTracking()
                 .Where(i => i.CompanyId == companyId 
                             && i.MinQuantity.HasValue 
                             && i.Quantity <= i.MinQuantity.Value
@@ -226,7 +266,9 @@ public class InventoryService : IInventoryService
                     IsActive = i.IsActive,
                     IsLowStock = true,
                     CreatedAt = i.CreatedAt,
-                    UpdatedAt = i.UpdatedAt
+                    UpdatedAt = i.UpdatedAt,
+                    IsArchived = i.IsArchived,
+                    ArchivedAt = i.ArchivedAt
                 });
 
             return await PagedList<InventoryItemDto>.CreateAsync(query, pageParameters);
@@ -243,6 +285,7 @@ public class InventoryService : IInventoryService
         try
         {
             var query = _context.InventoryItems
+                .AsNoTracking()
                 .Where(i => i.MinQuantity.HasValue 
                             && i.Quantity <= i.MinQuantity.Value
                             && i.IsActive)
@@ -307,6 +350,7 @@ public class InventoryService : IInventoryService
                 throw new InvalidOperationException($"Cannot adjust quantity. Current quantity is {item.Quantity} {item.UnitOfMeasure}, adjustment of {dto.AdjustmentAmount} would result in negative quantity.");
             }
 
+            var oldQuantity = item.Quantity;
             item.Quantity = newQuantity;
             
             // Optionally append the reason to notes
@@ -328,6 +372,19 @@ public class InventoryService : IInventoryService
             }
 
             await _repository.UpdateAsync(item);
+
+            // Log the quantity adjustment
+            await _auditService.LogActionAsync(new InventoryAuditLog
+            {
+                CompanyId = item.CompanyId,
+                InventoryItemId = item.Id,
+                Action = "QuantityAdjusted",
+                UserId = dto.UserId,
+                QuantityBefore = oldQuantity,
+                QuantityAfter = item.Quantity,
+                QuantityChanged = dto.AdjustmentAmount,
+                Reason = dto.Reason
+            });
             
             return ToDto(item);
         }
@@ -345,6 +402,7 @@ public class InventoryService : IInventoryService
             var lowerSearchTerm = searchTerm.ToLower();
             
             var query = _context.InventoryItems
+                .AsNoTracking()
                 .Where(i => i.CompanyId == companyId && 
                            (i.Name.ToLower().Contains(lowerSearchTerm) ||
                             (i.Sku != null && i.Sku.ToLower().Contains(lowerSearchTerm)) ||
@@ -400,6 +458,109 @@ public class InventoryService : IInventoryService
         }
     }
 
+    public async Task ArchiveAsync(Guid itemId, string? userId)
+    {
+        try
+        {
+            var item = await _repository.GetByIdAsync(itemId);
+            if (item == null)
+            {
+                throw new InvalidOperationException("Inventory item not found");
+            }
+
+            item.IsArchived = true;
+            item.ArchivedAt = DateTime.UtcNow;
+            item.ArchivedBy = userId;
+            item.IsActive = false;
+
+            await _repository.UpdateAsync(item);
+
+            // Log the archiving
+            await _auditService.LogActionAsync(new InventoryAuditLog
+            {
+                CompanyId = item.CompanyId,
+                InventoryItemId = item.Id,
+                Action = "Archived",
+                UserId = userId,
+                Reason = "Item archived"
+            });
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, e.Message);
+            throw;
+        }
+    }
+
+    public async Task RestoreAsync(Guid itemId, string? userId)
+    {
+        try
+        {
+            var item = await _repository.GetByIdAsync(itemId);
+            if (item == null)
+            {
+                throw new InvalidOperationException("Inventory item not found");
+            }
+
+            item.IsArchived = false;
+            item.ArchivedAt = null;
+            item.ArchivedBy = null;
+            item.IsActive = true;
+
+            await _repository.UpdateAsync(item);
+
+            // Log the restoration
+            await _auditService.LogActionAsync(new InventoryAuditLog
+            {
+                CompanyId = item.CompanyId,
+                InventoryItemId = item.Id,
+                Action = "Restored",
+                UserId = userId,
+                Reason = "Item restored from archive"
+            });
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, e.Message);
+            throw;
+        }
+    }
+
+    public async Task<bool> CanDeleteAsync(Guid itemId)
+    {
+        try
+        {
+            var item = await _context.InventoryItems
+                .AsNoTracking()
+                .Include(i => i.MontageUsages)
+                .FirstOrDefaultAsync(i => i.Id == itemId);
+
+            if (item == null)
+            {
+                return false;
+            }
+
+            // Check 1: Has it been used in any montages?
+            if (item.MontageUsages.Any())
+            {
+                return false;
+            }
+
+            // Check 2: Is it older than 30 days?
+            if ((DateTime.UtcNow - item.CreatedAt).TotalDays > 30)
+            {
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, e.Message);
+            return false;
+        }
+    }
+
     private static InventoryItemDto ToDto(InventoryItem item)
     {
         return new InventoryItemDto
@@ -419,7 +580,9 @@ public class InventoryService : IInventoryService
             IsActive = item.IsActive,
             IsLowStock = item.MinQuantity.HasValue && item.Quantity <= item.MinQuantity.Value,
             CreatedAt = item.CreatedAt,
-            UpdatedAt = item.UpdatedAt
+            UpdatedAt = item.UpdatedAt,
+            IsArchived = item.IsArchived,
+            ArchivedAt = item.ArchivedAt
         };
     }
 }

@@ -34,14 +34,17 @@
     "location": "Location",
     "upload": "Upload",
     "download": "Download",
-    "description": "Description"
+    "description": "Description",
+    "no_description": "No description available"
   },
   "nav": {
     "dashboard": "Dashboard",
     "montages": "Montages",
     "inventory": "Inventory",
     "employees": "Employees",
-    "air_conditioners": "Air Conditioners"
+    "air_conditioners": "Air Conditioners",
+    "admin": "Admin",
+    "companies": "Companies"
   },
   "auth": {
     "login_title": "Login to your account",
@@ -76,7 +79,26 @@
     "error_codes": "Error Codes",
     "code": "Code",
     "possible_cause": "Possible Cause",
-    "solution": "Solution"
+    "solution": "Solution",
+    "technical_specs": "Technical Specifications",
+    "piping": "Piping",
+    "liquid_pipe": "Liquid Pipe",
+    "gas_pipe": "Gas Pipe",
+    "max_pipe_length": "Max Pipe Length",
+    "max_height_diff": "Max Height Difference",
+    "refrigerant": "Refrigerant",
+    "refrigerant_type": "Type",
+    "factory_charge": "Factory Charge",
+    "electrical": "Electrical",
+    "power_supply": "Power Supply",
+    "cable_section": "Cable Section",
+    "recommended_fuse": "Recommended Fuse",
+    "indoor_unit": "Indoor Unit",
+    "outdoor_unit": "Outdoor Unit",
+    "dimensions": "Dimensions",
+    "weight": "Weight",
+    "error_details": "Error Details",
+    "description": "Description"
   },
   "dashboard": {
     "active_montages": "Active Montages",
@@ -131,7 +153,34 @@
     "new_item": "Add New Item",
     "item_created": "Item created successfully",
     "item_updated": "Item updated successfully",
-    "item_deleted": "Item deleted"
+    "item_deleted": "Item deleted",
+    "item_archived": "Item archived successfully",
+    "item_restored": "Item restored successfully",
+    "error_loading": "Failed to load inventory items",
+    "archive": "Archive",
+    "restore": "Restore",
+    "view_history": "View History",
+    "cannot_delete": "Cannot delete this item. It has been used in montages or is older than 30 days.",
+    "audit": {
+      "recentActivity": "Recent Inventory Activity",
+      "recentActivityDescription": "Latest changes to your inventory",
+      "noActivity": "No recent activity",
+      "viewAll": "View All Inventory",
+      "history": "Inventory History",
+      "historyFor": "History for {{item}}",
+      "unknownItem": "Unknown Item",
+      "system": "System",
+      "montage": "Montage",
+      "actions": {
+        "created": "Created",
+        "updated": "Updated",
+        "quantityAdjusted": "Quantity Adjusted",
+        "usedInMontage": "Used in Montage",
+        "archived": "Archived",
+        "restored": "Restored",
+        "deleted": "Deleted"
+      }
+    }
   },
   "montages": {
     "title": "Montages",
@@ -188,7 +237,23 @@
     },
     "location": "Location",
     "no_address": "No address provided",
-    "open_in_maps": "Open in Maps"
+    "open_in_maps": "Open in Maps",
+    "status_updated": "Montage status updated successfully",
+    "status_update_failed": "Failed to update montage status",
+    "payment_status_updated": "Payment status updated successfully",
+    "payment_status_update_failed": "Failed to update payment status",
+    "enter_payment_amount": "Enter Payment Amount",
+    "amount_exceeds_total": "Amount cannot exceed total price",
+    "status_changed_to": "Status changed to {{status}}",
+    "payment_changed_to": "Payment status changed to {{status}}",
+    "amount_updated_to": "Paid amount updated to ${{amount}}",
+    "error_not_fully_paid": "Cannot complete: Payment is not fully paid",
+    "error_indoor_serial_required": "Cannot complete: Indoor unit serial number is required",
+    "error_outdoor_serial_required": "Cannot complete: Outdoor unit serial number is required",
+    "error_amount_less_than_total": "Cannot complete: Paid amount is less than total price",
+    "material_add_failed": "Failed to add material",
+    "material_remove_failed": "Failed to remove material",
+    "material_update_failed": "Failed to update material"
   },
   "employees": {
     "title": "Employees",

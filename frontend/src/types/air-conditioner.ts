@@ -7,6 +7,27 @@ export interface AirConditioner {
   description?: string | null;
   price?: number | null;
   image_url?: string | null;
+  
+  // Technical Specifications - Piping
+  pipe_size_liquid?: string | null;
+  pipe_size_gas?: string | null;
+  max_pipe_length?: number | null;
+  max_height_difference?: number | null;
+  
+  // Technical Specifications - Refrigerant
+  refrigerant_type?: string | null;
+  factory_refrigerant_charge?: number | null;
+  
+  // Technical Specifications - Electrical
+  power_supply_location?: string | null;
+  cable_section?: string | null;
+  recommended_fuse?: number | null;
+  
+  // Technical Specifications - Dimensions & Weight
+  indoor_dimensions?: string | null;
+  outdoor_dimensions?: string | null;
+  weight_indoor?: number | null;
+  weight_outdoor?: number | null;
 }
 
 export interface ErrorCode {
@@ -27,6 +48,27 @@ export interface CreateAirConditionerRequest {
   description?: string | null;
   price?: number | null;
   image_url?: string | null;
+  
+  // Technical Specifications - Piping
+  pipe_size_liquid?: string | null;
+  pipe_size_gas?: string | null;
+  max_pipe_length?: number | null;
+  max_height_difference?: number | null;
+  
+  // Technical Specifications - Refrigerant
+  refrigerant_type?: string | null;
+  factory_refrigerant_charge?: number | null;
+  
+  // Technical Specifications - Electrical
+  power_supply_location?: string | null;
+  cable_section?: string | null;
+  recommended_fuse?: number | null;
+  
+  // Technical Specifications - Dimensions & Weight
+  indoor_dimensions?: string | null;
+  outdoor_dimensions?: string | null;
+  weight_indoor?: number | null;
+  weight_outdoor?: number | null;
 }
 
 export interface UpdateAirConditionerRequest extends Partial<CreateAirConditionerRequest> {}

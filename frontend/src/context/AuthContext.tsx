@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { authService } from '@/services';
 import type { AuthUser, LoginRequest, RegisterRequest, AuthResponse } from '@/types';
 
@@ -76,7 +76,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [logout]);
 
-  const value: AuthContextType = {
+  const value = useMemo<AuthContextType>(() => ({
     user,
     isAuthenticated: !!user && authService.isAuthenticated(),
     isLoading,
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     register,
     logout,
     refreshUser,
-  };
+  }), [user, isLoading, login, register, logout, refreshUser]);
 
   return (
     <AuthContext.Provider value={value}>

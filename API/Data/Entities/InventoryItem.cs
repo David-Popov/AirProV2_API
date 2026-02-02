@@ -63,6 +63,15 @@ public class InventoryItem
     [Column("updated_at")]
     public DateTime? UpdatedAt { get; set; }
 
+    [Column("is_archived")]
+    public bool IsArchived { get; set; } = false;
+
+    [Column("archived_at")]
+    public DateTime? ArchivedAt { get; set; }
+
+    [Column("archived_by")]
+    public string? ArchivedBy { get; set; }
+
     // Navigation properties
     [ForeignKey("CompanyId")]
     public virtual Company? Company { get; set; }
@@ -71,4 +80,9 @@ public class InventoryItem
     /// Montages where this inventory item was used
     /// </summary>
     public virtual ICollection<MontageInventoryItem> MontageUsages { get; set; } = new List<MontageInventoryItem>();
+
+    /// <summary>
+    /// Audit log entries for this inventory item
+    /// </summary>
+    public virtual ICollection<InventoryAuditLog> AuditLogs { get; set; } = new List<InventoryAuditLog>();
 }

@@ -97,7 +97,22 @@ export default function AirConditionersPage() {
       model: '',
       kilowatts: 0,
       price: 0,
-      description: ''
+      description: '',
+      image_url: '',
+      // Technical Specifications - initialized as undefined
+      pipe_size_liquid: undefined,
+      pipe_size_gas: undefined,
+      max_pipe_length: undefined,
+      max_height_difference: undefined,
+      refrigerant_type: undefined,
+      factory_refrigerant_charge: undefined,
+      power_supply_location: undefined,
+      cable_section: undefined,
+      recommended_fuse: undefined,
+      indoor_dimensions: undefined,
+      outdoor_dimensions: undefined,
+      weight_indoor: undefined,
+      weight_outdoor: undefined
     })
     setIsDialogOpen(true)
   }
@@ -112,7 +127,25 @@ export default function AirConditionersPage() {
       model: item.model,
       kilowatts: item.kilowatts,
       price: item.price,
-      description: item.description
+      description: item.description,
+      image_url: item.image_url,
+      // Technical Specifications - Piping
+      pipe_size_liquid: item.pipe_size_liquid,
+      pipe_size_gas: item.pipe_size_gas,
+      max_pipe_length: item.max_pipe_length,
+      max_height_difference: item.max_height_difference,
+      // Technical Specifications - Refrigerant
+      refrigerant_type: item.refrigerant_type,
+      factory_refrigerant_charge: item.factory_refrigerant_charge,
+      // Technical Specifications - Electrical
+      power_supply_location: item.power_supply_location,
+      cable_section: item.cable_section,
+      recommended_fuse: item.recommended_fuse,
+      // Technical Specifications - Dimensions & Weight
+      indoor_dimensions: item.indoor_dimensions,
+      outdoor_dimensions: item.outdoor_dimensions,
+      weight_indoor: item.weight_indoor,
+      weight_outdoor: item.weight_outdoor
     })
     setIsDialogOpen(true)
   }
@@ -140,27 +173,38 @@ export default function AirConditionersPage() {
     
     setIsSaving(true)
     try {
+      const requestData = {
+        name: currentItem.name!,
+        brand: currentItem.brand,
+        model: currentItem.model,
+        kilowatts: currentItem.kilowatts,
+        price: currentItem.price,
+        description: currentItem.description,
+        image_url: currentItem.image_url || '',
+        // Technical Specifications - Piping
+        pipe_size_liquid: currentItem.pipe_size_liquid,
+        pipe_size_gas: currentItem.pipe_size_gas,
+        max_pipe_length: currentItem.max_pipe_length,
+        max_height_difference: currentItem.max_height_difference,
+        // Technical Specifications - Refrigerant
+        refrigerant_type: currentItem.refrigerant_type,
+        factory_refrigerant_charge: currentItem.factory_refrigerant_charge,
+        // Technical Specifications - Electrical
+        power_supply_location: currentItem.power_supply_location,
+        cable_section: currentItem.cable_section,
+        recommended_fuse: currentItem.recommended_fuse,
+        // Technical Specifications - Dimensions & Weight
+        indoor_dimensions: currentItem.indoor_dimensions,
+        outdoor_dimensions: currentItem.outdoor_dimensions,
+        weight_indoor: currentItem.weight_indoor,
+        weight_outdoor: currentItem.weight_outdoor
+      }
+
       if (isEditing && currentItem.id) {
-        await airConditionerService.update(currentItem.id, {
-          name: currentItem.name!,
-          brand: currentItem.brand,
-          model: currentItem.model,
-          kilowatts: currentItem.kilowatts,
-          price: currentItem.price,
-          description: currentItem.description,
-          image_url: '' 
-        })
+        await airConditionerService.update(currentItem.id, requestData)
         toast.success(t('air_conditioners.ac_updated'))
       } else {
-        await airConditionerService.create({
-          name: currentItem.name!,
-          brand: currentItem.brand,
-          model: currentItem.model,
-          kilowatts: currentItem.kilowatts,
-          price: currentItem.price,
-          description: currentItem.description,
-          image_url: ''
-        })
+        await airConditionerService.create(requestData)
         toast.success(t('air_conditioners.ac_created'))
       }
       setIsDialogOpen(false)
@@ -343,74 +387,256 @@ export default function AirConditionersPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-card border-border text-card-foreground sm:max-w-[425px]">
+        <DialogContent className="bg-card border-border text-card-foreground sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isEditing ? t('air_conditioners.edit_ac') : t('air_conditioners.new_ac')}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSave} className="grid gap-4 py-4">
-             <div className="grid gap-2">
-              <Label htmlFor="name">{t('inventory.name')}</Label>
-              <Input
-                id="name"
-                value={currentItem.name || ''}
-                onChange={(e) => setCurrentItem({ ...currentItem, name: e.target.value })}
-                className="bg-background border-input"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="brand">{t('air_conditioners.brand')}</Label>
-                <Input
-                  id="brand"
-                  value={currentItem.brand || ''}
-                  onChange={(e) => setCurrentItem({ ...currentItem, brand: e.target.value })}
-                  className="bg-background border-input"
-                />
+          <form onSubmit={handleSave} className="grid gap-6 py-4">
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase flex items-center gap-2">
+                <div className="w-1 h-4 bg-primary rounded"></div>
+                {t('air_conditioners.details', 'Basic Information')}
+              </h3>
+              <div className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="name">{t('inventory.name')}</Label>
+                  <Input
+                    id="name"
+                    value={currentItem.name || ''}
+                    onChange={(e) => setCurrentItem({ ...currentItem, name: e.target.value })}
+                    className="bg-background border-input"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="brand">{t('air_conditioners.brand')}</Label>
+                    <Input
+                      id="brand"
+                      value={currentItem.brand || ''}
+                      onChange={(e) => setCurrentItem({ ...currentItem, brand: e.target.value })}
+                      className="bg-background border-input"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="model">{t('air_conditioners.model')}</Label>
+                    <Input
+                      id="model"
+                      value={currentItem.model || ''}
+                      onChange={(e) => setCurrentItem({ ...currentItem, model: e.target.value })}
+                      className="bg-background border-input"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="kilowatts">{t('air_conditioners.kilowatts')}</Label>
+                    <Input
+                      id="kilowatts"
+                      type="number"
+                      step="0.1"
+                      value={currentItem.kilowatts || 0}
+                      onChange={(e) => setCurrentItem({ ...currentItem, kilowatts: Number(e.target.value) })}
+                      className="bg-background border-input"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="price">{t('air_conditioners.price')}</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      value={currentItem.price || 0}
+                      onChange={(e) => setCurrentItem({ ...currentItem, price: Number(e.target.value) })}
+                      className="bg-background border-input"
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="description">{t('common.notes')}</Label>
+                  <Input
+                    id="description"
+                    value={currentItem.description || ''}
+                    onChange={(e) => setCurrentItem({ ...currentItem, description: e.target.value })}
+                    className="bg-background border-input"
+                  />
+                </div>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="model">{t('air_conditioners.model')}</Label>
-                <Input
-                  id="model"
-                  value={currentItem.model || ''}
-                  onChange={(e) => setCurrentItem({ ...currentItem, model: e.target.value })}
-                  className="bg-background border-input"
-                />
+            </div>
+
+            {/* Technical Specifications - Piping */}
+            <div className="space-y-4 pt-4 border-t border-border">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase flex items-center gap-2">
+                <div className="w-1 h-4 bg-blue-500 rounded"></div>
+                {t('air_conditioners.piping', 'Piping')}
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="pipe_size_liquid">{t('air_conditioners.liquid_pipe')}</Label>
+                  <Input
+                    id="pipe_size_liquid"
+                    value={currentItem.pipe_size_liquid || ''}
+                    onChange={(e) => setCurrentItem({ ...currentItem, pipe_size_liquid: e.target.value })}
+                    className="bg-background border-input"
+                    placeholder="6.35mm"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="pipe_size_gas">{t('air_conditioners.gas_pipe')}</Label>
+                  <Input
+                    id="pipe_size_gas"
+                    value={currentItem.pipe_size_gas || ''}
+                    onChange={(e) => setCurrentItem({ ...currentItem, pipe_size_gas: e.target.value })}
+                    className="bg-background border-input"
+                    placeholder="12.7mm"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="max_pipe_length">{t('air_conditioners.max_pipe_length')} (m)</Label>
+                  <Input
+                    id="max_pipe_length"
+                    type="number"
+                    value={currentItem.max_pipe_length || ''}
+                    onChange={(e) => setCurrentItem({ ...currentItem, max_pipe_length: e.target.value ? Number(e.target.value) : undefined })}
+                    className="bg-background border-input"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="max_height_difference">{t('air_conditioners.max_height_diff')} (m)</Label>
+                  <Input
+                    id="max_height_difference"
+                    type="number"
+                    value={currentItem.max_height_difference || ''}
+                    onChange={(e) => setCurrentItem({ ...currentItem, max_height_difference: e.target.value ? Number(e.target.value) : undefined })}
+                    className="bg-background border-input"
+                  />
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="kilowatts">{t('air_conditioners.kilowatts')}</Label>
-                <Input
-                  id="kilowatts"
-                  type="number"
-                  step="0.1"
-                  value={currentItem.kilowatts || 0}
-                  onChange={(e) => setCurrentItem({ ...currentItem, kilowatts: Number(e.target.value) })}
-                  className="bg-background border-input"
-                />
-              </div>
-               <div className="grid gap-2">
-                <Label htmlFor="price">{t('air_conditioners.price')}</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  value={currentItem.price || 0}
-                  onChange={(e) => setCurrentItem({ ...currentItem, price: Number(e.target.value) })}
-                  className="bg-background border-input"
-                />
+
+            {/* Technical Specifications - Refrigerant */}
+            <div className="space-y-4 pt-4 border-t border-border">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase flex items-center gap-2">
+                <div className="w-1 h-4 bg-cyan-500 rounded"></div>
+                {t('air_conditioners.refrigerant', 'Refrigerant')}
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="refrigerant_type">{t('air_conditioners.refrigerant_type')}</Label>
+                  <Input
+                    id="refrigerant_type"
+                    value={currentItem.refrigerant_type || ''}
+                    onChange={(e) => setCurrentItem({ ...currentItem, refrigerant_type: e.target.value })}
+                    className="bg-background border-input"
+                    placeholder="R32, R410A"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="factory_refrigerant_charge">{t('air_conditioners.factory_charge')} (g)</Label>
+                  <Input
+                    id="factory_refrigerant_charge"
+                    type="number"
+                    value={currentItem.factory_refrigerant_charge || ''}
+                    onChange={(e) => setCurrentItem({ ...currentItem, factory_refrigerant_charge: e.target.value ? Number(e.target.value) : undefined })}
+                    className="bg-background border-input"
+                  />
+                </div>
               </div>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="description">{t('common.notes')}</Label>
-              <Input
-                id="description"
-                value={currentItem.description || ''}
-                onChange={(e) => setCurrentItem({ ...currentItem, description: e.target.value })}
-                className="bg-background border-input"
-              />
+
+            {/* Technical Specifications - Electrical */}
+            <div className="space-y-4 pt-4 border-t border-border">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase flex items-center gap-2">
+                <div className="w-1 h-4 bg-yellow-500 rounded"></div>
+                {t('air_conditioners.electrical', 'Electrical')}
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="power_supply_location">{t('air_conditioners.power_supply')}</Label>
+                  <Input
+                    id="power_supply_location"
+                    value={currentItem.power_supply_location || ''}
+                    onChange={(e) => setCurrentItem({ ...currentItem, power_supply_location: e.target.value })}
+                    className="bg-background border-input"
+                    placeholder="Indoor, Outdoor"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="cable_section">{t('air_conditioners.cable_section')}</Label>
+                  <Input
+                    id="cable_section"
+                    value={currentItem.cable_section || ''}
+                    onChange={(e) => setCurrentItem({ ...currentItem, cable_section: e.target.value })}
+                    className="bg-background border-input"
+                    placeholder="3x2.5mm²"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="recommended_fuse">{t('air_conditioners.recommended_fuse')} (A)</Label>
+                  <Input
+                    id="recommended_fuse"
+                    type="number"
+                    value={currentItem.recommended_fuse || ''}
+                    onChange={(e) => setCurrentItem({ ...currentItem, recommended_fuse: e.target.value ? Number(e.target.value) : undefined })}
+                    className="bg-background border-input"
+                  />
+                </div>
+              </div>
             </div>
-            <DialogFooter>
+
+            {/* Technical Specifications - Dimensions & Weight */}
+            <div className="space-y-4 pt-4 border-t border-border">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase flex items-center gap-2">
+                <div className="w-1 h-4 bg-purple-500 rounded"></div>
+                {t('air_conditioners.dimensions', 'Dimensions')} & {t('air_conditioners.weight', 'Weight')}
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="indoor_dimensions">{t('air_conditioners.indoor_unit')} - {t('air_conditioners.dimensions')}</Label>
+                  <Input
+                    id="indoor_dimensions"
+                    value={currentItem.indoor_dimensions || ''}
+                    onChange={(e) => setCurrentItem({ ...currentItem, indoor_dimensions: e.target.value })}
+                    className="bg-background border-input"
+                    placeholder="800x290x200mm"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="weight_indoor">{t('air_conditioners.indoor_unit')} - {t('air_conditioners.weight')} (kg)</Label>
+                  <Input
+                    id="weight_indoor"
+                    type="number"
+                    step="0.1"
+                    value={currentItem.weight_indoor || ''}
+                    onChange={(e) => setCurrentItem({ ...currentItem, weight_indoor: e.target.value ? Number(e.target.value) : undefined })}
+                    className="bg-background border-input"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="outdoor_dimensions">{t('air_conditioners.outdoor_unit')} - {t('air_conditioners.dimensions')}</Label>
+                  <Input
+                    id="outdoor_dimensions"
+                    value={currentItem.outdoor_dimensions || ''}
+                    onChange={(e) => setCurrentItem({ ...currentItem, outdoor_dimensions: e.target.value })}
+                    className="bg-background border-input"
+                    placeholder="780x555x290mm"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="weight_outdoor">{t('air_conditioners.outdoor_unit')} - {t('air_conditioners.weight')} (kg)</Label>
+                  <Input
+                    id="weight_outdoor"
+                    type="number"
+                    step="0.1"
+                    value={currentItem.weight_outdoor || ''}
+                    onChange={(e) => setCurrentItem({ ...currentItem, weight_outdoor: e.target.value ? Number(e.target.value) : undefined })}
+                    className="bg-background border-input"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="pt-4">
               <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSaving}>
                 {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {t('common.save')}

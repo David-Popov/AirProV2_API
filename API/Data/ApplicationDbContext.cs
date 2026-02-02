@@ -28,6 +28,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     
     public DbSet<MontagePhoto> MontagePhotos { get; set; }
 
+    public DbSet<InventoryAuditLog> InventoryAuditLogs { get; set; }
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -156,6 +157,41 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                   .WithMany(m => m.Photos)
                   .HasForeignKey(e => e.MontageId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // InventoryAuditLog configuration - tracks all inventory changes
+        builder.Entity<InventoryAuditLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+            
+            entity.HasIndex(e => e.CompanyId).HasDatabaseName("idx_inventory_audit_company_id");
+            entity.HasIndex(e => e.InventoryItemId).HasDatabaseName("idx_inventory_audit_item_id");
+            entity.HasIndex(e => e.UserId).HasDatabaseName("idx_inventory_audit_user_id");
+            entity.HasIndex(e => e.Action).HasDatabaseName("idx_inventory_audit_action");
+            entity.HasIndex(e => e.CreatedAt).HasDatabaseName("idx_inventory_audit_created_at");
+            entity.HasIndex(e => e.RelatedMontageId).HasDatabaseName("idx_inventory_audit_montage_id");
+            
+            entity.HasOne(e => e.Company)
+                  .WithMany()
+                  .HasForeignKey(e => e.CompanyId)
+                  .OnDelete(DeleteBehavior.Cascade);
+                  
+            entity.HasOne(e => e.InventoryItem)
+                  .WithMany(i => i.AuditLogs)
+                  .HasForeignKey(e => e.InventoryItemId)
+                  .OnDelete(DeleteBehavior.Cascade);
+                  
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.SetNull);
+                  
+            entity.HasOne(e => e.RelatedMontage)
+                  .WithMany()
+                  .HasForeignKey(e => e.RelatedMontageId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

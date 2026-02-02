@@ -36,4 +36,7 @@ public class CreateInventoryItemDto
     
     [JsonPropertyName("notes")]
     public string? Notes { get; set; }
+
+    [JsonIgnore]
+    public string? UserId { get; set; }
 }

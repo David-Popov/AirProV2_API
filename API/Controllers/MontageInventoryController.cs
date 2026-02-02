@@ -26,6 +26,7 @@ public class MontageInventoryController : ControllerBase
     {
         try
         {
+            request.UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             var result = await _service.AddMaterialsAsync(montageId, request);
             return Ok(result);
         }

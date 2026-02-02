@@ -61,4 +61,7 @@ public class AddMaterialsToMontageRequest
 {
     [JsonPropertyName("materials")]
     public List<AddMaterialToMontageRequest> Materials { get; set; } = new();
+
+    [JsonIgnore]
+    public string? UserId { get; set; }
 }

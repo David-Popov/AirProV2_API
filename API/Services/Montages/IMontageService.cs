@@ -11,6 +11,9 @@ public interface IMontageService
     
     Task UpdateMontageStatusAsync(Guid montageId, string status);
     
+    Task UpdatePaymentStatusAsync(Guid montageId, string paymentStatus, decimal? paidAmount = null);
+
+    
     Task DeleteMontageAsync(Guid montageId);
     
     Task<MontageDto?> GetByIdAsync(Guid montageId);

@@ -101,9 +101,9 @@ export default function CompaniesPage() {
   
   // Filter companies by search
   const filteredCompanies = companies.filter(company =>
-    company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    company.bulstat?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    company.city?.toLowerCase().includes(searchTerm.toLowerCase())
+    (company.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (company.bulstat || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (company.city || '').toLowerCase().includes(searchTerm.toLowerCase())
   )
   
   // Handlers
@@ -281,8 +281,9 @@ export default function CompaniesPage() {
         </Button>
       </div>
       
-      {/* Stats Cards */}
-      <div className="grid grid-cols-4 gap-6 mb-8">
+      <div className="flex flex-col lg:block">
+        {/* Stats Cards - Order 2 on mobile */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8 order-2 lg:order-none mt-6 lg:mt-0">
         <Card className="glass-card">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
@@ -335,8 +336,8 @@ export default function CompaniesPage() {
         </Card>
       </div>
       
-      {/* Search */}
-      <div className="mb-6">
+      {/* Search - Order 1 on mobile */}
+      <div className="mb-6 order-1 lg:order-none">
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
@@ -348,8 +349,8 @@ export default function CompaniesPage() {
         </div>
       </div>
       
-      {/* Companies Table */}
-      <Card className="glass-card">
+      {/* Companies Table - Order 1 on mobile */}
+      <Card className="glass-card order-1 lg:order-none">
         <CardHeader>
           <CardTitle className="text-foreground flex items-center gap-2">
             <Building2 className="w-5 h-5 text-primary" />
@@ -373,10 +374,10 @@ export default function CompaniesPage() {
                     <th className="text-left py-3 px-4 text-muted-foreground font-medium">
                       {t('companies.name', 'Name')}
                     </th>
-                    <th className="text-left py-3 px-4 text-muted-foreground font-medium">
+                    <th className="text-left py-3 px-4 text-muted-foreground font-medium hidden md:table-cell">
                       {t('companies.type', 'Type')}
                     </th>
-                    <th className="text-left py-3 px-4 text-muted-foreground font-medium">
+                    <th className="text-left py-3 px-4 text-muted-foreground font-medium hidden md:table-cell">
                       {t('companies.city', 'City')}
                     </th>
                     <th className="text-left py-3 px-4 text-muted-foreground font-medium">
@@ -399,10 +400,10 @@ export default function CompaniesPage() {
                           <p className="text-sm text-sm sm:text-base text-muted-foreground">{company.bulstat || 'No BULSTAT'}</p>
                         </div>
                       </td>
-                      <td className="py-4 px-4 text-sm sm:text-base text-muted-foreground">
+                      <td className="py-4 px-4 text-sm sm:text-base text-muted-foreground hidden md:table-cell">
                         {COMPANY_TYPE_OPTIONS.find(t => t.value === company.company_type)?.label || company.company_type}
                       </td>
-                      <td className="py-4 px-4 text-sm sm:text-base text-muted-foreground">
+                      <td className="py-4 px-4 text-sm sm:text-base text-muted-foreground hidden md:table-cell">
                         {company.city || '-'}
                       </td>
                       <td className="py-4 px-4">
@@ -493,6 +494,7 @@ export default function CompaniesPage() {
           )}
         </CardContent>
       </Card>
+      </div>
       
       {/* Create/Edit Dialog */}
       <Dialog open={isCreateDialogOpen || isEditDialogOpen} onOpenChange={(open) => {
@@ -509,7 +511,7 @@ export default function CompaniesPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-foreground">{t('companies.name', 'Company Name')} *</label>
                 <Input
@@ -537,7 +539,7 @@ export default function CompaniesPage() {
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-foreground">{t('companies.bulstat', 'BULSTAT')}</label>
                 <Input
@@ -555,7 +557,7 @@ export default function CompaniesPage() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm font-medium text-foreground">{t('companies.city', 'City')}</label>
                 <Input
@@ -581,7 +583,7 @@ export default function CompaniesPage() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-foreground">{t('companies.phone', 'Phone')}</label>
                 <Input
@@ -667,7 +669,7 @@ export default function CompaniesPage() {
                       <p className="text-sm text-sm sm:text-base text-muted-foreground">{user.email}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {user.roles.map(role => (
+                      {user.roles && user.roles.map(role => (
                         <Badge key={role} variant="secondary">{role}</Badge>
                       ))}
                       {user.is_active ? (
@@ -734,7 +736,7 @@ export default function CompaniesPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-foreground">{t('companies.start_date', 'Start Date')}</label>
                 <Input

@@ -25,6 +25,7 @@ import {
   Tooltip,
   ResponsiveContainer
 } from 'recharts'
+import { RecentInventoryActivity } from '@/components/inventory/RecentInventoryActivity'
 
 type TimePeriod = '1month' | '3months' | '6months' | '1year' | '2years'
 
@@ -400,10 +401,8 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-
       {/* Stats Grid - 2x2 Layout */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <StatCard 
           title={t('dashboard.active_montages')} 
           value={stats.activeMontages.toString()} 
@@ -431,80 +430,81 @@ export default function DashboardPage() {
         />
       </div>
 
-
-        {/* Maintenance Reminders - Due for annual service */}
-        <div className="lg:col-span-2">
-          <Card className="glass-card h-full">
-            <CardHeader>
-              <CardTitle className="text-foreground flex items-center gap-2 text-base sm:text-lg">
-                <AlertTriangle className="w-5 h-5 text-orange-400" />
-                {t('dashboard.maintenance_reminders', 'Maintenance Reminders')}
-              </CardTitle>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                {t('dashboard.maintenance_reminders_desc', 'Clients due for annual AC maintenance service')}
-              </p>
-            </CardHeader>
-            <CardContent>
-              {maintenanceReminders.length > 0 ? (
-                <div className="space-y-3 sm:space-y-4">
-                  {maintenanceReminders.map(({ montage, maintenanceDate, daysUntil, isOverdue }) => (
-                    <div 
-                      key={montage.id} 
-                      onClick={() => navigate(`/montages/${montage.id}`)}
-                      className={`flex items-center justify-between p-3 sm:p-4 rounded-xl border cursor-pointer transition-all ${
-                        isOverdue 
-                          ? 'border-red-500/50 bg-red-500/5 hover:border-red-500' 
-                          : daysUntil <= 14 
-                            ? 'border-orange-500/50 bg-orange-500/5 hover:border-orange-500'
-                            : 'border-border bg-background/50 hover:border-primary/50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-                        <div className={`p-2 rounded-full shrink-0 ${
-                          isOverdue ? 'bg-red-500/10' : daysUntil <= 14 ? 'bg-orange-500/10' : 'bg-primary/10'
-                        }`}>
-                          <Phone className={`w-4 h-4 ${
-                            isOverdue ? 'text-red-500' : daysUntil <= 14 ? 'text-orange-500' : 'text-primary'
-                          }`} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-semibold text-foreground truncate text-sm sm:text-base">{montage.client_name}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {montage.client_phone || t('common.no_phone', 'No phone')} • {montage.client_city || 'N/A'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0 ml-2">
-                        <p className={`text-xs sm:text-sm font-medium ${
+      {/* Bottom Grid - Maintenance & Inventory Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+        {/* Maintenance Reminders */}
+        <Card className="glass-card h-full">
+          <CardHeader>
+            <CardTitle className="text-foreground flex items-center gap-2 text-base sm:text-lg">
+              <AlertTriangle className="w-5 h-5 text-orange-400" />
+              {t('dashboard.maintenance_reminders', 'Maintenance Reminders')}
+            </CardTitle>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              {t('dashboard.maintenance_reminders_desc', 'Clients due for annual AC maintenance service')}
+            </p>
+          </CardHeader>
+          <CardContent>
+            {maintenanceReminders.length > 0 ? (
+              <div className="space-y-3 sm:space-y-4">
+                {maintenanceReminders.map(({ montage, maintenanceDate, daysUntil, isOverdue }) => (
+                  <div 
+                    key={montage.id} 
+                    onClick={() => navigate(`/montages/${montage.id}`)}
+                    className={`flex items-center justify-between p-3 sm:p-4 rounded-xl border cursor-pointer transition-all ${
+                      isOverdue 
+                        ? 'border-red-500/50 bg-red-500/5 hover:border-red-500' 
+                        : daysUntil <= 14 
+                          ? 'border-orange-500/50 bg-orange-500/5 hover:border-orange-500'
+                          : 'border-border bg-background/50 hover:border-primary/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                      <div className={`p-2 rounded-full shrink-0 ${
+                        isOverdue ? 'bg-red-500/10' : daysUntil <= 14 ? 'bg-orange-500/10' : 'bg-primary/10'
+                      }`}>
+                        <Phone className={`w-4 h-4 ${
                           isOverdue ? 'text-red-500' : daysUntil <= 14 ? 'text-orange-500' : 'text-primary'
-                        }`}>
-                          {maintenanceDate.toLocaleDateString()}
-                        </p>
-                        <p className={`text-xs font-medium ${
-                          isOverdue ? 'text-red-500' : daysUntil <= 14 ? 'text-orange-500' : 'text-muted-foreground'
-                        }`}>
-                          {isOverdue 
-                            ? t('dashboard.overdue_days', '{{days}} days overdue', { days: Math.abs(daysUntil) })
-                            : daysUntil === 0 
-                              ? t('dashboard.due_today', 'Due today')
-                              : t('dashboard.due_in_days', 'In {{days}} days', { days: daysUntil })
-                          }
+                        }`} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-foreground truncate text-sm sm:text-base">{montage.client_name}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {montage.client_phone || t('common.no_phone', 'No phone')} • {montage.client_city || 'N/A'}
                         </p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-6 sm:py-8 text-muted-foreground">
-                  <AlertTriangle className="w-8 sm:w-10 h-8 sm:h-10 mx-auto mb-3 opacity-20" />
-                  <p className="text-sm sm:text-base">{t('dashboard.no_maintenance_due', 'No maintenance due in the next 60 days')}</p>
-                  <p className="text-xs sm:text-sm mt-1">{t('dashboard.maintenance_auto_calc', 'Maintenance is calculated 1 year after installation')}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                    <div className="text-right shrink-0 ml-2">
+                      <p className={`text-xs sm:text-sm font-medium ${
+                        isOverdue ? 'text-red-500' : daysUntil <= 14 ? 'text-orange-500' : 'text-primary'
+                      }`}>
+                        {maintenanceDate.toLocaleDateString()}
+                      </p>
+                      <p className={`text-xs font-medium ${
+                        isOverdue ? 'text-red-500' : daysUntil <= 14 ? 'text-orange-500' : 'text-muted-foreground'
+                      }`}>
+                        {isOverdue 
+                          ? t('dashboard.overdue_days', '{{days}} days overdue', { days: Math.abs(daysUntil) })
+                          : daysUntil === 0 
+                            ? t('dashboard.due_today', 'Due today')
+                            : t('dashboard.due_in_days', 'In {{days}} days', { days: daysUntil })
+                        }
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 sm:py-8 text-muted-foreground">
+                <AlertTriangle className="w-8 sm:w-10 h-8 sm:h-10 mx-auto mb-3 opacity-20" />
+                <p className="text-sm sm:text-base">{t('dashboard.no_maintenance_due', 'No maintenance due in the next 60 days')}</p>
+                <p className="text-xs sm:text-sm mt-1">{t('dashboard.maintenance_auto_calc', 'Maintenance is calculated 1 year after installation')}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
+        {/* Recent Inventory Activity */}
+        <RecentInventoryActivity />
       </div>
     </div>
   )
@@ -521,15 +521,15 @@ interface StatCardProps {
 function StatCard({ title, value, change, icon: Icon, warning = false }: StatCardProps) {
   return (
     <Card className="glass-card hover:shadow-md transition-shadow duration-300">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-muted-foreground text-sm font-medium">{title}</p>
-          <div className={`p-2 rounded-lg ${warning ? 'bg-orange-500/10' : 'bg-primary/10'}`}>
-            <Icon className={`w-5 h-5 ${warning ? 'text-orange-500' : 'text-primary'}`} />
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <p className="text-muted-foreground text-xs sm:text-sm font-medium truncate pr-2">{title}</p>
+          <div className={`p-2 rounded-lg shrink-0 ${warning ? 'bg-orange-500/10' : 'bg-primary/10'}`}>
+            <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${warning ? 'text-orange-500' : 'text-primary'}`} />
           </div>
         </div>
-        <p className="text-3xl font-bold text-foreground mb-2 tracking-tight">{value}</p>
-        <p className={`text-sm ${warning ? 'text-orange-500 font-medium' : 'text-green-500'}`}>{change}</p>
+        <p className="text-2xl sm:text-3xl font-bold text-foreground mb-2 tracking-tight">{value}</p>
+        <p className={`text-xs sm:text-sm ${warning ? 'text-orange-500 font-medium' : 'text-green-500'}`}>{change}</p>
       </CardContent>
     </Card>
   )

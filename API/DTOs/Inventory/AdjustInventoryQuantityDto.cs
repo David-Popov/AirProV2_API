@@ -19,4 +19,7 @@ public class AdjustInventoryQuantityDto
     /// </summary>
     [JsonPropertyName("reason")]
     public string? Reason { get; set; }
+
+    [JsonIgnore]
+    public string? UserId { get; set; }
 }

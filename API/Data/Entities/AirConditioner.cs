@@ -35,6 +35,49 @@ public class AirConditioner
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    // 1. Piping & Freon
+    [Column("pipe_size_liquid")]
+    public string? PipeSizeLiquid { get; set; }
+
+    [Column("pipe_size_gas")]
+    public string? PipeSizeGas { get; set; }
+
+    [Column("refrigerant_type")]
+    public string? RefrigerantType { get; set; }
+
+    [Column("factory_refrigerant_charge")]
+    public int? FactoryRefrigerantCharge { get; set; } // grams
+
+    // 2. Electrical
+    [Column("power_supply_location")]
+    public string? PowerSupplyLocation { get; set; }
+
+    [Column("cable_section")]
+    public string? CableSection { get; set; }
+
+    [Column("recommended_fuse")]
+    public int? RecommendedFuse { get; set; } // Amps
+
+    // 3. Dimensions (WxHxD mm) & Weight (kg)
+    [Column("indoor_dimensions")]
+    public string? IndoorDimensions { get; set; }
+
+    [Column("outdoor_dimensions")]
+    public string? OutdoorDimensions { get; set; }
+
+    [Column("weight_indoor", TypeName = "decimal(5, 2)")]
+    public decimal? WeightIndoor { get; set; }
+
+    [Column("weight_outdoor", TypeName = "decimal(5, 2)")]
+    public decimal? WeightOutdoor { get; set; }
+
+    // 4. Limits
+    [Column("max_pipe_length")]
+    public int? MaxPipeLength { get; set; }
+
+    [Column("max_height_difference")]
+    public int? MaxHeightDifference { get; set; }
+
     [Column("updated_at")]
     public DateTime? UpdatedAt { get; set; }
     

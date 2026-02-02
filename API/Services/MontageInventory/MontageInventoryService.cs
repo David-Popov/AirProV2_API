@@ -2,6 +2,7 @@ using API.Data;
 using API.Data.Entities;
 using API.DTOs;
 using API.Common;
+using API.Services.Inventory;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Services.MontageInventory;
@@ -38,11 +39,16 @@ public class MontageInventoryService : IMontageInventoryService
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<MontageInventoryService> _logger;
+    private readonly IInventoryAuditService _auditService;
 
-    public MontageInventoryService(ApplicationDbContext context, ILogger<MontageInventoryService> logger)
+    public MontageInventoryService(
+        ApplicationDbContext context, 
+        ILogger<MontageInventoryService> logger,
+        IInventoryAuditService auditService)
     {
         _context = context;
         _logger = logger;
+        _auditService = auditService;
     }
 
     public async Task<List<MontageInventoryItemDto>> AddMaterialsAsync(Guid montageId, AddMaterialsToMontageRequest request)
@@ -89,6 +95,20 @@ public class MontageInventoryService : IMontageInventoryService
                 };
 
                 _context.MontageInventoryItems.Add(montageInventoryItem);
+
+                // Log the usage in montage
+                await _auditService.LogActionAsync(new InventoryAuditLog
+                {
+                    CompanyId = inventoryItem.CompanyId,
+                    InventoryItemId = material.InventoryItemId,
+                    Action = "UsedInMontage",
+                    UserId = request.UserId, // Assuming we add UserId to request
+                    QuantityBefore = inventoryItem.Quantity + material.QuantityUsed,
+                    QuantityAfter = inventoryItem.Quantity,
+                    QuantityChanged = -material.QuantityUsed,
+                    RelatedMontageId = montageId,
+                    Reason = $"Used in montage"
+                });
                 
                 addedItems.Add(new MontageInventoryItemDto
                 {

@@ -298,6 +298,37 @@ public class MontagesController : ControllerBase
     }
 
     /// <summary>
+    /// Update montage payment status
+    /// </summary>
+    [HttpPatch("{id}/payment-status")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> UpdatePaymentStatus(Guid id, [FromBody] UpdatePaymentStatusDto dto)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(dto.PaymentStatus))
+            {
+                return BadRequest(new { message = "Payment status is required" });
+            }
+
+            await _service.UpdatePaymentStatusAsync(id, dto.PaymentStatus, dto.PaidAmount);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Delete montage
     /// </summary>
     [HttpDelete("{id}")]
