@@ -16,7 +16,8 @@ import {
   Snowflake,
   AlertTriangle,
   Phone,
-  Wrench
+  Wrench,
+  Filter
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -56,7 +57,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { montageService } from '@/services'
+import { montageService, type MontageFilters } from '@/services/montages'
 import { 
   type Montage, 
   type CreateMontageRequest,
@@ -88,7 +89,6 @@ export default function MontagesPage() {
     isOverdue: boolean
   }[]>([])
 
-  // Dialog State
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -111,12 +111,22 @@ export default function MontagesPage() {
 
   const [formData, setFormData] = useState<MontageFormState>(initialFormState)
   
-  // Delete confirmation state
+  const [searchTerm, setSearchTerm] = useState('')
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [activeFilters, setActiveFilters] = useState<MontageFilters>({})
+  const [tempFilters, setTempFilters] = useState<MontageFilters>({})
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [searchTerm, activeFilters])
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<Montage | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Status Colors (Adaptive for Light/Dark)
   const statusColors: Record<string, string> = {
     'Planned': 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
     'InProgress': 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
@@ -125,31 +135,24 @@ export default function MontagesPage() {
     'Overdue': 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
   }
 
-  const loadItems = async () => {
-    setIsLoading(true)
+  const loadMaintenanceReminders = async () => {
     try {
-      const response = await montageService.getAll(page, 10)
-      setItems(response.items)
-      setTotalPages(response.totalPages)
-      
-      // Calculate maintenance reminders
       const today = new Date()
       today.setHours(0, 0, 0, 0)
-      
-      // Need all montages for maintenance calculation, not just current page
+
       const allMontagesResponse = await montageService.getAll(1, 100)
       const allMontages = allMontagesResponse.items
-      
+
       const reminders = allMontages
         .filter(m => m.status === 'Completed' || m.payment_status === 'Paid')
         .map(m => {
           const installDate = new Date(m.completion_date || m.installation_date)
           const maintenanceDate = new Date(installDate)
           maintenanceDate.setFullYear(maintenanceDate.getFullYear() + 1)
-          
+
           const timeDiff = maintenanceDate.getTime() - today.getTime()
           const daysUntil = Math.ceil(timeDiff / (1000 * 60 * 60 * 24))
-          
+
           return {
             montage: m,
             maintenanceDate,
@@ -160,8 +163,22 @@ export default function MontagesPage() {
         .filter(r => r.daysUntil <= 60)
         .sort((a, b) => a.daysUntil - b.daysUntil)
         .slice(0, 5)
-      
+
       setMaintenanceReminders(reminders)
+    } catch (error) {
+      console.error('Failed to load maintenance reminders:', error)
+    }
+  }
+
+  const loadItems = async () => {
+    setIsLoading(true)
+    try {
+      const response = await montageService.getAll(page, 10, {
+        ...activeFilters,
+        clientName: searchTerm
+      })
+      setItems(response.items)
+      setTotalPages(response.totalPages)
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
@@ -172,8 +189,12 @@ export default function MontagesPage() {
   }
 
   useEffect(() => {
+    loadMaintenanceReminders()
+  }, [])
+
+  useEffect(() => {
     loadItems()
-  }, [page])
+  }, [page, activeFilters, searchTerm])
 
   const handleCreate = () => {
     setIsEditing(false)
@@ -206,7 +227,6 @@ export default function MontagesPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Client-side validation
     const validationErrors: string[] = []
     
     if (!formData.client_name?.trim()) {
@@ -227,7 +247,6 @@ export default function MontagesPage() {
     setIsSaving(true)
     try {
       if (isEditing && formData.id) {
-        // Update
         const updatePayload: UpdateMontageRequest = {
           client_name: formData.client_name,
           client_phone: formData.client_phone,
@@ -246,7 +265,6 @@ export default function MontagesPage() {
         await montageService.update(formData.id, updatePayload)
         toast.success(t('montages.updated_success', 'Montage updated successfully')) 
       } else {
-        // Create
         await montageService.create(formData)
         toast.success(t('montages.created_success', 'Montage created successfully'))
       }
@@ -317,10 +335,28 @@ export default function MontagesPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input 
-            placeholder={t('montages.search_placeholder')}
+            placeholder={t('montages.search_placeholder', 'Search by client name...')}
             className="pl-10 bg-background/50 border-input text-foreground hover:bg-background/80 transition-colors"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        <Button 
+            variant="outline" 
+            className="relative border-border hover:bg-accent text-foreground"
+            onClick={() => {
+              setTempFilters(activeFilters)
+              setIsFilterOpen(true)
+            }}
+        >
+          <Filter className="w-4 h-4 mr-2" />
+          {t('common.filter', 'Filter')}
+          {Object.keys(activeFilters).length > 0 && (
+            <span className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-primary text-primary-foreground text-[10px]">
+              {Object.keys(activeFilters).length}
+            </span>
+          )}
+        </Button>
       </div>
 
       {/* Maintenance Reminders */}
@@ -666,6 +702,95 @@ export default function MontagesPage() {
           <ChevronRight className="w-4 h-4" />
         </Button>
       </div>
+
+      {/* Filter Dialog */}
+      <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+        <DialogContent className="bg-card border-border text-card-foreground sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>{t('common.filter', 'Filter Montages')}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            
+            {/* Status Filter */}
+            <div className="grid gap-2">
+              <Label>{t('common.status', 'Status')}</Label>
+              <Select 
+                value={tempFilters.status || 'All'} 
+                onValueChange={(val) => setTempFilters({...tempFilters, status: val === 'All' ? undefined : val})}
+              >
+                <SelectTrigger className="bg-background border-input">
+                  <SelectValue placeholder={t('common.all', 'All')} />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-border text-popover-foreground">
+                  <SelectItem value="All">{t('common.all', 'All')}</SelectItem>
+                  {MONTAGE_STATUS_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Client Phone */}
+            <div className="grid gap-2">
+              <Label>{t('auth.phone', 'Phone')}</Label>
+              <Input 
+                placeholder={t('montages.search_phone', 'Search by phone...')}
+                value={tempFilters.clientPhone || ''}
+                onChange={(e) => setTempFilters({...tempFilters, clientPhone: e.target.value})}
+                className="bg-background border-input"
+              />
+            </div>
+
+            {/* Date Range */}
+            <div className="space-y-2">
+              <Label>{t('common.date_range', 'Date Range')}</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="grid gap-1">
+                    <Label className="text-xs text-muted-foreground">{t('common.from', 'From')}</Label>
+                    <Input 
+                        type="date"
+                        value={tempFilters.startDate || ''}
+                        onChange={(e) => setTempFilters({...tempFilters, startDate: e.target.value})}
+                        className="bg-background border-input"
+                    />
+                </div>
+                <div className="grid gap-1">
+                    <Label className="text-xs text-muted-foreground">{t('common.to', 'To')}</Label>
+                    <Input 
+                        type="date"
+                        value={tempFilters.endDate || ''}
+                        onChange={(e) => setTempFilters({...tempFilters, endDate: e.target.value})}
+                        className="bg-background border-input"
+                    />
+                </div>
+              </div>
+            </div>
+
+          </div>
+          <DialogFooter className="flex-col sm:flex-col gap-2">
+            <Button 
+                onClick={() => {
+                    setActiveFilters(tempFilters)
+                    setIsFilterOpen(false)
+                }} 
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {t('common.apply_filters', 'Apply Filters')}
+            </Button>
+            <Button 
+                variant="outline" 
+                onClick={() => {
+                    setTempFilters({})
+                    setActiveFilters({})
+                    setIsFilterOpen(false)
+                }} 
+                className="w-full border-border hover:bg-accent text-foreground"
+            >
+              {t('common.clear_filters', 'Clear Filters')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

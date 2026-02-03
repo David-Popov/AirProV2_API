@@ -40,11 +40,11 @@ public class AirConditionersController : ControllerBase
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<PagedList<AirConditionerDto>>> GetAirConditioners([FromQuery] PageParameters pageParameters)
+    public async Task<ActionResult<PagedList<AirConditionerDto>>> GetAirConditioners([FromQuery] AirConditionerParameters parameters)
     {
         try
         {
-            var result = await _service.GetAirConditionersAsync(pageParameters);
+            var result = await _service.GetAirConditionersAsync(parameters);
             return Ok(result);
         }
         catch (Exception ex)

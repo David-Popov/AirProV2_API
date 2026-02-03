@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { 
-  Users, 
-  Plus, 
-  Search, 
-  Trash, 
+import {
+  Users,
+  Plus,
+  Search,
+  Trash,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  CheckCircle,
+  XCircle
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -41,16 +43,19 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { employeeService } from '@/services'
-import type { Employee, CreateEmployeeRequest } from '@/types'
+import type { Employee, CreateEmployeeRequest, EmployeeLimits } from '@/types'
+import { TrialActivationModal, PremiumUpgradeModal } from '@/components/subscription'
+import { useAuth } from '@/context'
 
 export default function EmployeesPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [employees, setEmployees] = useState<Employee[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [employeeLimits, setEmployeeLimits] = useState<EmployeeLimits | null>(null)
 
-  // Dialog State
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [newEmployee, setNewEmployee] = useState<CreateEmployeeRequest>({
     email: '',
@@ -62,10 +67,14 @@ export default function EmployeesPage() {
   })
   const [isSaving, setIsSaving] = useState(false)
   
-  // Delete confirmation state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  const [trialModalOpen, setTrialModalOpen] = useState(false)
+
+  const [premiumModalOpen, setPremiumModalOpen] = useState(false)
+  const [premiumModalReason, setPremiumModalReason] = useState<'employee_limit' | 'trial_used' | 'general'>('general')
 
   const loadEmployees = async () => {
     setIsLoading(true)
@@ -80,11 +89,42 @@ export default function EmployeesPage() {
     }
   }
 
+  const loadEmployeeLimits = async () => {
+    try {
+      const limits = await employeeService.getLimits()
+      setEmployeeLimits(limits)
+    } catch (error) {
+      console.error('Failed to load employee limits:', error)
+    }
+  }
+
   useEffect(() => {
     loadEmployees()
+    loadEmployeeLimits()
   }, [])
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
+    if (employeeLimits && !employeeLimits.can_add_more) {
+      if (employeeLimits.subscription_plan === 'Free') {
+        if (user?.has_used_trial) {
+          setPremiumModalReason('trial_used')
+          setPremiumModalOpen(true)
+          return
+        } else {
+          setTrialModalOpen(true)
+          return
+        }
+      } else if (employeeLimits.subscription_plan === 'FreeTrial') {
+        setPremiumModalReason('employee_limit')
+        setPremiumModalOpen(true)
+        return
+      } else {
+        setPremiumModalReason('general')
+        setPremiumModalOpen(true)
+        return
+      }
+    }
+
     setNewEmployee({
       email: '',
       password: '',
@@ -125,7 +165,6 @@ export default function EmployeesPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Client-side validation
     const validationErrors: string[] = []
     
     if (!newEmployee.first_name.trim()) {
@@ -153,7 +192,8 @@ export default function EmployeesPage() {
       await employeeService.create(newEmployee)
       toast.success(t('employees.created_success', 'Employee created successfully'))
       setIsDialogOpen(false)
-      loadEmployees()
+      await loadEmployees()
+      await loadEmployeeLimits() // Reload limits after creating employee
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
@@ -183,6 +223,42 @@ export default function EmployeesPage() {
       setIsDeleting(false)
       setDeleteDialogOpen(false)
       setEmployeeToDelete(null)
+    }
+  }
+
+  const handleActivateEmployee = async (e: React.MouseEvent, employee: Employee) => {
+    e.stopPropagation()
+
+    if (employeeLimits && !employeeLimits.can_add_more) {
+      toast.error(
+        t('employees.cannot_activate_limit',
+          `Cannot activate more employees. Your plan allows ${employeeLimits.max_count} active employees.`)
+      )
+      return
+    }
+
+    try {
+      await employeeService.activate(employee.id)
+      toast.success(t('employees.activated_success', 'Employee activated successfully'))
+      await loadEmployees()
+      await loadEmployeeLimits()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t('common.unknown_error')
+      toast.error(message)
+    }
+  }
+
+  const handleDeactivateEmployee = async (e: React.MouseEvent, employee: Employee) => {
+    e.stopPropagation()
+
+    try {
+      await employeeService.deactivate(employee.id)
+      toast.success(t('employees.deactivated_success', 'Employee deactivated successfully'))
+      await loadEmployees()
+      await loadEmployeeLimits()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t('common.unknown_error')
+      toast.error(message)
     }
   }
 
@@ -280,8 +356,34 @@ export default function EmployeesPage() {
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-2">
-                      <Button 
-                        variant="ghost" 
+                      {/* Activate/Deactivate toggle - only for User role */}
+                      {!emp.roles.includes('Manager') && (
+                        <>
+                          {emp.is_active ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-orange-500 hover:text-orange-400 hover:bg-orange-500/10"
+                              onClick={(e) => handleDeactivateEmployee(e, emp)}
+                              title={t('employees.deactivate', 'Deactivate')}
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-green-500 hover:text-green-400 hover:bg-green-500/10"
+                              onClick={(e) => handleActivateEmployee(e, emp)}
+                              title={t('employees.activate', 'Activate')}
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </>
+                      )}
+                      <Button
+                        variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10"
                         onClick={(e) => { e.stopPropagation(); handleDeleteClick(emp) }}
@@ -470,6 +572,32 @@ export default function EmployeesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Trial Activation Modal */}
+      <TrialActivationModal
+        isOpen={trialModalOpen}
+        onClose={() => setTrialModalOpen(false)}
+        onSuccess={async () => {
+          await loadEmployeeLimits()
+          setNewEmployee({
+            email: '',
+            password: '',
+            first_name: '',
+            last_name: '',
+            phone_number: '',
+            address: ''
+          })
+          setIsDialogOpen(true)
+        }}
+        maxEmployees={employeeLimits?.max_count || 2}
+      />
+
+      {/* Premium Upgrade Modal */}
+      <PremiumUpgradeModal
+        isOpen={premiumModalOpen}
+        onClose={() => setPremiumModalOpen(false)}
+        reason={premiumModalReason}
+      />
     </div>
   )
 }

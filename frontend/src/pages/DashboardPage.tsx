@@ -60,7 +60,6 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Fetch montages with max allowed page size
         const montagesRes = await montageService.getAll(1, 100)
         const montages = montagesRes.items
         setAllMontages(montages)
@@ -71,15 +70,12 @@ export default function DashboardPage() {
         ).length
         const completed = montages.filter(m => m.status === 'Completed').length
 
-        // Calculate maintenance reminders for COMPLETED installations
-        // Maintenance is due 1 year after installation
         const today = new Date()
         today.setHours(0, 0, 0, 0)
         
         const reminders = montages
           .filter(m => m.status === 'Completed' || m.payment_status === 'Paid')
           .map(m => {
-            // Calculate maintenance date: 1 year after completion (or installation if no completion date)
             const installDate = new Date(m.completion_date || m.installation_date)
             const maintenanceDate = new Date(installDate)
             maintenanceDate.setFullYear(maintenanceDate.getFullYear() + 1)
@@ -94,28 +90,23 @@ export default function DashboardPage() {
               isOverdue: daysUntil < 0
             }
           })
-          // Show maintenance due within next 60 days OR overdue (past due)
           .filter(r => r.daysUntil <= 60)
-          // Sort by date (overdue first, then soonest)
           .sort((a, b) => a.daysUntil - b.daysUntil)
           .slice(0, 5)
 
         setMaintenanceReminders(reminders)
 
-        // Fetch inventory - handle potential errors gracefully
         let inventoryCount = 0
         let lowStockCount = 0
         try {
           const inventoryRes = await inventoryService.getAll(1, 1)
           inventoryCount = inventoryRes.totalCount
-          // Low stock items - filter from full list since endpoint may not exist
           const allInventory = await inventoryService.getAll(1, 100)
           lowStockCount = allInventory.items.filter(item => item.is_low_stock).length
         } catch (err) {
           console.warn('Failed to fetch inventory stats', err)
         }
 
-        // Fetch employees if manager
         let employeeCount = 0
         try {
           if (user?.roles.includes('Manager')) {
@@ -153,7 +144,6 @@ export default function DashboardPage() {
 
     const data: RevenueDataPoint[] = []
     
-    // Debug: log all montages and their statuses
     console.log('All montages for revenue:', allMontages.map(m => ({
       id: m.id,
       status: m.status,
@@ -171,13 +161,11 @@ export default function DashboardPage() {
       
       // Get montages for this month - count completed OR paid montages
       const monthMontages = allMontages.filter(m => {
-        // Consider montage for revenue if it's Completed OR has payment status "Paid"
         const isCompleted = m.status === 'Completed'
         const isPaid = m.payment_status === 'Paid'
         
         if (!isCompleted && !isPaid) return false
         
-        // Use completion_date if available, otherwise installation_date
         const dateStr = m.completion_date || m.installation_date
         if (!dateStr) return false
         
@@ -190,7 +178,6 @@ export default function DashboardPage() {
 
       const revenue = monthMontages.reduce((sum, m) => sum + (m.paid_amount || m.total_price || 0), 0)
       
-      // Format month name - for 1 month view, show full month name
       const monthName = date.toLocaleDateString(i18n.language === 'bg' ? 'bg-BG' : 'en-US', { 
         month: monthsBack <= 3 ? 'long' : 'short',
         year: monthsBack > 12 ? '2-digit' : undefined

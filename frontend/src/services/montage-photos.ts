@@ -100,7 +100,6 @@ export const montagePhotoService = {
    * Client-side validation before upload
    */
   validateFile(file: File, validationInfo: PhotoValidationInfo): { isValid: boolean; error?: string } {
-    // Check file size
     if (file.size > validationInfo.maxFileSizeBytes) {
       return {
         isValid: false,
@@ -108,7 +107,6 @@ export const montagePhotoService = {
       };
     }
 
-    // Check content type
     if (!validationInfo.allowedContentTypes.includes(file.type.toLowerCase())) {
       return {
         isValid: false,
@@ -116,7 +114,6 @@ export const montagePhotoService = {
       };
     }
 
-    // Check file extension
     const extension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
     if (!validationInfo.allowedExtensions.includes(extension)) {
       return {
@@ -136,7 +133,6 @@ export const montagePhotoService = {
     validationInfo: PhotoValidationInfo,
     currentPhotoCount: number = 0
   ): { isValid: boolean; error?: string } {
-    // Check total count
     const totalAfterUpload = currentPhotoCount + files.length;
     if (totalAfterUpload > validationInfo.maxPhotosPerMontage) {
       const remaining = validationInfo.maxPhotosPerMontage - currentPhotoCount;
@@ -146,7 +142,6 @@ export const montagePhotoService = {
       };
     }
 
-    // Validate each file
     for (const file of files) {
       const result = this.validateFile(file, validationInfo);
       if (!result.isValid) {

@@ -12,7 +12,6 @@ interface MontageLocationMapProps {
 export function MontageLocationMap({ address, city, clientName }: MontageLocationMapProps) {
   const { t } = useTranslation();
   
-  // Build full address string
   const fullAddress = [address, city].filter(Boolean).join(', ');
   
   if (!fullAddress) {
@@ -34,7 +33,6 @@ export function MontageLocationMap({ address, city, clientName }: MontageLocatio
     );
   }
   
-  // Encode address for Google Maps embed
   const encodedAddress = encodeURIComponent(fullAddress);
   const mapEmbedUrl = `https://www.google.com/maps?q=${encodedAddress}&output=embed`;
   const mapLinkUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;

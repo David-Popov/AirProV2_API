@@ -20,9 +20,9 @@ public interface IMontageService
     
     Task<MontageDto?> GetByIdWithAirConditionerAsync(Guid montageId);
     
-    Task<PagedList<MontageDto>> GetAllAsync(PageParameters pageParameters);
+    Task<PagedList<MontageDto>> GetAllAsync(MontageParameters parameters);
     
-    Task<PagedList<MontageDto>> GetByCompanyIdAsync(Guid companyId, PageParameters pageParameters);
+    Task<PagedList<MontageDto>> GetByCompanyIdAsync(Guid companyId, MontageParameters parameters);
     
     Task<PagedList<MontageDto>> GetByUserIdAsync(string userId, PageParameters pageParameters);
     

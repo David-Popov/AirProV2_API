@@ -6,9 +6,30 @@ import type {
   PagedList
 } from '@/types';
 
+
+export interface MontageFilters {
+  startDate?: string;
+  endDate?: string;
+  status?: string;
+  clientName?: string;
+  clientPhone?: string;
+}
+
 export const montageService = {
-  async getAll(pageNumber = 1, pageSize = 10): Promise<PagedList<Montage>> {
-    return apiClient.get<PagedList<Montage>>(`/Montages?PageNumber=${pageNumber}&PageSize=${pageSize}`);
+  async getAll(pageNumber = 1, pageSize = 10, filters?: MontageFilters): Promise<PagedList<Montage>> {
+    const params = new URLSearchParams();
+    params.append('PageNumber', pageNumber.toString());
+    params.append('PageSize', pageSize.toString());
+
+    if (filters) {
+      if (filters.startDate) params.append('startDate', filters.startDate);
+      if (filters.endDate) params.append('endDate', filters.endDate);
+      if (filters.status && filters.status !== 'All') params.append('status', filters.status);
+      if (filters.clientName) params.append('clientName', filters.clientName);
+      if (filters.clientPhone) params.append('clientPhone', filters.clientPhone);
+    }
+
+    return apiClient.get<PagedList<Montage>>(`/Montages?${params.toString()}`);
   },
 
   async getById(id: string): Promise<Montage> {

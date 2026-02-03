@@ -1,4 +1,3 @@
-// Auth Types
 
 export interface LoginRequest {
   email: string;
@@ -6,7 +5,6 @@ export interface LoginRequest {
 }
 
 export interface RegisterRequest {
-  // User Information
   email: string;
   password: string;
   confirm_password: string;
@@ -16,7 +14,6 @@ export interface RegisterRequest {
   phone_number?: string | null;
   address?: string | null;
   
-  // Company Information
   company_name: string;
   company_type: string;
   bulstat?: string | null;
@@ -32,6 +29,7 @@ export interface RegisterRequest {
 
 export interface AuthResponse {
   token: string;
+  refresh_token: string;
   token_expiration: string;
   user: AuthUser;
 }
@@ -49,6 +47,7 @@ export interface AuthUser {
   subscription_plan?: string | null;
   subscription_status?: string | null;
   trial_end_date?: string | null;
+  has_used_trial?: boolean;
   roles: string[];
 }
 
@@ -74,4 +73,11 @@ export interface Employee {
   roles: string[];
   is_active: boolean;
   created_at?: string | null;
+}
+
+export interface EmployeeLimits {
+  current_count: number;
+  max_count: number;
+  can_add_more: boolean;
+  subscription_plan: string;
 }

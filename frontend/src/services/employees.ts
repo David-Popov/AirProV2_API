@@ -1,7 +1,8 @@
 import { apiClient } from './api';
-import type { 
-  Employee, 
-  CreateEmployeeRequest
+import type {
+  Employee,
+  CreateEmployeeRequest,
+  EmployeeLimits
 } from '@/types';
 
 export const employeeService = {
@@ -38,5 +39,33 @@ export const employeeService = {
    */
   async delete(id: string): Promise<void> {
     return apiClient.delete(`/manager/employees/${id}`);
+  },
+
+  /**
+   * Get employee limits for current company
+   */
+  async getLimits(): Promise<EmployeeLimits> {
+    return apiClient.get<EmployeeLimits>('/manager/employee-limits');
+  },
+
+  /**
+   * Activate employee
+   */
+  async activate(id: string): Promise<void> {
+    return apiClient.post(`/manager/employees/${id}/activate`);
+  },
+
+  /**
+   * Deactivate employee
+   */
+  async deactivate(id: string): Promise<void> {
+    return apiClient.post(`/manager/employees/${id}/deactivate`);
+  },
+
+  /**
+   * Activate 6-month trial period for the company
+   */
+  async activateTrial(): Promise<void> {
+    return apiClient.post('/manager/activate-trial');
   }
 };

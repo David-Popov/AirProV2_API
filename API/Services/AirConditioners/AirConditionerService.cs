@@ -147,13 +147,50 @@ public class AirConditionerService : IAirConditionerService
         }
     }
 
-    public async Task<PagedList<AirConditionerDto>> GetAirConditionersAsync(PageParameters pageParameters)
+    public async Task<PagedList<AirConditionerDto>> GetAirConditionersAsync(AirConditionerParameters parameters)
     {
         try
         {
-            var query = _context.AirConditioners
-                .AsNoTracking()
-                .Select(ac => new AirConditionerDto
+            var query = _context.AirConditioners.AsNoTracking();
+
+            // Apply Filters
+            if (!string.IsNullOrWhiteSpace(parameters.SearchTerm))
+            {
+                var term = parameters.SearchTerm.ToLower().Trim();
+                query = query.Where(ac => 
+                    ac.Name.ToLower().Contains(term) || 
+                    ac.Brand.ToLower().Contains(term) || 
+                    ac.Model.ToLower().Contains(term));
+            }
+
+            if (!string.IsNullOrWhiteSpace(parameters.Brand))
+            {
+                var brand = parameters.Brand.ToLower().Trim();
+                query = query.Where(ac => ac.Brand.ToLower() == brand);
+            }
+
+            if (parameters.MinPrice.HasValue)
+            {
+                query = query.Where(ac => ac.Price >= parameters.MinPrice.Value);
+            }
+
+            if (parameters.MaxPrice.HasValue)
+            {
+                query = query.Where(ac => ac.Price <= parameters.MaxPrice.Value);
+            }
+
+            if (parameters.MinKilowatts.HasValue)
+            {
+                query = query.Where(ac => ac.Kilowatts >= parameters.MinKilowatts.Value);
+            }
+
+            if (parameters.MaxKilowatts.HasValue)
+            {
+                query = query.Where(ac => ac.Kilowatts <= parameters.MaxKilowatts.Value);
+            }
+
+            // Project to DTO
+            var dtoQuery = query.Select(ac => new AirConditionerDto
                 {
                     Id = ac.Id,
                     Name = ac.Name,
@@ -177,7 +214,8 @@ public class AirConditionerService : IAirConditionerService
                     MaxPipeLength = ac.MaxPipeLength,
                     MaxHeightDifference = ac.MaxHeightDifference,
                 });
-            return await PagedList<AirConditionerDto>.CreateAsync(query, pageParameters);
+
+            return await PagedList<AirConditionerDto>.CreateAsync(dtoQuery, parameters);
         }
         catch (Exception e)
         {

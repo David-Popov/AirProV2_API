@@ -40,7 +40,6 @@ import { COMPANY_TYPE_OPTIONS, SUBSCRIPTION_PLANS, SUBSCRIPTION_STATUSES } from 
 export default function CompaniesPage() {
   const { t } = useTranslation()
   
-  // State
   const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -48,7 +47,6 @@ export default function CompaniesPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   
-  // Modal states
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -58,7 +56,6 @@ export default function CompaniesPage() {
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
   const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([])
   
-  // Form state
   const [formData, setFormData] = useState<CreateCompanyRequest>({
     name: '',
     company_type: 'LLC',
@@ -80,7 +77,6 @@ export default function CompaniesPage() {
     end_date: ''
   })
   
-  // Load companies
   useEffect(() => {
     loadCompanies()
   }, [currentPage])

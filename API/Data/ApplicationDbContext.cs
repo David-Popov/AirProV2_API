@@ -29,6 +29,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<MontagePhoto> MontagePhotos { get; set; }
 
     public DbSet<InventoryAuditLog> InventoryAuditLogs { get; set; }
+
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -192,6 +194,21 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                   .WithMany()
                   .HasForeignKey(e => e.RelatedMontageId)
                   .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // RefreshToken configuration
+        builder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasDefaultValueSql("gen_random_uuid()");
+            
+            entity.HasIndex(e => e.Token).IsUnique().HasDatabaseName("idx_refresh_tokens_token");
+            entity.HasIndex(e => e.UserId).HasDatabaseName("idx_refresh_tokens_user_id");
+
+            entity.HasOne(e => e.ApplicationUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

@@ -1,13 +1,13 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useState } from 'react'
-import { 
-  LayoutDashboard, 
-  ClipboardList, 
-  Package, 
-  Users, 
-  Snowflake, 
-  Settings, 
+import { useState, useEffect } from 'react'
+import {
+  LayoutDashboard,
+  ClipboardList,
+  Package,
+  Users,
+  Snowflake,
+  Settings,
   LogOut,
   AlertCircle,
   Building2,
@@ -22,7 +22,7 @@ import { ModeToggle } from '@/components/mode-toggle'
 import { SubscriptionExpiredModal } from '@/components/SubscriptionExpiredModal'
 
 export default function DashboardLayout() {
-  const { user, logout } = useAuth()
+  const { user, logout, refreshUser } = useAuth()
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
@@ -33,14 +33,32 @@ export default function DashboardLayout() {
     navigate('/login')
   }
 
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refreshUser()
+      }
+    }
+
+    const handleFocus = () => {
+      refreshUser()
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [refreshUser])
+
   const isAdmin = user?.roles.includes('Admin')
   const isManager = user?.roles.includes('Manager')
   
-  // Check if subscription is expired (bypass for Admin users)
   const isSubscriptionExpired = !isAdmin && (
     user?.subscription_status === 'Expired' || 
     user?.subscription_status === 'Cancelled' ||
-    // Also check if trial has ended
     (user?.subscription_status === 'Trial' && user?.trial_end_date && new Date(user.trial_end_date) < new Date())
   )
 

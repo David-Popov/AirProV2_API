@@ -52,7 +52,6 @@ export default function EmployeeDetailsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [employeeMontages, setEmployeeMontages] = useState<Montage[]>([])
   
-  // Edit state
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState({
     first_name: '',
@@ -62,11 +61,9 @@ export default function EmployeeDetailsPage() {
   })
   const [isSaving, setIsSaving] = useState(false)
   
-  // Delete state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   
-  // Password reset state
   const [isResettingPassword, setIsResettingPassword] = useState(false)
   const [passwordForm, setPasswordForm] = useState({
     password: '',
@@ -88,14 +85,12 @@ export default function EmployeeDetailsPage() {
           address: data.address || ''
         })
         
-        // Try to fetch montages assigned to this employee
         try {
           const montagesRes = await montageService.getAll(1, 100)
           // Filter montages by user_id (if the montage has user assignment)
           const empMontages = montagesRes.items.filter(m => m.user_id === id)
           setEmployeeMontages(empMontages)
         } catch {
-          // Montages fetch failed, that's okay
           console.log('Could not fetch employee montages')
         }
       } catch (error) {
@@ -116,12 +111,10 @@ export default function EmployeeDetailsPage() {
 
     setIsSaving(true)
     try {
-      // Include email and other required fields from the existing employee object
       const updatePayload = {
         ...editForm,
         email: employee.email,
         middle_name: employee.middle_name,
-        // Ensure we don't sending null for optional fields if they are empty strings in form
         address: editForm.address || null,
         phone_number: editForm.phone_number || null,
       }
@@ -130,7 +123,6 @@ export default function EmployeeDetailsPage() {
       const updated = await employeeService.getById(employee.id)
       setEmployee(updated)
       
-      // If updating the currently logged in user, refresh the auth context
       if (user?.id === employee.id) {
         await refreshUser()
       }
@@ -187,13 +179,11 @@ export default function EmployeeDetailsPage() {
     e.preventDefault()
     if (!employee) return
 
-    // Validate passwords match
     if (passwordForm.password !== passwordForm.confirmPassword) {
       toast.error(t('validation.passwords_not_match', 'Passwords do not match'))
       return
     }
 
-    // Validate password strength
     const passwordErrors = validatePassword(passwordForm.password)
     if (passwordErrors.length > 0) {
       toast.error(passwordErrors.join('. '))

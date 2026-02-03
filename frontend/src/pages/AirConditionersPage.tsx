@@ -12,7 +12,8 @@ import {
   Loader2,
   Zap,
   MoreVertical,
-  AlertTriangle
+  AlertTriangle,
+  Filter
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -57,13 +58,21 @@ export default function AirConditionersPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
-  // Dialog State
+  const [activeFilters, setActiveFilters] = useState({
+    minPrice: 0,
+    maxPrice: 5000,
+    minKilowatts: 0,
+    maxKilowatts: 15,
+    brand: ''
+  })
+  const [tempFilters, setTempFilters] = useState(activeFilters)
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
+
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [currentItem, setCurrentItem] = useState<Partial<CreateAirConditionerRequest> & { id?: string }>({})
   const [isSaving, setIsSaving] = useState(false)
   
-  // Delete confirmation state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<AirConditioner | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -71,10 +80,17 @@ export default function AirConditionersPage() {
   const loadItems = async () => {
     setIsLoading(true)
     try {
-      // Use 12 items per page for cleaner grid (3 or 4 columns)
-      const response = await airConditionerService.getAll(page, 12)
+      const filters = {
+        searchTerm,
+        brand: activeFilters.brand,
+        minPrice: activeFilters.minPrice > 0 ? activeFilters.minPrice : undefined,
+        maxPrice: activeFilters.maxPrice < 5000 ? activeFilters.maxPrice : undefined,
+        minKilowatts: activeFilters.minKilowatts > 0 ? activeFilters.minKilowatts : undefined,
+        maxKilowatts: activeFilters.maxKilowatts < 15 ? activeFilters.maxKilowatts : undefined,
+      };
+
+      const response = await airConditionerService.getAll(page, 12, filters)
       setItems(response.items)
-      // Ensure backend returns correct total_pages based on pageSize=12
       setTotalPages(response.totalPages)
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
@@ -86,8 +102,44 @@ export default function AirConditionersPage() {
   }
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1)
+      loadItems()
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [searchTerm, activeFilters])
+
+  useEffect(() => {
     loadItems()
   }, [page])
+
+  const handleApplyFilters = () => {
+    setActiveFilters(tempFilters)
+    setIsFilterOpen(false)
+    setPage(1) // Reset to page 1 on filter application
+  }
+
+  const handleClearFilters = () => {
+    const defaults = {
+        minPrice: 0,
+        maxPrice: 5000,
+        minKilowatts: 0,
+        maxKilowatts: 15,
+        brand: ''
+    };
+    setTempFilters(defaults)
+    setActiveFilters(defaults)
+    setSearchTerm('')
+    setIsFilterOpen(false)
+  }
+
+  const getActiveFilterCount = () => {
+    let count = 0
+    if (activeFilters.brand) count++
+    if (activeFilters.minPrice > 0 || activeFilters.maxPrice < 5000) count++
+    if (activeFilters.minKilowatts > 0 || activeFilters.maxKilowatts < 15) count++
+    return count
+  }
 
   const handleCreate = () => {
     setIsEditing(false)
@@ -99,7 +151,6 @@ export default function AirConditionersPage() {
       price: 0,
       description: '',
       image_url: '',
-      // Technical Specifications - initialized as undefined
       pipe_size_liquid: undefined,
       pipe_size_gas: undefined,
       max_pipe_length: undefined,
@@ -129,19 +180,15 @@ export default function AirConditionersPage() {
       price: item.price,
       description: item.description,
       image_url: item.image_url,
-      // Technical Specifications - Piping
       pipe_size_liquid: item.pipe_size_liquid,
       pipe_size_gas: item.pipe_size_gas,
       max_pipe_length: item.max_pipe_length,
       max_height_difference: item.max_height_difference,
-      // Technical Specifications - Refrigerant
       refrigerant_type: item.refrigerant_type,
       factory_refrigerant_charge: item.factory_refrigerant_charge,
-      // Technical Specifications - Electrical
       power_supply_location: item.power_supply_location,
       cable_section: item.cable_section,
       recommended_fuse: item.recommended_fuse,
-      // Technical Specifications - Dimensions & Weight
       indoor_dimensions: item.indoor_dimensions,
       outdoor_dimensions: item.outdoor_dimensions,
       weight_indoor: item.weight_indoor,
@@ -153,7 +200,6 @@ export default function AirConditionersPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Client-side validation
     const validationErrors: string[] = []
     
     if (!currentItem.name?.trim()) {
@@ -181,19 +227,15 @@ export default function AirConditionersPage() {
         price: currentItem.price,
         description: currentItem.description,
         image_url: currentItem.image_url || '',
-        // Technical Specifications - Piping
         pipe_size_liquid: currentItem.pipe_size_liquid,
         pipe_size_gas: currentItem.pipe_size_gas,
         max_pipe_length: currentItem.max_pipe_length,
         max_height_difference: currentItem.max_height_difference,
-        // Technical Specifications - Refrigerant
         refrigerant_type: currentItem.refrigerant_type,
         factory_refrigerant_charge: currentItem.factory_refrigerant_charge,
-        // Technical Specifications - Electrical
         power_supply_location: currentItem.power_supply_location,
         cable_section: currentItem.cable_section,
         recommended_fuse: currentItem.recommended_fuse,
-        // Technical Specifications - Dimensions & Weight
         indoor_dimensions: currentItem.indoor_dimensions,
         outdoor_dimensions: currentItem.outdoor_dimensions,
         weight_indoor: currentItem.weight_indoor,
@@ -242,14 +284,6 @@ export default function AirConditionersPage() {
     }
   }
 
-  const renderItems = searchTerm 
-    ? items.filter(i => 
-        i.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        i.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        i.model?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : items
-
   return (
     <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
       {/* Header */}
@@ -269,7 +303,7 @@ export default function AirConditionersPage() {
         )}
       </div>
 
-      {/* Search */}
+      {/* Search and Filter */}
       <div className="flex gap-4 mb-6">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -280,20 +314,109 @@ export default function AirConditionersPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        
+        <Button 
+            variant="outline" 
+            className="hidden lg:flex relative border-border hover:bg-accent text-foreground"
+            onClick={() => setIsFilterOpen(true)}
+        >
+          <Filter className="w-4 h-4 mr-2" />
+          {t('common.filter', 'Filter')}
+          {getActiveFilterCount() > 0 && (
+            <span className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-primary text-primary-foreground text-[10px]">
+              {getActiveFilterCount()}
+            </span>
+          )}
+        </Button>
       </div>
+
+      {/* Filter Dialog */}
+      <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+        <DialogContent className="bg-card border-border text-card-foreground sm:max-w-[425px] overflow-y-auto max-h-[85vh]">
+          <DialogHeader>
+            <DialogTitle>{t('air_conditioners.filter_title', 'Filter Air Conditioners')}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {/* Brand Filter */}
+            <div className="grid gap-2">
+              <Label>{t('air_conditioners.brand')}</Label>
+              <Input 
+                placeholder={t('air_conditioners.brand_placeholder', 'e.g. Daikin')}
+                value={tempFilters.brand}
+                onChange={(e) => setTempFilters({...tempFilters, brand: e.target.value})}
+                className="bg-background border-input"
+              />
+            </div>
+
+            {/* Price Range */}
+            <div className="space-y-2">
+              <Label>{t('air_conditioners.price_range')}</Label>
+              <div className="flex items-center gap-2">
+                  <Input 
+                    type="number"
+                    placeholder="Min"
+                    value={tempFilters.minPrice}
+                    onChange={(e) => setTempFilters({...tempFilters, minPrice: Number(e.target.value)})}
+                    className="bg-background border-input"
+                  />
+                  <span className="text-muted-foreground">-</span>
+                  <Input 
+                    type="number"
+                    placeholder="Max"
+                    value={tempFilters.maxPrice}
+                    onChange={(e) => setTempFilters({...tempFilters, maxPrice: Number(e.target.value)})}
+                    className="bg-background border-input"
+                  />
+              </div>
+            </div>
+
+            {/* Power Range */}
+            <div className="space-y-2">
+              <Label>{t('air_conditioners.power_range')} (kW)</Label>
+               <div className="flex items-center gap-2">
+                  <Input 
+                    type="number"
+                    placeholder="Min"
+                    step="0.1"
+                    value={tempFilters.minKilowatts}
+                    onChange={(e) => setTempFilters({...tempFilters, minKilowatts: Number(e.target.value)})}
+                    className="bg-background border-input"
+                  />
+                  <span className="text-muted-foreground">-</span>
+                  <Input 
+                    type="number"
+                    placeholder="Max"
+                    step="0.1"
+                    value={tempFilters.maxKilowatts}
+                    onChange={(e) => setTempFilters({...tempFilters, maxKilowatts: Number(e.target.value)})}
+                    className="bg-background border-input"
+                  />
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="flex-col sm:flex-col gap-2">
+            <Button onClick={handleApplyFilters} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+              {t('common.apply_filters', 'Apply Filters')}
+            </Button>
+            <Button variant="outline" onClick={handleClearFilters} className="w-full border-border hover:bg-accent text-foreground">
+              {t('common.clear_filters', 'Clear Filters')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Grid Content */}
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
-      ) : renderItems.length === 0 ? (
+      ) : items.length === 0 ? (
         <div className="text-center text-muted-foreground py-12">
           {t('air_conditioners.no_acs')}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {renderItems.map((item) => (
+          {items.map((item) => (
             <Card 
               key={item.id} 
               className="glass-card overflow-hidden hover:border-primary/50 transition-colors cursor-pointer group"
@@ -355,7 +478,7 @@ export default function AirConditionersPage() {
       )}
 
      {/* Pagination */}
-      <div className="flex items-center justify-end space-x-2 py-8">
+      <div className="flex items-center justify-center space-x-2 py-8">
         <Button
           variant="outline"
           size="sm"
@@ -678,6 +801,21 @@ export default function AirConditionersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Mobile Filter FAB - Bubble */}
+      <div className="lg:hidden fixed bottom-6 right-6 z-50">
+        <Button 
+            className="h-14 w-14 rounded-full shadow-lg shadow-primary/30 bg-primary hover:bg-primary/90 text-primary-foreground p-0 flex items-center justify-center transform transition-transform hover:scale-105 active:scale-95"
+            onClick={() => setIsFilterOpen(true)}
+        >
+            <Filter className="w-6 h-6" />
+            {getActiveFilterCount() > 0 && (
+                <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full border-2 border-background flex items-center justify-center text-[10px] font-bold">
+                    {getActiveFilterCount()}
+                </span>
+            )}
+        </Button>
+      </div>
     </div>
   )
 }

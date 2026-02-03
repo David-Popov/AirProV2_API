@@ -52,7 +52,6 @@ export default function MontageDetailsPage() {
   const [montage, setMontage] = useState<Montage | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   
-  // Materials state
   const [isAddingMaterial, setIsAddingMaterial] = useState(false)
   const [availableItems, setAvailableItems] = useState<InventoryItem[]>([])
   const [selectedItemId, setSelectedItemId] = useState('')
@@ -91,12 +90,10 @@ export default function MontageDetailsPage() {
     fetchData()
   }, [id])
 
-  // Load available inventory items when dialog opens
   useEffect(() => {
     if (isAddingMaterial && availableItems.length === 0) {
       const fetchItems = async () => {
         try {
-          // Get all items (pagination might be needed later if list is huge)
           const result = await inventoryService.getAll(1, 100)
           setAvailableItems(result.items.filter(i => (i.quantity ?? 0) > 0))
         } catch (error) {
@@ -122,13 +119,11 @@ export default function MontageDetailsPage() {
       toast.success(t('montages.material_added'))
       setIsAddingMaterial(false)
       
-      // Reset form
       setSelectedItemId('')
       setQuantity(1)
       setNotes('')
       setMaterialSearch('')
       
-      // Refresh montage data to show new material
       const updatedMontage = await montageService.getById(montage.id)
       setMontage(updatedMontage)
     } catch (error: any) {
@@ -146,7 +141,6 @@ export default function MontageDetailsPage() {
       await montageInventoryService.removeMaterial(materialId)
       toast.success(t('montages.material_removed', 'Material removed successfully'))
       
-      // Refresh montage data
       const updatedMontage = await montageService.getById(montage.id)
       setMontage(updatedMontage)
     } catch (error) {
@@ -162,7 +156,6 @@ export default function MontageDetailsPage() {
       await montageInventoryService.updateQuantity(editingMaterial.id, editQuantity)
       toast.success(t('montages.material_updated'))
       setEditingMaterial(null)
-      // Refresh montage data
       const updatedMontage = await montageService.getById(montage.id)
       setMontage(updatedMontage)
     } catch (error) {
@@ -186,7 +179,6 @@ export default function MontageDetailsPage() {
       const statusLabel = getStatusLabel(newStatus)
       toast.success(t('montages.status_changed_to', { status: statusLabel }))
       
-      // Refresh data
       const updated = await montageService.getById(montage.id)
       setMontage(updated)
     } catch (error: any) {
@@ -209,7 +201,6 @@ export default function MontageDetailsPage() {
       
       toast.success(message)
       
-      // Refresh data
       const updated = await montageService.getById(montage.id)
       setMontage(updated)
     } catch (error: any) {
@@ -583,7 +574,6 @@ export default function MontageDetailsPage() {
           montageId={montage.id}
           photos={montage.photos}
           onPhotosChange={async () => {
-            // Refresh montage data to get updated photos
             const updatedMontage = await montageService.getById(montage.id)
             setMontage(updatedMontage)
           }}

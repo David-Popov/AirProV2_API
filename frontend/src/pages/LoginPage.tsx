@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Snowflake, Mail, Lock, Loader2, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,7 @@ import { ModeToggle } from '@/components/mode-toggle'
 export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { t } = useTranslation()
   const { login, isAuthenticated } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
@@ -19,7 +21,6 @@ export default function LoginPage() {
     password: '',
   })
 
-  // Redirect if already authenticated
   if (isAuthenticated) {
     const from = (location.state as { from?: Location })?.from?.pathname || '/dashboard'
     navigate(from, { replace: true })
@@ -35,13 +36,12 @@ export default function LoginPage() {
         password: formData.password,
       })
       
-      toast.success('Login successful!')
+      toast.success(t('auth.login_success'))
       
-      // Redirect to previous page or dashboard
       const from = (location.state as { from?: Location })?.from?.pathname || '/dashboard'
       navigate(from, { replace: true })
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Login failed')
+      toast.error(error instanceof Error ? error.message : t('auth.login_failed'))
     } finally {
       setIsLoading(false)
     }
@@ -71,15 +71,15 @@ export default function LoginPage() {
 
         <Card className="bg-card/80 backdrop-blur-xl border-border/50 shadow-2xl shadow-primary/5">
           <CardHeader className="text-center pb-2">
-            <CardTitle className="text-2xl font-bold text-foreground">Welcome Back</CardTitle>
+            <CardTitle className="text-2xl font-bold text-foreground">{t('auth.welcome_back')}</CardTitle>
             <CardDescription className="text-muted-foreground">
-              Sign in to your account to continue
+              {t('auth.sign_in_description')}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-foreground font-medium">Email</Label>
+                <Label htmlFor="email" className="text-foreground font-medium">{t('auth.email')}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -94,7 +94,7 @@ export default function LoginPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-foreground font-medium">Password</Label>
+                <Label htmlFor="password" className="text-foreground font-medium">{t('auth.password')}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -116,11 +116,11 @@ export default function LoginPage() {
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Signing in...
+                    {t('auth.signing_in')}
                   </>
                 ) : (
                   <>
-                    Sign In
+                    {t('auth.sign_in')}
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </>
                 )}
@@ -129,9 +129,9 @@ export default function LoginPage() {
 
             <div className="mt-6 text-center">
               <p className="text-muted-foreground">
-                Don't have an account?{' '}
+                {t('auth.dont_have_account')}{' '}
                 <Link to="/register" className="text-primary hover:text-primary/80 font-medium transition-colors">
-                  Register
+                  {t('auth.register_link')}
                 </Link>
               </p>
             </div>
@@ -141,7 +141,7 @@ export default function LoginPage() {
         {/* Back to home */}
         <div className="mt-6 text-center">
           <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            ← Back to home
+            {t('auth.back_to_home')}
           </Link>
         </div>
       </div>

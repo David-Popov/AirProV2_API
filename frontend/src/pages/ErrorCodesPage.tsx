@@ -41,7 +41,6 @@ export default function ErrorCodesPage() {
   const { user } = useAuth()
   const isAdmin = user?.roles.includes('Admin')
   
-  // State
   const [errorCodes, setErrorCodes] = useState<ErrorCode[]>([])
   const [airConditioners, setAirConditioners] = useState<AirConditioner[]>([])
   const [loading, setLoading] = useState(true)
@@ -51,14 +50,12 @@ export default function ErrorCodesPage() {
   const [totalCount, setTotalCount] = useState(0)
   const [filterAcId, setFilterAcId] = useState<string>('all')
   
-  // Modal states
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [selectedErrorCode, setSelectedErrorCode] = useState<ErrorCode | null>(null)
   
-  // Form state
   const [formData, setFormData] = useState<CreateErrorCodeRequest>({
     error_code: '',
     error_name: '',
@@ -68,7 +65,6 @@ export default function ErrorCodesPage() {
     severity: ''
   })
   
-  // Load error codes and air conditioners
   useEffect(() => {
     loadData()
   }, [currentPage])
@@ -95,7 +91,6 @@ export default function ErrorCodesPage() {
       setErrorCodes([])
       setTotalPages(1)
       setTotalCount(0)
-      // Only show toast if component is mounted and not initial load
       if (currentPage > 1) {
         toast.error(t('error_codes.error_loading', 'Failed to load error codes'))
       }

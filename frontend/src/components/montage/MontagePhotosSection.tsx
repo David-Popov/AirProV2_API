@@ -99,7 +99,6 @@ export function MontagePhotosSection({
 
     setSelectedFiles(files);
     setShowUploadDialog(true);
-    // Reset input value to allow selecting the same file again
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }

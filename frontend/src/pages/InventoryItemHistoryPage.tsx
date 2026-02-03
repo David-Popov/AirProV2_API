@@ -68,19 +68,15 @@ export default function InventoryItemHistoryPage() {
     
     setIsLoading(true);
     try {
-      // Load item details
       if (!item) {
         try {
           const itemData = await inventoryService.getById(id);
           setItem(itemData);
         } catch (error) {
-          // If item is not found (e.g. hard deleted), we might still want to show history if possible,
-          // but usually getById would 404. For now assume we handle active/archived items.
           console.error("Failed to load item", error);
         }
       }
 
-      // Load history
       const historyData = await inventoryAuditService.getItemHistory(id, page, pageSize);
       setLogs(historyData.items);
       setTotalPages(historyData.total_pages);

@@ -99,6 +99,31 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// Refresh access token
+    /// </summary>
+    [HttpPost("refresh-token")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<AuthResponseDto>> RefreshToken([FromBody] RefreshTokenRequestDto dto)
+    {
+        try
+        {
+            var result = await _authService.RefreshTokenAsync(dto.Token, dto.RefreshToken);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, new { message = "An error occurred during token refresh" });
+        }
+    }
+
+    /// <summary>
     /// Get current authenticated user
     /// </summary>
     /// <remarks>

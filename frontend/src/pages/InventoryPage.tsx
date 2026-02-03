@@ -62,18 +62,15 @@ export default function InventoryPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [lowStockItems, setLowStockItems] = useState<InventoryItem[]>([])
 
-  // Dialog State
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [currentItem, setCurrentItem] = useState<Partial<CreateInventoryItemRequest> & { id?: string }>({})
   const [isSaving, setIsSaving] = useState(false)
   
-  // Delete confirmation state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Archive confirmation state
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
   const [itemToArchive, setItemToArchive] = useState<InventoryItem | null>(null)
   const [isArchiving, setIsArchiving] = useState(false)
@@ -88,7 +85,6 @@ export default function InventoryPage() {
       setItems(response.items)
       setTotalPages(response.totalPages)
 
-      // Always fetch low stock items for the alert window
       const lowStockRes = await inventoryService.getLowStock(1, 100)
       setLowStockItems(lowStockRes.items)
     } catch (error) {
@@ -135,7 +131,6 @@ export default function InventoryPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Client-side validation
     const validationErrors: string[] = []
     
     if (!currentItem.name?.trim()) {

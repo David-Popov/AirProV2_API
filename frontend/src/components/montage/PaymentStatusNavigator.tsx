@@ -57,10 +57,8 @@ export function PaymentStatusNavigator({
     const nextStatus = getNextStatus()
     
     if (nextStatus === 'Paid') {
-      // Автоматично задаваме пълната сума
       onStatusChange(nextStatus, totalPrice)
     } else if (nextStatus === 'PartiallyPaid') {
-      // Показваме диалог за въвеждане на сума
       setNextStatusTarget(nextStatus)
       setTempAmount(paidAmount || 0)
       setShowAmountDialog(true)
@@ -75,7 +73,6 @@ export function PaymentStatusNavigator({
     if (prevStatus === 'NotPaid') {
       onStatusChange(prevStatus, 0)
     } else if (prevStatus === 'PartiallyPaid') {
-      // Показваме диалог за въвеждане на сума
       setNextStatusTarget(prevStatus)
       setTempAmount(paidAmount || 0)
       setShowAmountDialog(true)

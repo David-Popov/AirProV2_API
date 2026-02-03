@@ -34,39 +34,36 @@ import type { Company } from '@/types'
 import { SubscriptionSection } from '@/components/subscription'
 
 export default function SettingsPage() {
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
   const { t, i18n } = useTranslation()
   const { theme, setTheme } = useTheme()
   const [searchParams, setSearchParams] = useSearchParams()
-  
+
   const [company, setCompany] = useState<Company | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'profile' | 'company' | 'subscription' | 'preferences'>('profile')
-  
-  // Notification preferences (local state for demo)
+
   const [notifications, setNotifications] = useState({
     emailMontages: true,
     emailLowStock: true,
     emailSubscription: true,
     pushEnabled: false
   })
-  
-  // Handle URL params for tab switching
+
   useEffect(() => {
     const tab = searchParams.get('tab')
     if (tab && ['profile', 'company', 'subscription', 'preferences'].includes(tab)) {
       setActiveTab(tab as typeof activeTab)
     }
-    
-    // Show success message if coming from Stripe
+
     const success = searchParams.get('success')
     if (success === 'true') {
       toast.success(t('subscription.payment_success'))
-      // Clean up URL
+      refreshUser()
       searchParams.delete('success')
       setSearchParams(searchParams)
     }
-  }, [searchParams, t])
+  }, [searchParams, t, refreshUser])
   
   useEffect(() => {
     if (user?.company_id) {

@@ -1,4 +1,3 @@
-// Company Types
 
 import type { CompanyType } from './common';
 

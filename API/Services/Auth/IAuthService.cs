@@ -8,6 +8,8 @@ public interface IAuthService
     
     Task<AuthResponseDto> LoginAsync(LoginDto dto);
     
+    Task<AuthResponseDto> RefreshTokenAsync(string token, string refreshToken);
+
     Task<AuthUserDto?> GetCurrentUserAsync(string userId);
     
     Task<bool> UserExistsAsync(string email);
@@ -20,6 +22,12 @@ public interface IAuthService
     Task<EmployeeDto?> GetEmployeeByIdAsync(string employeeId, Guid companyId);
     
     Task DeleteEmployeeAsync(string employeeId, Guid companyId);
-    
+
     Task<EmployeeDto> UpdateEmployeeAsync(string employeeId, CreateEmployeeDto dto, Guid companyId);
+
+    Task<IList<string>> GetUserRolesAsync(string userId);
+
+    Task<int> GetActiveEmployeeCountAsync(Guid companyId);
+
+    Task<bool> IsManagerAsync(string userId);
 }

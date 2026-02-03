@@ -25,6 +25,9 @@ public class ApplicationUser : IdentityUser
     [MaxLength(80)]
     public string Address { get; set; } = string.Empty;
 
+    [Column("is_active")]
+    public bool IsActive { get; set; } = true;
+
     [ForeignKey("CompanyId")]
     public virtual Company? Company { get; set; }
 }

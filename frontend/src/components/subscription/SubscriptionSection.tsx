@@ -1,24 +1,27 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { 
-  Check, 
-  Loader2, 
+import {
+  Check,
+  Loader2,
   Sparkles,
   CreditCard,
   Settings as SettingsIcon,
-  ArrowRight
+  ArrowRight,
+  Users
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
 import { toast } from 'sonner'
-import { stripeService } from '@/services'
-import type { StripePlan, StripeSubscriptionInfo } from '@/types'
+import { stripeService, employeeService } from '@/services'
+import type { StripePlan, StripeSubscriptionInfo, EmployeeLimits } from '@/types'
 
 export default function SubscriptionSection() {
   const { t } = useTranslation()
   const [plan, setPlan] = useState<StripePlan | null>(null)
   const [subscriptionInfo, setSubscriptionInfo] = useState<StripeSubscriptionInfo | null>(null)
+  const [employeeLimits, setEmployeeLimits] = useState<EmployeeLimits | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isRedirecting, setIsRedirecting] = useState(false)
 
@@ -29,12 +32,14 @@ export default function SubscriptionSection() {
   const fetchData = async () => {
     setIsLoading(true)
     try {
-      const [planData, statusData] = await Promise.all([
+      const [planData, statusData, limitsData] = await Promise.all([
         stripeService.getPlan(),
-        stripeService.getSubscriptionStatus()
+        stripeService.getSubscriptionStatus(),
+        employeeService.getLimits().catch(() => null) // Don't fail if limits fetch fails
       ])
       setPlan(planData)
       setSubscriptionInfo(statusData)
+      setEmployeeLimits(limitsData)
     } catch (error) {
       console.error('Failed to fetch subscription data:', error)
       toast.error(t('common.unknown_error'))
@@ -131,6 +136,51 @@ export default function SubscriptionSection() {
                   {t('subscription.manage')}
                 </Button>
               )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Employee Limits Card */}
+      {employeeLimits && (
+        <Card className="glass-card border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              {t('subscription.employee_limits', 'Employee Limits')}
+            </CardTitle>
+            <CardDescription>
+              {t('subscription.employee_limits_description', 'Track your employee usage based on your subscription plan')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">
+                {t('subscription.employees_used', 'Employees Used')}
+              </span>
+              <span className="font-semibold text-foreground">
+                {employeeLimits.current_count} / {employeeLimits.max_count === 999 ? t('common.unlimited', 'Unlimited') : employeeLimits.max_count}
+              </span>
+            </div>
+
+            {employeeLimits.max_count !== 999 && (
+              <div className="space-y-2">
+                <Progress
+                  value={(employeeLimits.current_count / employeeLimits.max_count) * 100}
+                  className="h-2"
+                />
+                {!employeeLimits.can_add_more && (
+                  <p className="text-sm text-orange-500 dark:text-orange-400">
+                    {t('subscription.employee_limit_reached', 'You have reached your employee limit. Upgrade to add more employees.')}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="pt-2 border-t border-border">
+              <p className="text-sm text-muted-foreground">
+                {t('subscription.current_plan')}: <span className="font-medium text-foreground">{employeeLimits.subscription_plan}</span>
+              </p>
             </div>
           </CardContent>
         </Card>

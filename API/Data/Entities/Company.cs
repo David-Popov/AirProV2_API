@@ -71,6 +71,9 @@ public class Company
     [Column("is_subscription_active")]
     public bool? IsSubscriptionActive { get; set; } = true;
 
+    [Column("has_used_trial")]
+    public bool HasUsedTrial { get; set; } = false;
+
     [Column("is_active")]
     public bool? IsActive { get; set; } = true;
 
