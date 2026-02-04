@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using API.Models;
+using EntityFrameworkCore.EncryptColumn.Attribute;
 
 namespace API.Data.Entities;
 
@@ -19,19 +20,22 @@ public class Company
     [Column("company_type")]
     public CompanyType CompanyType { get; set; } = CompanyType.SoleProprietorship;
 
+    [EncryptColumn]
     [Column("bulstat")]
-    [MaxLength(50)]
+    [MaxLength(200)]
     public string? Bulstat { get; set; }
 
+    [EncryptColumn]
     [Column("vat_number")]
-    [MaxLength(50)]
+    [MaxLength(200)]
     public string? VatNumber { get; set; }
 
     [Column("is_vat_registered")]
     public bool? IsVatRegistered { get; set; } = false;
 
+    [EncryptColumn]
     [Column("address")]
-    [MaxLength(80)]
+    [MaxLength(300)]
     public string? Address { get; set; }
 
     [Column("city")]
@@ -42,12 +46,14 @@ public class Company
     [MaxLength(15)]
     public string? PostalCode { get; set; }
 
+    [EncryptColumn]
     [Column("phone")]
-    [MaxLength(20)]
+    [MaxLength(150)]
     public string? Phone { get; set; }
 
+    [EncryptColumn]
     [Column("email")]
-    [MaxLength(50)]
+    [MaxLength(200)]
     public string? Email { get; set; }
 
     [Column("is_company_owner")]

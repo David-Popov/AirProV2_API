@@ -602,7 +602,20 @@ public class AuthService : IAuthService
                 throw new InvalidOperationException("Cannot delete a Manager. Transfer ownership first.");
             }
 
-            await _userManager.DeleteAsync(user);
+            user.FirstName = "DELETED_USER";
+            user.MiddleName = string.Empty;
+            user.LastName = string.Empty;
+            user.Email = $"deleted_{user.Id}@deleted.local";
+            user.NormalizedEmail = user.Email.ToUpperInvariant();
+            user.UserName = $"deleted_{user.Id}";
+            user.NormalizedUserName = user.UserName.ToUpperInvariant();
+            user.PhoneNumber = null;
+            user.Address = string.Empty;
+            user.IsActive = false;
+            user.IsDeleted = true;
+            user.DeletedAt = DateTime.UtcNow;
+
+            await _userManager.UpdateAsync(user);
         }
         catch (Exception e)
         {

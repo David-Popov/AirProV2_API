@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using API.Models;
+using EntityFrameworkCore.EncryptColumn.Attribute;
 
 namespace API.Data.Entities;
 
@@ -20,25 +21,30 @@ public class Montage
     [Column("air_conditioner_id")]
     public Guid? AirConditionerId { get; set; }
 
+    [EncryptColumn]
     [Required]
     [Column("client_name")]
-    [MaxLength(60)]
+    [MaxLength(200)]
     public string ClientName { get; set; } = string.Empty;
 
+    [EncryptColumn]
     [Column("client_phone")]
-    [MaxLength(20)]
+    [MaxLength(150)]
     public string? ClientPhone { get; set; } = string.Empty;
 
+    [EncryptColumn]
     [Column("client_email")]
-    [MaxLength(60)]
+    [MaxLength(200)]
     public string? ClientEmail { get; set; } = string.Empty;
 
+    [EncryptColumn]
     [Column("client_address")]
-    [MaxLength(150)]
+    [MaxLength(400)]
     public string? ClientAddress { get; set; } = string.Empty;
 
+    [EncryptColumn]
     [Column("client_city")]
-    [MaxLength(60)]
+    [MaxLength(200)]
     public string? ClientCity { get; set; } = string.Empty;
 
     [Required]
