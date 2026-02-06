@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/context'
-import { 
-  ChevronLeft, 
+import {
   Loader2,
   User,
   Phone,
@@ -17,6 +16,7 @@ import {
   AlertTriangle,
   KeyRound
 } from 'lucide-react'
+import { BackButton } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -230,16 +230,7 @@ export default function EmployeeDetailsPage() {
   return (
     <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
       {/* Back Button */}
-      <div className="mb-4">
-        <Button 
-          variant="outline" 
-          size="icon" 
-          onClick={() => navigate('/employees')} 
-          className="bg-card text-muted-foreground hover:text-foreground shadow-sm"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </Button>
-      </div>
+      <BackButton onClick={() => navigate('/employees')} />
 
       {/* Header */}
       <div className="mb-6 sm:mb-8">

@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { 
-  ChevronLeft, 
+import {
   Loader2,
   Zap,
   AlertTriangle,
   Snowflake,
   Info
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { BackButton } from '@/components/shared'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -71,18 +70,8 @@ export default function AirConditionerDetailsPage() {
 
   return (
     <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
-      {/* Back Button - Top Left at same level as hamburger */}
       {/* Back Button */}
-      <div className="mb-4">
-        <Button 
-          variant="outline" 
-          size="icon"
-          onClick={() => navigate('/air-conditioners')}
-          className="bg-card text-muted-foreground hover:text-foreground shadow-sm"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </Button>
-      </div>
+      <BackButton onClick={() => navigate('/air-conditioners')} />
 
       {/* Header */}
       <div className="mb-6 sm:mb-8">

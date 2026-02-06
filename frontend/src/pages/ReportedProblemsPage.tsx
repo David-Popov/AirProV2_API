@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { 
-  MessageSquareWarning, 
+import {
+  MessageSquareWarning,
   Eye,
   Image as ImageIcon,
   User,
   Tag,
-  Loader2,
   Check
 } from 'lucide-react'
+import { LoadingState, EmptyState, ConfirmDialog } from '@/components/shared'
 import {
   Table,
   TableBody,
@@ -25,16 +25,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -52,6 +42,7 @@ export default function ReportedProblemsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [problemToDelete, setProblemToDelete] = useState<ReportedProblem | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null)
 
   useEffect(() => {
     loadProblems()
@@ -91,9 +82,28 @@ export default function ReportedProblemsPage() {
     }
   }
 
-  const handleViewDetails = (problem: ReportedProblem) => {
+  const handleViewDetails = async (problem: ReportedProblem) => {
     setSelectedProblem(problem)
     setIsDetailOpen(true)
+
+    if (problem.hasScreenshot) {
+      try {
+        const url = await problemReportsService.getScreenshotBlobUrl(problem.id)
+        setScreenshotUrl(url)
+      } catch {
+        setScreenshotUrl(null)
+      }
+    }
+  }
+
+  const handleDetailClose = (open: boolean) => {
+    setIsDetailOpen(open)
+    if (!open) {
+      if (screenshotUrl) {
+        URL.revokeObjectURL(screenshotUrl)
+        setScreenshotUrl(null)
+      }
+    }
   }
 
   const handleDeleteClick = (problem: ReportedProblem) => {
@@ -162,14 +172,9 @@ export default function ReportedProblemsPage() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-              </div>
+              <LoadingState />
             ) : problems.length === 0 ? (
-              <div className="text-center py-12">
-                <MessageSquareWarning className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">{t('problem_reports.no_problems')}</p>
-              </div>
+              <EmptyState icon={MessageSquareWarning} message={t('problem_reports.no_problems')} />
             ) : (
               <div className="overflow-x-auto">
                 <Table>
@@ -235,7 +240,7 @@ export default function ReportedProblemsPage() {
         </Card>
 
         {/* Detail Dialog */}
-        <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+        <Dialog open={isDetailOpen} onOpenChange={handleDetailClose}>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -281,18 +286,24 @@ export default function ReportedProblemsPage() {
                       <ImageIcon className="w-4 h-4" />
                       {t('problem_reports.screenshot')}
                     </h4>
-                    <img
-                      src={problemReportsService.getScreenshotUrl(selectedProblem.id)}
-                      alt="Screenshot"
-                      className="rounded-lg border max-h-80 w-full object-contain bg-muted/30"
-                    />
+                    {screenshotUrl ? (
+                      <img
+                        src={screenshotUrl}
+                        alt="Screenshot"
+                        className="rounded-lg border max-h-80 w-full object-contain bg-muted/30"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-40 bg-muted/30 rounded-lg">
+                        <LoadingState />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             )}
 
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDetailOpen(false)}>
+              <Button variant="outline" onClick={() => handleDetailClose(false)}>
                 {t('common.close')}
               </Button>
               <Button
@@ -311,38 +322,17 @@ export default function ReportedProblemsPage() {
         </Dialog>
 
         {/* Delete Confirmation Dialog */}
-        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t('problem_reports.confirm_reviewed_title')}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {t('problem_reports.confirm_reviewed_description')}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={isDeleting}>
-                {t('common.cancel')}
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleConfirmDelete}
-                disabled={isDeleting}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                {isDeleting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {t('common.loading')}
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-4 h-4 mr-2" />
-                    {t('problem_reports.confirm_mark_reviewed')}
-                  </>
-                )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <ConfirmDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          onConfirm={handleConfirmDelete}
+          title={t('problem_reports.confirm_reviewed_title')}
+          description={t('problem_reports.confirm_reviewed_description')}
+          confirmLabel={t('problem_reports.confirm_mark_reviewed')}
+          cancelLabel={t('common.cancel')}
+          isLoading={isDeleting}
+          icon={Check}
+        />
       </div>
     </main>
   )

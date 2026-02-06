@@ -1,18 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { 
-  ArrowLeft, 
-  Package, 
-  User, 
-  Clock, 
+import {
+  Package,
+  User,
+  Clock,
   ArrowRight,
   Archive,
   Wrench,
   PackagePlus,
   PackageMinus,
   ArchiveRestore,
-  Loader2    
+  Loader2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { bg, enUS } from 'date-fns/locale';
@@ -20,6 +19,7 @@ import { bg, enUS } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { BackButton } from '@/components/shared';
 
 import { inventoryService, inventoryAuditService } from '@/services';
 import type { InventoryItem, InventoryAuditLog } from '@/types/inventory';
@@ -123,14 +123,7 @@ export default function InventoryItemHistoryPage() {
     <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
       {/* Header */}
       <div className="mb-6 sm:mb-8">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate('/inventory')} 
-          className="mb-4 pl-0 hover:pl-2 transition-all"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          {t('common.back', 'Back to Inventory')}
-        </Button>
+        <BackButton onClick={() => navigate('/inventory')} label={t('common.back', 'Back to Inventory')} />
         
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>

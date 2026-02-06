@@ -1,19 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { 
-  AlertCircle, 
-  Plus, 
-  Search, 
-  Edit2, 
+import {
+  AlertCircle,
+  Plus,
+  Search,
+  Edit2,
   Trash2,
-  ChevronLeft,
-  ChevronRight,
   Snowflake,
   Lightbulb
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageHeader, Pagination, EmptyState, StatCard } from '@/components/shared'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -211,58 +210,43 @@ export default function ErrorCodesPage() {
 
   return (
     <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t('error_codes.title', 'Error Codes')}</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
-            {t('error_codes.subtitle', 'Manage air conditioner error codes and solutions')}
-          </p>
-        </div>
-        {isAdmin && (
-          <Button 
+      <PageHeader
+        title={t('error_codes.title', 'Error Codes')}
+        subtitle={t('error_codes.subtitle', 'Manage air conditioner error codes and solutions')}
+        action={isAdmin ? (
+          <Button
             onClick={() => { resetForm(); setIsCreateDialogOpen(true) }}
             className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
           >
             <Plus className="w-4 h-4 mr-2" />
             {t('error_codes.add_error_code', 'Add Error Code')}
           </Button>
-        )}
-      </div>
+        ) : undefined}
+      />
       
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
-        <Card className="glass-card">
-          <CardContent className="p-3 sm:p-4 flex flex-col items-center text-center">
-            <div className="p-1.5 sm:p-2 rounded-lg bg-red-500/10 mb-1.5 sm:mb-2">
-              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
-            </div>
-            <p className="text-muted-foreground text-[10px] sm:text-xs font-medium mb-1">{t('error_codes.total', 'Total Error Codes')}</p>
-            <p className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{totalCount}</p>
-          </CardContent>
-        </Card>
-        <Card className="glass-card">
-          <CardContent className="p-3 sm:p-4 flex flex-col items-center text-center">
-            <div className="p-1.5 sm:p-2 rounded-lg bg-green-500/10 mb-1.5 sm:mb-2">
-              <Lightbulb className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
-            </div>
-            <p className="text-muted-foreground text-[10px] sm:text-xs font-medium mb-1">{t('error_codes.with_solutions', 'With Solutions')}</p>
-            <p className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
-              {(errorCodes || []).filter(ec => ec?.solution).length}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="glass-card">
-          <CardContent className="p-3 sm:p-4 flex flex-col items-center text-center">
-            <div className="p-1.5 sm:p-2 rounded-lg bg-blue-500/10 mb-1.5 sm:mb-2">
-              <Snowflake className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
-            </div>
-            <p className="text-muted-foreground text-[10px] sm:text-xs font-medium mb-1">{t('error_codes.air_conditioners', 'Air Conditioners')}</p>
-            <p className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
-              {new Set((errorCodes || []).map(ec => ec?.air_conditioner_id).filter(Boolean)).size}
-            </p>
-          </CardContent>
-        </Card>
+        <StatCard
+          icon={AlertCircle}
+          iconClassName="text-red-500"
+          bgClassName="bg-red-500/10"
+          label={t('error_codes.total', 'Total Error Codes')}
+          value={totalCount}
+        />
+        <StatCard
+          icon={Lightbulb}
+          iconClassName="text-green-500"
+          bgClassName="bg-green-500/10"
+          label={t('error_codes.with_solutions', 'With Solutions')}
+          value={(errorCodes || []).filter(ec => ec?.solution).length}
+        />
+        <StatCard
+          icon={Snowflake}
+          iconClassName="text-blue-500"
+          bgClassName="bg-blue-500/10"
+          label={t('error_codes.air_conditioners', 'Air Conditioners')}
+          value={new Set((errorCodes || []).map(ec => ec?.air_conditioner_id).filter(Boolean)).size}
+        />
       </div>
       
       {/* Filters - Desktop Only */}
@@ -352,10 +336,7 @@ export default function ErrorCodesPage() {
               {t('common.loading', 'Loading...')}
             </div>
           ) : filteredErrorCodes.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-20" />
-              <p>{t('error_codes.no_error_codes', 'No error codes found')}</p>
-            </div>
+            <EmptyState icon={AlertCircle} message={t('error_codes.no_error_codes', 'No error codes found')} />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredErrorCodes.map((errorCode) => (
@@ -411,31 +392,14 @@ export default function ErrorCodesPage() {
             </div>
           )}
           
-          {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6 pt-4 border-t border-border/50">
-              <p className="text-sm text-muted-foreground">
-                {t('common.page_of', { current: currentPage, total: totalPages })}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
+            <Pagination
+              page={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              pageLabel={t('common.page_of', { current: currentPage, total: totalPages })}
+              className="mt-6 pt-4 border-t border-border/50 justify-between"
+            />
           )}
         </CardContent>
       </Card>

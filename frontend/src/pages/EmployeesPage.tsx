@@ -4,10 +4,8 @@ import { useTranslation } from 'react-i18next'
 import {
   Users,
   Plus,
-  Search,
   Trash,
   Loader2,
-  AlertTriangle,
   CheckCircle,
   XCircle
 } from 'lucide-react'
@@ -17,13 +15,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from '@/components/ui/table'
 import {
   Dialog,
@@ -32,16 +30,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+import { PageHeader, SearchBar, LoadingState, EmptyState, ConfirmDialog } from '@/components/shared'
 import { employeeService } from '@/services'
 import type { Employee, CreateEmployeeRequest, EmployeeLimits } from '@/types'
 import { TrialActivationModal, PremiumUpgradeModal } from '@/components/subscription'
@@ -270,33 +259,23 @@ export default function EmployeesPage() {
 
   return (
     <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
-            <Users className="w-6 sm:w-8 h-6 sm:h-8 text-primary" />
-            {t('employees.title')}
-          </h1>
-          <p className="text-sm sm:text-base text-muted-foreground">{t('employees.subtitle')}</p>
-        </div>
-        <Button onClick={handleCreate} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
-          <Plus className="w-4 h-4 mr-2" />
-          {t('employees.add_employee')}
-        </Button>
-      </div>
+      <PageHeader
+        title={t('employees.title')}
+        subtitle={t('employees.subtitle')}
+        icon={Users}
+        action={
+          <Button onClick={handleCreate} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
+            <Plus className="w-4 h-4 mr-2" />
+            {t('employees.add_employee')}
+          </Button>
+        }
+      />
 
-      {/* Search */}
-      <div className="flex gap-4 mb-4 sm:mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input 
-            placeholder={t('employees.search_placeholder')}
-            className="pl-10 bg-background/50 border-input text-foreground hover:bg-background/80 transition-colors"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </div>
+      <SearchBar
+        value={searchTerm}
+        onChange={setSearchTerm}
+        placeholder={t('employees.search_placeholder')}
+      />
 
       {/* Table - Desktop */}
       <div className="hidden md:block glass-card rounded-xl overflow-hidden">
@@ -402,14 +381,9 @@ export default function EmployeesPage() {
       {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
+          <LoadingState />
         ) : filteredEmployees.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <Users className="w-12 h-12 mx-auto mb-3 opacity-20" />
-            <p>{t('employees.no_employees')}</p>
-          </div>
+          <EmptyState icon={Users} message={t('employees.no_employees')} />
         ) : (
           filteredEmployees.map((emp) => (
             <Card 
@@ -540,38 +514,17 @@ export default function EmployeesPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="bg-card border-border">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-foreground">
-              <AlertTriangle className="w-5 h-5 text-destructive" />
-              {t('common.confirm_delete_title', 'Delete Employee')}
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm sm:text-base text-muted-foreground">
-              {t('employees.delete_confirmation', 'Are you sure you want to delete this employee? This action cannot be undone.')}
-              {employeeToDelete && (
-                <span className="block mt-2 font-medium text-foreground">
-                  {employeeToDelete.full_name} ({employeeToDelete.email})
-                </span>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="border-border text-foreground hover:bg-muted">
-              {t('common.cancel', 'Cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isDeleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {t('common.delete', 'Delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleDeleteConfirm}
+        title={t('common.confirm_delete_title', 'Delete Employee')}
+        description={t('employees.delete_confirmation', 'Are you sure you want to delete this employee? This action cannot be undone.')}
+        itemName={employeeToDelete ? `${employeeToDelete.full_name} (${employeeToDelete.email})` : undefined}
+        confirmLabel={t('common.delete', 'Delete')}
+        cancelLabel={t('common.cancel', 'Cancel')}
+        isLoading={isDeleting}
+      />
 
       {/* Trial Activation Modal */}
       <TrialActivationModal

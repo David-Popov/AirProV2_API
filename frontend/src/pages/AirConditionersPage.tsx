@@ -1,18 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { 
-  Snowflake, 
-  Plus, 
-  Search, 
-  Edit, 
-  Trash, 
-  ChevronLeft, 
-  ChevronRight,
+import {
+  Snowflake,
+  Plus,
+  Edit,
+  Trash,
   Loader2,
   Zap,
   MoreVertical,
-  AlertTriangle,
   Filter
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -27,16 +23,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+import { PageHeader, SearchBar, Pagination, LoadingState, EmptyState, ConfirmDialog } from '@/components/shared'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -286,39 +273,29 @@ export default function AirConditionersPage() {
 
   return (
     <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
-            <Snowflake className="w-6 sm:w-8 h-6 sm:h-8 text-primary" />
-            {t('air_conditioners.title')}
-          </h1>
-          <p className="text-sm sm:text-base text-muted-foreground">{t('air_conditioners.subtitle')}</p>
-        </div>
-        {isAdmin && (
+      <PageHeader
+        title={t('air_conditioners.title')}
+        subtitle={t('air_conditioners.subtitle')}
+        icon={Snowflake}
+        action={isAdmin ? (
           <Button onClick={handleCreate} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
             <Plus className="w-4 h-4 mr-2" />
             {t('air_conditioners.add_ac')}
           </Button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
-      {/* Search and Filter */}
-      <div className="flex gap-4 mb-6">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input 
-            placeholder={t('air_conditioners.search_placeholder')}
-            className="pl-10 bg-background/50 border-input text-foreground hover:bg-background/80 transition-colors"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        
-        <Button 
-            variant="outline" 
-            className="hidden lg:flex relative border-border hover:bg-accent text-foreground"
-            onClick={() => setIsFilterOpen(true)}
+      <SearchBar
+        value={searchTerm}
+        onChange={setSearchTerm}
+        placeholder={t('air_conditioners.search_placeholder')}
+        className="mb-6"
+        inputClassName="max-w-sm"
+      >
+        <Button
+          variant="outline"
+          className="hidden lg:flex relative border-border hover:bg-accent text-foreground"
+          onClick={() => setIsFilterOpen(true)}
         >
           <Filter className="w-4 h-4 mr-2" />
           {t('common.filter', 'Filter')}
@@ -328,7 +305,7 @@ export default function AirConditionersPage() {
             </span>
           )}
         </Button>
-      </div>
+      </SearchBar>
 
       {/* Filter Dialog */}
       <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
@@ -407,13 +384,9 @@ export default function AirConditionersPage() {
 
       {/* Grid Content */}
       {isLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
+        <LoadingState className="h-64" />
       ) : items.length === 0 ? (
-        <div className="text-center text-muted-foreground py-12">
-          {t('air_conditioners.no_acs')}
-        </div>
+        <EmptyState message={t('air_conditioners.no_acs')} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {items.map((item) => (
@@ -477,36 +450,15 @@ export default function AirConditionersPage() {
         </div>
       )}
 
-     {/* Pagination */}
-      <div className="flex items-center justify-center space-x-2 py-8">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPage(p => Math.max(1, p - 1))}
-          disabled={page === 1}
-          className="border-border text-muted-foreground hover:bg-muted hover:text-foreground"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          {t('common.previous')}
-        </Button>
-        <span className="text-sm text-sm sm:text-base text-muted-foreground">
-          {t('common.page', { current: page, total: totalPages || 1 })}
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            if (page < totalPages) {
-              setPage(p => p + 1)
-            }
-          }}
-          disabled={page >= totalPages}
-          className="border-border text-muted-foreground hover:bg-muted hover:text-foreground"
-        >
-          {t('common.next')}
-          <ChevronRight className="w-4 h-4" />
-        </Button>
-      </div>
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        previousLabel={t('common.previous')}
+        nextLabel={t('common.next')}
+        pageLabel={t('common.page', { current: page, total: totalPages || 1 })}
+        className="justify-center py-8"
+      />
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -769,38 +721,17 @@ export default function AirConditionersPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="bg-card border-border">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-foreground">
-              <AlertTriangle className="w-5 h-5 text-destructive" />
-              {t('common.confirm_delete_title', 'Delete Air Conditioner')}
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm sm:text-base text-muted-foreground">
-              {t('air_conditioners.delete_confirmation', 'Are you sure you want to delete this air conditioner? This action cannot be undone.')}
-              {itemToDelete && (
-                <span className="block mt-2 font-medium text-foreground">
-                  {itemToDelete.brand} {itemToDelete.name}
-                </span>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="border-border text-foreground hover:bg-muted">
-              {t('common.cancel', 'Cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isDeleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {t('common.delete', 'Delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleDeleteConfirm}
+        title={t('common.confirm_delete_title', 'Delete Air Conditioner')}
+        description={t('air_conditioners.delete_confirmation', 'Are you sure you want to delete this air conditioner? This action cannot be undone.')}
+        itemName={itemToDelete ? `${itemToDelete.brand} ${itemToDelete.name}` : undefined}
+        confirmLabel={t('common.delete', 'Delete')}
+        cancelLabel={t('common.cancel', 'Cancel')}
+        isLoading={isDeleting}
+      />
 
       {/* Mobile Filter FAB - Bubble */}
       <div className="lg:hidden fixed bottom-6 right-6 z-50">

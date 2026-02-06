@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { 
-  Package, 
-  Plus, 
-  Search, 
-  Edit, 
-  Trash, 
-  AlertTriangle, 
-  ChevronLeft, 
+import {
+  Package,
+  Plus,
+  Edit,
+  Trash,
+  AlertTriangle,
+  ChevronLeft,
   ChevronRight,
   Loader2,
   Wand2,
@@ -36,16 +35,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+import { PageHeader, SearchBar, Pagination, LoadingState, EmptyState, ConfirmDialog } from '@/components/shared'
 import { useAuth } from '@/context'
 import { inventoryService } from '@/services'
 import type { InventoryItem, CreateInventoryItemRequest, UnitOfMeasure } from '@/types'
@@ -267,33 +257,23 @@ export default function InventoryPage() {
 
   return (
     <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
-            <Package className="w-6 sm:w-8 h-6 sm:h-8 text-primary" />
-            {t('inventory.title')}
-          </h1>
-          <p className="text-sm sm:text-base text-muted-foreground">{t('inventory.subtitle')}</p>
-        </div>
-        <Button onClick={handleCreate} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
-          <Plus className="w-4 h-4 mr-2" />
-          {t('inventory.add_item')}
-        </Button>
-      </div>
+      <PageHeader
+        title={t('inventory.title')}
+        subtitle={t('inventory.subtitle')}
+        icon={Package}
+        action={
+          <Button onClick={handleCreate} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
+            <Plus className="w-4 h-4 mr-2" />
+            {t('inventory.add_item')}
+          </Button>
+        }
+      />
 
-      {/* Search */}
-      <div className="flex gap-4 mb-4 sm:mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input 
-            placeholder={t('inventory.search_placeholder')} 
-            className="pl-10 bg-background/50 border-input text-foreground hover:bg-background/80 transition-colors"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </div>
+      <SearchBar
+        value={searchTerm}
+        onChange={setSearchTerm}
+        placeholder={t('inventory.search_placeholder')}
+      />
 
       {/* Low Stock Alerts */}
       <Card className="glass-card mb-4 sm:mb-6 border-orange-500/20">
@@ -480,14 +460,9 @@ export default function InventoryPage() {
       {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
+          <LoadingState />
         ) : items.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <Package className="w-12 h-12 mx-auto mb-3 opacity-20" />
-            <p>{t('inventory.no_items')}</p>
-          </div>
+          <EmptyState icon={Package} message={t('inventory.no_items')} />
         ) : (
           items.map((item) => (
             <Card key={item.id} className="glass-card">
@@ -572,32 +547,14 @@ export default function InventoryPage() {
         )}
       </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-center sm:justify-end space-x-2 py-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPage(p => Math.max(1, p - 1))}
-          disabled={page === 1}
-          className="border-border text-muted-foreground hover:bg-muted hover:text-foreground"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          <span className="hidden sm:inline ml-1">{t('common.previous')}</span>
-        </Button>
-        <span className="text-xs sm:text-sm text-muted-foreground px-2">
-          {t('common.page', { current: page, total: totalPages || 1 })}
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-          disabled={page === totalPages}
-          className="border-border text-muted-foreground hover:bg-muted hover:text-foreground"
-        >
-          <span className="hidden sm:inline mr-1">{t('common.next')}</span>
-          <ChevronRight className="w-4 h-4" />
-        </Button>
-      </div>
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        previousLabel={t('common.previous')}
+        nextLabel={t('common.next')}
+        pageLabel={t('common.page', { current: page, total: totalPages || 1 })}
+      />
 
       {/* Item Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -708,70 +665,32 @@ export default function InventoryPage() {
         </DialogContent>
       </Dialog>
       
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="bg-card border-border">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-foreground">
-              <Trash className="w-5 h-5 text-destructive" />
-              {t('common.confirm_delete_title', 'Delete Item')}
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground">
-              {t('inventory.delete_confirmation', 'Are you sure you want to delete this item? This action cannot be undone.')}
-              {itemToDelete && (
-                <span className="block mt-2 font-medium text-foreground">
-                  {itemToDelete.name}
-                </span>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="border-border text-foreground hover:bg-muted">
-              {t('common.cancel', 'Cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isDeleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {t('common.delete', 'Delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleDeleteConfirm}
+        title={t('common.confirm_delete_title', 'Delete Item')}
+        description={t('inventory.delete_confirmation', 'Are you sure you want to delete this item? This action cannot be undone.')}
+        itemName={itemToDelete?.name}
+        confirmLabel={t('common.delete', 'Delete')}
+        cancelLabel={t('common.cancel', 'Cancel')}
+        isLoading={isDeleting}
+        icon={Trash}
+      />
 
-      {/* Archive Confirmation Dialog */}
-      <AlertDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
-        <AlertDialogContent className="bg-card border-border">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-foreground">
-              <Archive className="w-5 h-5 text-orange-500" />
-              {t('inventory.archive_item', 'Archive Item')}
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground">
-              {t('inventory.archive_confirmation', 'Are you sure you want to archive this item? It will be hidden from the main list but preserved in history.')}
-              {itemToArchive && (
-                <span className="block mt-2 font-medium text-foreground">
-                  {itemToArchive.name}
-                </span>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="border-border text-foreground hover:bg-muted">
-              {t('common.cancel', 'Cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleArchiveConfirm}
-              disabled={isArchiving}
-              className="bg-orange-500 text-white hover:bg-orange-600 border-none"
-            >
-              {isArchiving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {t('common.archive', 'Archive')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={archiveDialogOpen}
+        onOpenChange={setArchiveDialogOpen}
+        onConfirm={handleArchiveConfirm}
+        title={t('inventory.archive_item', 'Archive Item')}
+        description={t('inventory.archive_confirmation', 'Are you sure you want to archive this item? It will be hidden from the main list but preserved in history.')}
+        itemName={itemToArchive?.name}
+        confirmLabel={t('common.archive', 'Archive')}
+        cancelLabel={t('common.cancel', 'Cancel')}
+        isLoading={isArchiving}
+        variant="warning"
+        icon={Archive}
+      />
     </div>
   )
 }

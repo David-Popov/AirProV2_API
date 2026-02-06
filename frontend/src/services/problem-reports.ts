@@ -55,10 +55,25 @@ export const problemReportsService = {
   },
 
   /**
-   * Get the screenshot URL for a problem report
+   * Fetch the screenshot as a blob URL (authenticated)
    */
-  getScreenshotUrl(id: string): string {
-    return `${apiClient.getBaseUrl()}${BASE_URL}/${id}/screenshot`;
+  async getScreenshotBlobUrl(id: string): Promise<string> {
+    const token = localStorage.getItem('token');
+    const headers: HeadersInit = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${apiClient.getBaseUrl()}${BASE_URL}/${id}/screenshot`, {
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to load screenshot');
+    }
+
+    const blob = await response.blob();
+    return URL.createObjectURL(blob);
   },
 
   /**
