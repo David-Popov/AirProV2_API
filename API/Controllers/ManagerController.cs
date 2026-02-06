@@ -3,6 +3,7 @@ using API.Data;
 using API.DTOs;
 using API.Models;
 using API.Services.Auth;
+using API.Services.Email;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,17 +23,20 @@ public class ManagerController : ControllerBase
     private readonly ApplicationDbContext _context;
     private readonly ILogger<ManagerController> _logger;
     private readonly IValidator<CreateEmployeeDto> _createEmployeeValidator;
+    private readonly IEmailService _emailService;
 
     public ManagerController(
         IAuthService authService,
         ApplicationDbContext context,
         ILogger<ManagerController> logger,
-        IValidator<CreateEmployeeDto> createEmployeeValidator)
+        IValidator<CreateEmployeeDto> createEmployeeValidator,
+        IEmailService emailService)
     {
         _authService = authService;
         _context = context;
         _logger = logger;
         _createEmployeeValidator = createEmployeeValidator;
+        _emailService = emailService;
     }
 
     /// <summary>
@@ -390,6 +394,16 @@ public class ManagerController : ControllerBase
             company.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+
+            // Send trial activation email
+            try
+            {
+                await _emailService.SendTrialActivatedEmailAsync(company, company.TrialEndDate!.Value);
+            }
+            catch (Exception emailEx)
+            {
+                _logger.LogWarning(emailEx, "Failed to send trial activation email for company {CompanyId}", company.Id);
+            }
 
             return Ok(new
             {

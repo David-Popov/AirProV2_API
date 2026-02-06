@@ -5,6 +5,7 @@ using API.Data;
 using API.Data.Entities;
 using API.DTOs;
 using API.Models;
+using API.Services.Email;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -18,19 +19,22 @@ public class AuthService : IAuthService
     private readonly ApplicationDbContext _context;
     private readonly IConfiguration _configuration;
     private readonly ILogger<AuthService> _logger;
+    private readonly IEmailService _emailService;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
         ApplicationDbContext context,
         IConfiguration configuration,
-        ILogger<AuthService> logger)
+        ILogger<AuthService> logger,
+        IEmailService emailService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _context = context;
         _configuration = configuration;
         _logger = logger;
+        _emailService = emailService;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
@@ -102,6 +106,16 @@ public class AuthService : IAuthService
             await _userManager.AddToRoleAsync(user, "Manager");
 
             await transaction.CommitAsync();
+
+            // Send welcome email
+            try
+            {
+                await _emailService.SendWelcomeEmailAsync(user, company);
+            }
+            catch (Exception emailEx)
+            {
+                _logger.LogWarning(emailEx, "Failed to send welcome email to {Email}", user.Email);
+            }
 
             // Generate JWT token
             var token = await GenerateJwtTokenAsync(user);
@@ -461,6 +475,16 @@ public class AuthService : IAuthService
 
             if (currentEmployeeCount >= maxEmployees)
             {
+                // Send employee limit notification
+                try
+                {
+                    await _emailService.SendEmployeeLimitReachedEmailAsync(company, currentEmployeeCount, maxEmployees);
+                }
+                catch (Exception emailEx)
+                {
+                    _logger.LogWarning(emailEx, "Failed to send employee limit email for company {CompanyId}", companyId);
+                }
+
                 throw new InvalidOperationException(
                     $"Employee limit reached. Your current plan allows {maxEmployees} employees. " +
                     $"Please upgrade your subscription to add more employees.");
@@ -488,6 +512,16 @@ public class AuthService : IAuthService
             }
 
             await _userManager.AddToRoleAsync(user, "User");
+
+            // Send welcome email to new employee
+            try
+            {
+                await _emailService.SendNewEmployeeWelcomeEmailAsync(user, company, dto.Password);
+            }
+            catch (Exception emailEx)
+            {
+                _logger.LogWarning(emailEx, "Failed to send welcome email to new employee {Email}", user.Email);
+            }
 
             var roles = await _userManager.GetRolesAsync(user);
 

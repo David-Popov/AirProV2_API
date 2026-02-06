@@ -41,7 +41,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 import { toast } from 'sonner'
 import { montageService, inventoryService, montageInventoryService } from '@/services'
-import { type Montage, type InventoryItem, type MontageInventoryItem, MONTAGE_STATUS_OPTIONS, PAYMENT_STATUS_OPTIONS } from '@/types'
+import { type Montage, type InventoryItem, type MontageInventoryItem } from '@/types'
 import { MontagePhotosSection, MontageLocationMap, StatusNavigator, PaymentStatusNavigator } from '@/components/montage'
 
 
@@ -234,13 +234,26 @@ export default function MontageDetailsPage() {
   }
 
   const getStatusLabel = (val?: string | null) => {
-    if (!val) return 'Planned'
-    return MONTAGE_STATUS_OPTIONS.find(o => o.value === val)?.label || val
+    if (!val) return t('montages.status_planned', 'Planned')
+    const statusMap: Record<string, string> = {
+      'Planned': t('montages.status_planned', 'Planned'),
+      'InProgress': t('montages.status_in_progress', 'In Progress'),
+      'Completed': t('montages.status_completed', 'Completed'),
+      'Canceled': t('montages.status_canceled', 'Cancelled'),
+      'Overdue': t('montages.status_overdue', 'Overdue')
+    }
+    return statusMap[val] || val
   }
   
   const getPaymentStatusLabel = (val?: string | null) => {
-    if (!val) return 'Not Paid'
-    return PAYMENT_STATUS_OPTIONS.find(o => o.value === val)?.label || val
+    if (!val) return t('montages.payment_not_paid', 'Not Paid')
+    const paymentStatusMap: Record<string, string> = {
+      'NotPaid': t('montages.payment_not_paid', 'Not Paid'),
+      'PartiallyPaid': t('montages.payment_partially_paid', 'Partially Paid'),
+      'Paid': t('montages.payment_paid', 'Paid'),
+      'Overdue': t('montages.payment_overdue', 'Overdue')
+    }
+    return paymentStatusMap[val] || val
   }
 
   return (

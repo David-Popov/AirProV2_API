@@ -12,7 +12,10 @@ import {
   Palette,
   Globe,
   Moon,
-  Sun
+  Sun,
+  Pencil,
+  Save,
+  X
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -42,6 +45,18 @@ export default function SettingsPage() {
   const [company, setCompany] = useState<Company | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'profile' | 'company' | 'subscription' | 'preferences'>('profile')
+  const [isEditing, setIsEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [companyForm, setCompanyForm] = useState({
+    name: '',
+    bulstat: '',
+    vat_number: '',
+    address: '',
+    city: '',
+    phone: '',
+    email: '',
+    warranty_default_months: 24
+  })
 
   const [notifications, setNotifications] = useState({
     emailMontages: true,
@@ -79,19 +94,77 @@ export default function SettingsPage() {
       setLoading(true)
       const data = await companyService.getById(user.company_id)
       setCompany(data)
+      // Initialize form with company data
+      setCompanyForm({
+        name: data.name || '',
+        bulstat: data.bulstat || '',
+        vat_number: data.vat_number || '',
+        address: data.address || '',
+        city: data.city || '',
+        phone: data.phone || '',
+        email: data.email || '',
+        warranty_default_months: data.warranty_default_months || 24
+      })
     } catch {
       console.error('Failed to load company')
     } finally {
       setLoading(false)
     }
   }
+
+  const handleSaveCompany = async () => {
+    if (!company?.id) return
+    try {
+      setSaving(true)
+      await companyService.update(company.id, {
+        name: companyForm.name,
+        bulstat: companyForm.bulstat || null,
+        vat_number: companyForm.vat_number || null,
+        address: companyForm.address || null,
+        city: companyForm.city || null,
+        phone: companyForm.phone || null,
+        email: companyForm.email || null,
+        warranty_default_months: companyForm.warranty_default_months
+      })
+      toast.success(t('settings.company_updated', 'Company information updated successfully'))
+      setIsEditing(false)
+      loadCompany() // Reload to get fresh data
+    } catch {
+      toast.error(t('settings.company_update_error', 'Failed to update company information'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    // Reset form to original company data
+    if (company) {
+      setCompanyForm({
+        name: company.name || '',
+        bulstat: company.bulstat || '',
+        vat_number: company.vat_number || '',
+        address: company.address || '',
+        city: company.city || '',
+        phone: company.phone || '',
+        email: company.email || '',
+        warranty_default_months: company.warranty_default_months || 24
+      })
+    }
+    setIsEditing(false)
+  }
   
-  const tabs = [
+  const isAdmin = user?.roles.includes('Admin')
+  const isManager = user?.roles.includes('Manager')
+  
+  const allTabs = [
     { id: 'profile', label: t('settings.profile', 'Profile'), icon: User },
     { id: 'company', label: t('settings.company', 'Company'), icon: Building2 },
     { id: 'subscription', label: t('settings.subscription', 'Subscription'), icon: CreditCard },
     { id: 'preferences', label: t('settings.preferences', 'Preferences'), icon: Settings }
   ] as const
+  
+  // Hide company tab from Admin users
+  const tabs = isAdmin ? allTabs.filter(tab => tab.id !== 'company') : allTabs
 
   return (
     <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
@@ -227,13 +300,23 @@ export default function SettingsPage() {
           {activeTab === 'company' && (
             <Card className="glass-card">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                  <Building2 className="w-5 h-5 text-primary" />
-                  {t('settings.company_info', 'Company Information')}
-                </CardTitle>
-                <CardDescription className="text-sm">
-                  {t('settings.company_desc', 'Your company details')}
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                      <Building2 className="w-5 h-5 text-primary" />
+                      {t('settings.company_info', 'Company Information')}
+                    </CardTitle>
+                    <CardDescription className="text-sm">
+                      {t('settings.company_desc', 'Your company details')}
+                    </CardDescription>
+                  </div>
+                  {isManager && company && !isEditing && (
+                    <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                      <Pencil className="w-4 h-4 mr-2" />
+                      {t('common.edit', 'Edit')}
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 {loading ? (
@@ -242,39 +325,109 @@ export default function SettingsPage() {
                   </div>
                 ) : company ? (
                   <div className="space-y-4 sm:space-y-6">
+                    {/* Company header - always visible */}
                     <div className="p-3 sm:p-4 rounded-xl bg-primary/5 border border-primary/20">
-                      <h3 className="font-semibold text-base sm:text-lg text-foreground">{company.name}</h3>
-                      <p className="text-muted-foreground text-xs sm:text-sm">{company.city || 'No city'} • {company.company_type}</p>
+                      {isEditing ? (
+                        <div className="space-y-2">
+                          <Label className="text-sm text-muted-foreground">{t('settings.company_name', 'Company Name')}</Label>
+                          <Input 
+                            value={companyForm.name} 
+                            onChange={(e) => setCompanyForm({...companyForm, name: e.target.value})}
+                            className="font-semibold"
+                          />
+                        </div>
+                      ) : (
+                        <>
+                          <h3 className="font-semibold text-base sm:text-lg text-foreground">{company.name}</h3>
+                          <p className="text-muted-foreground text-xs sm:text-sm">{company.city || 'No city'} • {company.company_type}</p>
+                        </>
+                      )}
                     </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <Label className="text-sm text-muted-foreground">{t('settings.bulstat', 'BULSTAT')}</Label>
-                        <Input value={company.bulstat || '-'} disabled className="mt-1 bg-muted/20" />
+                        <Input 
+                          value={isEditing ? companyForm.bulstat : (company.bulstat || '-')} 
+                          onChange={(e) => setCompanyForm({...companyForm, bulstat: e.target.value})}
+                          disabled={!isEditing} 
+                          className={`mt-1 ${!isEditing ? 'bg-muted/20' : ''}`}
+                        />
                       </div>
                       <div>
                         <Label className="text-sm text-muted-foreground">{t('settings.vat', 'VAT Number')}</Label>
-                        <Input value={company.vat_number || '-'} disabled className="mt-1 bg-muted/20" />
+                        <Input 
+                          value={isEditing ? companyForm.vat_number : (company.vat_number || '-')} 
+                          onChange={(e) => setCompanyForm({...companyForm, vat_number: e.target.value})}
+                          disabled={!isEditing} 
+                          className={`mt-1 ${!isEditing ? 'bg-muted/20' : ''}`}
+                        />
                       </div>
                     </div>
-                    <div>
-                      <Label className="text-sm text-muted-foreground">{t('settings.address', 'Address')}</Label>
-                      <Input value={company.address || '-'} disabled className="mt-1 bg-muted/20" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      <div>
+                        <Label className="text-sm text-muted-foreground">{t('settings.address', 'Address')}</Label>
+                        <Input 
+                          value={isEditing ? companyForm.address : (company.address || '-')} 
+                          onChange={(e) => setCompanyForm({...companyForm, address: e.target.value})}
+                          disabled={!isEditing} 
+                          className={`mt-1 ${!isEditing ? 'bg-muted/20' : ''}`}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm text-muted-foreground">{t('settings.city', 'City')}</Label>
+                        <Input 
+                          value={isEditing ? companyForm.city : (company.city || '-')} 
+                          onChange={(e) => setCompanyForm({...companyForm, city: e.target.value})}
+                          disabled={!isEditing} 
+                          className={`mt-1 ${!isEditing ? 'bg-muted/20' : ''}`}
+                        />
+                      </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <Label className="text-sm text-muted-foreground">{t('settings.phone', 'Phone')}</Label>
-                        <Input value={company.phone || '-'} disabled className="mt-1 bg-muted/20" />
+                        <Input 
+                          value={isEditing ? companyForm.phone : (company.phone || '-')} 
+                          onChange={(e) => setCompanyForm({...companyForm, phone: e.target.value})}
+                          disabled={!isEditing} 
+                          className={`mt-1 ${!isEditing ? 'bg-muted/20' : ''}`}
+                        />
                       </div>
                       <div>
                         <Label className="text-sm text-muted-foreground">{t('settings.email', 'Email')}</Label>
-                        <Input value={company.email || '-'} disabled className="mt-1 bg-muted/20" />
+                        <Input 
+                          value={isEditing ? companyForm.email : (company.email || '-')} 
+                          onChange={(e) => setCompanyForm({...companyForm, email: e.target.value})}
+                          disabled={!isEditing} 
+                          className={`mt-1 ${!isEditing ? 'bg-muted/20' : ''}`}
+                        />
                       </div>
                     </div>
                     <div>
                       <Label className="text-sm text-muted-foreground">{t('settings.warranty', 'Default Warranty (months)')}</Label>
-                      <Input value={company.warranty_default_months?.toString() || '24'} disabled className="mt-1 bg-muted/20" />
+                      <Input 
+                        type="number"
+                        value={isEditing ? companyForm.warranty_default_months : (company.warranty_default_months || 24)} 
+                        onChange={(e) => setCompanyForm({...companyForm, warranty_default_months: parseInt(e.target.value) || 24})}
+                        disabled={!isEditing} 
+                        className={`mt-1 ${!isEditing ? 'bg-muted/20' : ''} w-32`}
+                      />
                     </div>
+                    
+                    {/* Save/Cancel buttons when editing */}
+                    {isEditing && (
+                      <div className="flex gap-3 pt-4 border-t border-border/50">
+                        <Button onClick={handleSaveCompany} disabled={saving}>
+                          <Save className="w-4 h-4 mr-2" />
+                          {saving ? t('common.saving', 'Saving...') : t('common.save', 'Save')}
+                        </Button>
+                        <Button variant="outline" onClick={handleCancelEdit} disabled={saving}>
+                          <X className="w-4 h-4 mr-2" />
+                          {t('common.cancel', 'Cancel')}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8 text-sm sm:text-base text-muted-foreground">

@@ -5,6 +5,7 @@ using API.DTOs;
 using API.Models;
 using API.Repositories;
 using API.Repositories.Companies;
+using API.Services.Email;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,17 +17,20 @@ public class CompanyService : ICompanyService
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ILogger<CompanyService> _logger;
+    private readonly IEmailService _emailService;
 
     public CompanyService(
         ICompanyRepository repository,
         ApplicationDbContext context,
         UserManager<ApplicationUser> userManager,
-        ILogger<CompanyService> logger)
+        ILogger<CompanyService> logger,
+        IEmailService emailService)
     {
         _repository = repository;
         _context = context;
         _userManager = userManager;
         _logger = logger;
+        _emailService = emailService;
     }
 
     public async Task<CompanyDto> AddCompanyAsync(CreateCompanyDto dto)
@@ -127,7 +131,23 @@ public class CompanyService : ICompanyService
             var company = await _repository.GetByIdAsync(companyId);
             if (company != null)
             {
+                var companyEmail = company.Email;
+                var companyName = company.CompanyName;
+
                 await _repository.DeleteCompanyAsync(company);
+
+                // Send deletion confirmation email
+                if (!string.IsNullOrEmpty(companyEmail))
+                {
+                    try
+                    {
+                        await _emailService.SendAccountDeletionConfirmationEmailAsync(companyEmail, companyName);
+                    }
+                    catch (Exception emailEx)
+                    {
+                        _logger.LogWarning(emailEx, "Failed to send deletion confirmation email for company {CompanyName}", companyName);
+                    }
+                }
             }
         }
         catch (Exception e)

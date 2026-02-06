@@ -43,13 +43,13 @@ function App() {
                 </ProtectedRoute>
               }
             >
-              <Route path="/dashboard" element={<ErrorBoundary><DashboardPage /></ErrorBoundary>} />
-              <Route path="/inventory" element={<ErrorBoundary><InventoryPage /></ErrorBoundary>} />
-              <Route path="/inventory/:id/history" element={<ErrorBoundary><InventoryItemHistoryPage /></ErrorBoundary>} />
+              <Route path="/dashboard" element={<ProtectedRoute roles={['Manager']}><ErrorBoundary><DashboardPage /></ErrorBoundary></ProtectedRoute>} />
+              <Route path="/inventory" element={<ProtectedRoute roles={['Manager', 'User']}><ErrorBoundary><InventoryPage /></ErrorBoundary></ProtectedRoute>} />
+              <Route path="/inventory/:id/history" element={<ProtectedRoute roles={['Manager', 'User']}><ErrorBoundary><InventoryItemHistoryPage /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/montages" element={<ErrorBoundary><MontagesPage /></ErrorBoundary>} />
               <Route path="/montages/:id" element={<ErrorBoundary><MontageDetailsPage /></ErrorBoundary>} />
-              <Route path="/employees" element={<ErrorBoundary><EmployeesPage /></ErrorBoundary>} />
-              <Route path="/employees/:id" element={<ErrorBoundary><EmployeeDetailsPage /></ErrorBoundary>} />
+              <Route path="/employees" element={<ProtectedRoute roles={['Manager', 'Admin']}><ErrorBoundary><EmployeesPage /></ErrorBoundary></ProtectedRoute>} />
+              <Route path="/employees/:id" element={<ProtectedRoute roles={['Manager', 'Admin']}><ErrorBoundary><EmployeeDetailsPage /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/air-conditioners" element={<ErrorBoundary><AirConditionersPage /></ErrorBoundary>} />
               <Route path="/air-conditioners/:id" element={<ErrorBoundary><AirConditionerDetailsPage /></ErrorBoundary>} />
               <Route path="/error-codes" element={<ErrorBoundary><ErrorCodesPage /></ErrorBoundary>} />

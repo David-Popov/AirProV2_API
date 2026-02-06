@@ -103,27 +103,33 @@ export default function DashboardLayout() {
 
         <nav className="space-y-2 flex-1">
           {/* Main Navigation */}
-          <NavItem 
-            icon={LayoutDashboard} 
-            label={t('nav.dashboard')}
-            active={location.pathname === '/dashboard'}
-            onClick={() => handleNavClick('/dashboard')} 
-          />
+          {/* Dashboard - Only for Manager */}
+          {isManager && !isAdmin && (
+            <NavItem 
+              icon={LayoutDashboard} 
+              label={t('nav.dashboard')}
+              active={location.pathname === '/dashboard'}
+              onClick={() => handleNavClick('/dashboard')} 
+            />
+          )}
           <NavItem 
             icon={ClipboardList} 
             label={t('nav.montages')}
             active={location.pathname === '/montages' || location.pathname.startsWith('/montages/')}
             onClick={() => handleNavClick('/montages')} 
           />
-          <NavItem 
-            icon={Package} 
-            label={t('nav.inventory')}
-            active={location.pathname === '/inventory'}
-            onClick={() => handleNavClick('/inventory')}
-          />
+          {/* Inventory - Hidden from Admin */}
+          {!isAdmin && (
+            <NavItem 
+              icon={Package} 
+              label={t('nav.inventory')}
+              active={location.pathname === '/inventory'}
+              onClick={() => handleNavClick('/inventory')}
+            />
+          )}
           
-          {/* Employee Management - Managers Only */}
-          {(!isAdmin && isManager) && (
+          {/* Employee Management - Managers and Admins */}
+          {(isManager || isAdmin) && (
             <NavItem 
               icon={Users} 
               label={t('nav.employees')}

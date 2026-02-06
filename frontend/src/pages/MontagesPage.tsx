@@ -62,8 +62,7 @@ import {
   type Montage, 
   type CreateMontageRequest,
   type UpdateMontageRequest,
-  MONTAGE_STATUS_OPTIONS,
-  PAYMENT_STATUS_OPTIONS
+  MONTAGE_STATUS_OPTIONS
 } from '@/types'
 
 // Extended type for form state
@@ -304,13 +303,26 @@ export default function MontagesPage() {
   }
 
   const getStatusLabel = (val?: string | null) => {
-    if (!val) return 'Planned'
-    return MONTAGE_STATUS_OPTIONS.find(o => o.value === val)?.label || val
+    if (!val) return t('montages.status_planned', 'Planned')
+    const statusMap: Record<string, string> = {
+      'Planned': t('montages.status_planned', 'Planned'),
+      'InProgress': t('montages.status_in_progress', 'In Progress'),
+      'Completed': t('montages.status_completed', 'Completed'),
+      'Canceled': t('montages.status_canceled', 'Cancelled'),
+      'Overdue': t('montages.status_overdue', 'Overdue')
+    }
+    return statusMap[val] || val
   }
   
   const getPaymentStatusLabel = (val?: string | null) => {
-    if (!val) return 'Not Paid'
-    return PAYMENT_STATUS_OPTIONS.find(o => o.value === val)?.label || val
+    if (!val) return t('montages.payment_not_paid', 'Not Paid')
+    const paymentStatusMap: Record<string, string> = {
+      'NotPaid': t('montages.payment_not_paid', 'Not Paid'),
+      'PartiallyPaid': t('montages.payment_partially_paid', 'Partially Paid'),
+      'Paid': t('montages.payment_paid', 'Paid'),
+      'Overdue': t('montages.payment_overdue', 'Overdue')
+    }
+    return paymentStatusMap[val] || val
   }
 
   return (
@@ -723,9 +735,11 @@ export default function MontagesPage() {
                 </SelectTrigger>
                 <SelectContent className="bg-popover border-border text-popover-foreground">
                   <SelectItem value="All">{t('common.all', 'All')}</SelectItem>
-                  {MONTAGE_STATUS_OPTIONS.map(opt => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                  ))}
+                  <SelectItem value="Planned">{t('montages.status_planned', 'Planned')}</SelectItem>
+                  <SelectItem value="InProgress">{t('montages.status_in_progress', 'In Progress')}</SelectItem>
+                  <SelectItem value="Completed">{t('montages.status_completed', 'Completed')}</SelectItem>
+                  <SelectItem value="Canceled">{t('montages.status_canceled', 'Cancelled')}</SelectItem>
+                  <SelectItem value="Overdue">{t('montages.status_overdue', 'Overdue')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -842,9 +856,11 @@ export default function MontagesPage() {
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover border-border text-popover-foreground">
-                        {MONTAGE_STATUS_OPTIONS.map(opt => (
-                          <SelectItem key={opt.value} value={opt.value} className="cursor-pointer">{opt.label}</SelectItem>
-                        ))}
+                        <SelectItem value="Planned" className="cursor-pointer">{t('montages.status_planned', 'Planned')}</SelectItem>
+                        <SelectItem value="InProgress" className="cursor-pointer">{t('montages.status_in_progress', 'In Progress')}</SelectItem>
+                        <SelectItem value="Completed" className="cursor-pointer">{t('montages.status_completed', 'Completed')}</SelectItem>
+                        <SelectItem value="Canceled" className="cursor-pointer">{t('montages.status_canceled', 'Cancelled')}</SelectItem>
+                        <SelectItem value="Overdue" className="cursor-pointer">{t('montages.status_overdue', 'Overdue')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -878,9 +894,10 @@ export default function MontagesPage() {
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover border-border text-popover-foreground">
-                        {PAYMENT_STATUS_OPTIONS.map(opt => (
-                          <SelectItem key={opt.value} value={opt.value} className="cursor-pointer">{opt.label}</SelectItem>
-                        ))}
+                        <SelectItem value="NotPaid" className="cursor-pointer">{t('montages.payment_not_paid', 'Not Paid')}</SelectItem>
+                        <SelectItem value="PartiallyPaid" className="cursor-pointer">{t('montages.payment_partially_paid', 'Partially Paid')}</SelectItem>
+                        <SelectItem value="Paid" className="cursor-pointer">{t('montages.payment_paid', 'Paid')}</SelectItem>
+                        <SelectItem value="Overdue" className="cursor-pointer">{t('montages.payment_overdue', 'Overdue')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
