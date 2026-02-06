@@ -39,6 +39,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     
+    public DbSet<ReportedProblem> ReportedProblems { get; set; }
+    
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -216,6 +218,23 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(e => e.UserId).HasDatabaseName("idx_refresh_tokens_user_id");
 
             entity.HasOne(e => e.ApplicationUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ReportedProblem configuration - user-submitted problem reports
+        builder.Entity<ReportedProblem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+            
+            entity.HasIndex(e => e.UserId).HasDatabaseName("idx_reported_problems_user_id");
+            entity.HasIndex(e => e.Category).HasDatabaseName("idx_reported_problems_category");
+            entity.HasIndex(e => e.CreatedAt).HasDatabaseName("idx_reported_problems_created_at");
+            
+            entity.HasOne(e => e.User)
                   .WithMany()
                   .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Cascade);

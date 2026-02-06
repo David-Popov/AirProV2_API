@@ -127,9 +127,9 @@ export default function MontagesPage() {
   const [isDeleting, setIsDeleting] = useState(false)
 
   const statusColors: Record<string, string> = {
-    'Planned': 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-    'InProgress': 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
-    'Completed': 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
+    'Planned': 'bg-primary/10 text-primary border-primary/20',
+    'InProgress': 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+    'Completed': 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
     'Canceled': 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
     'Overdue': 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
   }

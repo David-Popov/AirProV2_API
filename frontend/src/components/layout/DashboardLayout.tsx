@@ -12,7 +12,9 @@ import {
   AlertCircle,
   Building2,
   Menu,
-  X
+  X,
+  Bug,
+  MessageSquareWarning
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -20,6 +22,7 @@ import { useAuth } from '@/context'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { ModeToggle } from '@/components/mode-toggle'
 import { SubscriptionExpiredModal } from '@/components/SubscriptionExpiredModal'
+import { ReportProblemModal } from '@/components/ReportProblemModal'
 
 export default function DashboardLayout() {
   const { user, logout, refreshUser } = useAuth()
@@ -27,6 +30,7 @@ export default function DashboardLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false)
 
   const handleLogout = () => {
     logout()
@@ -112,12 +116,15 @@ export default function DashboardLayout() {
               onClick={() => handleNavClick('/dashboard')} 
             />
           )}
-          <NavItem 
-            icon={ClipboardList} 
-            label={t('nav.montages')}
-            active={location.pathname === '/montages' || location.pathname.startsWith('/montages/')}
-            onClick={() => handleNavClick('/montages')} 
-          />
+          {/* Montages - Hidden from Admin */}
+          {!isAdmin && (
+            <NavItem 
+              icon={ClipboardList} 
+              label={t('nav.montages')}
+              active={location.pathname === '/montages' || location.pathname.startsWith('/montages/')}
+              onClick={() => handleNavClick('/montages')} 
+            />
+          )}
           {/* Inventory - Hidden from Admin */}
           {!isAdmin && (
             <NavItem 
@@ -128,8 +135,8 @@ export default function DashboardLayout() {
             />
           )}
           
-          {/* Employee Management - Managers and Admins */}
-          {(isManager || isAdmin) && (
+          {/* Employee Management - Managers only */}
+          {isManager && !isAdmin && (
             <NavItem 
               icon={Users} 
               label={t('nav.employees')}
@@ -169,6 +176,12 @@ export default function DashboardLayout() {
                 active={location.pathname === '/companies'}
                 onClick={() => handleNavClick('/companies')}
               />
+              <NavItem 
+                icon={MessageSquareWarning} 
+                label={t('nav.reported_problems', 'Reported Problems')}
+                active={location.pathname === '/reported-problems'}
+                onClick={() => handleNavClick('/reported-problems')}
+              />
             </div>
           )}
           
@@ -197,6 +210,18 @@ export default function DashboardLayout() {
             </div>
           </div>
           
+          {/* Report Problem Button - for non-admins */}
+          {!isAdmin && (
+            <Button 
+              variant="outline" 
+              className="w-full justify-start text-muted-foreground hover:text-orange-500 hover:border-orange-500/50 rounded-lg"
+              onClick={() => setIsReportModalOpen(true)}
+            >
+              <Bug className="w-4 h-4 mr-2" />
+              {t('problem_reports.report_problem')}
+            </Button>
+          )}
+          
           <div className="flex items-center gap-2">
             <Button 
               variant="ghost" 
@@ -217,6 +242,12 @@ export default function DashboardLayout() {
       
       {/* Subscription Expired Modal */}
       <SubscriptionExpiredModal isOpen={!!isSubscriptionExpired} />
+      
+      {/* Report Problem Modal */}
+      <ReportProblemModal 
+        isOpen={isReportModalOpen} 
+        onClose={() => setIsReportModalOpen(false)} 
+      />
     </div>
   )
 }

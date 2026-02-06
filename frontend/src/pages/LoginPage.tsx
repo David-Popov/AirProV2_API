@@ -63,7 +63,7 @@ export default function LoginPage() {
       <div className="relative w-full max-w-md">
         {/* Logo */}
         <Link to="/" className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-12 h-12 bg-gradient-to-br from-primary to-blue-600 dark:from-primary dark:to-blue-400 rounded-xl flex items-center justify-center shadow-lg shadow-primary/25">
+          <div className="w-12 h-12 bg-gradient-to-br from-primary to-teal-500 dark:from-primary dark:to-teal-400 rounded-xl flex items-center justify-center shadow-lg shadow-primary/25">
             <Snowflake className="w-6 h-6 text-white" />
           </div>
           <span className="font-bold text-2xl text-foreground">AirPro</span>
@@ -110,7 +110,7 @@ export default function LoginPage() {
               </div>
               <Button 
                 type="submit" 
-                className="w-full h-11 bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 shadow-lg shadow-primary/25 font-medium"
+                className="w-full h-11 bg-gradient-to-r from-primary to-teal-500 hover:from-primary/90 hover:to-teal-500/90 shadow-lg shadow-primary/25 font-medium"
                 disabled={isLoading}
               >
                 {isLoading ? (

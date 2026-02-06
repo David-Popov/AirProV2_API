@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using API.DTOs;
+using API.DTOs.Auth;
 using API.Services.Auth;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
@@ -175,5 +176,53 @@ public class AuthController : ControllerBase
 
         var exists = await _authService.UserExistsAsync(email);
         return Ok(new { available = !exists });
+    }
+
+    /// <summary>
+    /// Update user profile
+    /// </summary>
+    [HttpPut("profile")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<AuthUserDto>> UpdateProfile([FromBody] UpdateProfileDto dto)
+    {
+        try
+        {
+            // Validate DTO manually since we can't easily inject a new validator into the constructor without breaking changes
+            // A better approach would be to add the validator to the constructor, but for now we'll do manual validation or rely on automatic model validation if configured
+            // However, to be consistent with other methods, let's use the injected validator
+            
+            // To avoid breaking the constructor signature for existing tests/usage, we'll retrieve the validator from request services
+            var validator = HttpContext.RequestServices.GetService<IValidator<UpdateProfileDto>>();
+            if (validator != null)
+            {
+                var validationResult = await validator.ValidateAsync(dto);
+                if (!validationResult.IsValid)
+                {
+                    return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+                }
+            }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User not authenticated" });
+            }
+
+            var result = await _authService.UpdateProfileAsync(userId, dto);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, new { message = "An error occurred while updating profile" });
+        }
     }
 }

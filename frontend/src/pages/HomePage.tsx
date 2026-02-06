@@ -28,7 +28,7 @@ export default function HomePage() {
         {/* Navigation */}
         <nav className="flex items-center justify-between mb-16 backdrop-blur-sm bg-background/50 -mx-4 px-4 py-3 rounded-2xl border border-border/50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-blue-600 dark:from-primary dark:to-blue-400 rounded-xl flex items-center justify-center shadow-lg shadow-primary/25">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary to-teal-500 dark:from-primary dark:to-teal-400 rounded-xl flex items-center justify-center shadow-lg shadow-primary/25">
               <Snowflake className="w-5 h-5 text-white" />
             </div>
             <span className="font-bold text-xl text-foreground">AirPro</span>
@@ -41,7 +41,7 @@ export default function HomePage() {
               </Button>
             </Link>
             <Link to="/register">
-              <Button className="bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 shadow-lg shadow-primary/25">
+              <Button className="bg-gradient-to-r from-primary to-teal-500 hover:from-primary/90 hover:to-teal-500/90 shadow-lg shadow-primary/25">
                 Get Started
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
@@ -58,7 +58,7 @@ export default function HomePage() {
           
           <h1 className="text-5xl md:text-7xl font-bold text-foreground mb-6 leading-tight">
             Manage Your
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-blue-500 to-cyan-500">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-teal-500 to-cyan-500">
               {' '}AC Business
             </span>
           </h1>
@@ -70,7 +70,7 @@ export default function HomePage() {
           
           <div className="flex flex-col sm:flex-row gap-4">
             <Link to="/register">
-              <Button size="lg" className="bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 text-lg px-8 h-14 shadow-xl shadow-primary/30 rounded-xl">
+              <Button size="lg" className="bg-gradient-to-r from-primary to-teal-500 hover:from-primary/90 hover:to-teal-500/90 text-lg px-8 h-14 shadow-xl shadow-primary/30 rounded-xl">
                 Start Free Trial
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
@@ -156,7 +156,7 @@ export default function HomePage() {
 
         {/* Stats Section */}
         <div className="py-20">
-          <div className="bg-gradient-to-br from-primary/5 via-blue-500/5 to-cyan-500/5 dark:from-primary/10 dark:via-blue-500/10 dark:to-cyan-500/10 rounded-3xl border border-border/50 p-12">
+          <div className="bg-gradient-to-br from-primary/5 via-teal-500/5 to-cyan-500/5 dark:from-primary/10 dark:via-teal-500/10 dark:to-cyan-500/10 rounded-3xl border border-border/50 p-12">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
               <StatItem value="500+" label="Companies" icon="🏢" />
               <StatItem value="10K+" label="Montages Tracked" icon="📋" />
@@ -168,7 +168,7 @@ export default function HomePage() {
         
         {/* CTA Section */}
         <div className="py-20">
-          <div className="bg-gradient-to-r from-primary to-blue-600 rounded-3xl p-12 text-center text-white shadow-2xl shadow-primary/30">
+          <div className="bg-gradient-to-r from-primary to-teal-500 rounded-3xl p-12 text-center text-white shadow-2xl shadow-primary/30">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Ready to transform your AC business?
             </h2>
@@ -189,7 +189,7 @@ export default function HomePage() {
       <footer className="relative border-t border-border/50 bg-background/50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary to-blue-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-br from-primary to-teal-500 rounded-lg flex items-center justify-center">
               <Snowflake className="w-4 h-4 text-white" />
             </div>
             <span className="text-muted-foreground">© 2026 AirPro. All rights reserved.</span>

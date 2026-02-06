@@ -4,6 +4,7 @@ using System.Text;
 using API.Data;
 using API.Data.Entities;
 using API.DTOs;
+using API.DTOs.Auth;
 using API.Models;
 using API.Services.Email;
 using Microsoft.AspNetCore.Identity;
@@ -264,6 +265,71 @@ public class AuthService : IAuthService
     {
         var user = await _userManager.FindByEmailAsync(email);
         return user != null;
+    }
+
+    public async Task<AuthUserDto> UpdateProfileAsync(string userId, UpdateProfileDto dto)
+    {
+        try
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                throw new InvalidOperationException("User not found");
+            }
+
+            if (user.Email != dto.Email)
+            {
+                var existingUser = await _userManager.FindByEmailAsync(dto.Email);
+                if (existingUser != null)
+                {
+                    throw new InvalidOperationException("A user with this email already exists");
+                }
+                user.Email = dto.Email;
+                user.UserName = dto.Email;
+                user.NormalizedEmail = dto.Email.ToUpperInvariant();
+                user.NormalizedUserName = dto.Email.ToUpperInvariant();
+            }
+
+            user.FirstName = dto.FirstName;
+            user.MiddleName = dto.MiddleName ?? string.Empty;
+            user.LastName = dto.LastName;
+            user.PhoneNumber = dto.PhoneNumber;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                throw new InvalidOperationException($"Failed to update profile: {errors}");
+            }
+
+            var company = user.CompanyId.HasValue 
+                ? await _context.Companies.FindAsync(user.CompanyId.Value)
+                : null;
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            return new AuthUserDto
+            {
+                Id = user.Id,
+                Email = user.Email!,
+                FirstName = user.FirstName,
+                MiddleName = user.MiddleName,
+                LastName = user.LastName,
+                FullName = $"{user.FirstName} {user.LastName}".Trim(),
+                PhoneNumber = user.PhoneNumber,
+                CompanyId = user.CompanyId,
+                CompanyName = company?.CompanyName,
+                SubscriptionPlan = company?.SubscriptionPlan.ToString(),
+                SubscriptionStatus = company?.SubscriptionStatus.ToString(),
+                TrialEndDate = company?.TrialEndDate,
+                Roles = roles.ToList()
+            };
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, e.Message);
+            throw;
+        }
     }
 
     public async Task<AuthResponseDto> RefreshTokenAsync(string token, string refreshToken)

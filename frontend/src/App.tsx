@@ -17,6 +17,8 @@ import CompaniesPage from '@/pages/CompaniesPage'
 import ErrorCodesPage from '@/pages/ErrorCodesPage'
 import SettingsPage from '@/pages/SettingsPage'
 import NotFoundPage from '@/pages/NotFoundPage'
+import ReportedProblemsPage from '@/pages/ReportedProblemsPage'
+import { AdminCompaniesPage, AdminUsersPage, AdminMontagesPage } from '@/pages/admin'
 import { SubscriptionPage, SubscriptionSuccessPage } from '@/pages/subscription'
 import { ProtectedRoute, DashboardLayout } from '@/components/layout'
 import { ThemeProvider } from '@/components/theme-provider'
@@ -46,17 +48,23 @@ function App() {
               <Route path="/dashboard" element={<ProtectedRoute roles={['Manager']}><ErrorBoundary><DashboardPage /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/inventory" element={<ProtectedRoute roles={['Manager', 'User']}><ErrorBoundary><InventoryPage /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/inventory/:id/history" element={<ProtectedRoute roles={['Manager', 'User']}><ErrorBoundary><InventoryItemHistoryPage /></ErrorBoundary></ProtectedRoute>} />
-              <Route path="/montages" element={<ErrorBoundary><MontagesPage /></ErrorBoundary>} />
-              <Route path="/montages/:id" element={<ErrorBoundary><MontageDetailsPage /></ErrorBoundary>} />
-              <Route path="/employees" element={<ProtectedRoute roles={['Manager', 'Admin']}><ErrorBoundary><EmployeesPage /></ErrorBoundary></ProtectedRoute>} />
-              <Route path="/employees/:id" element={<ProtectedRoute roles={['Manager', 'Admin']}><ErrorBoundary><EmployeeDetailsPage /></ErrorBoundary></ProtectedRoute>} />
+              <Route path="/montages" element={<ProtectedRoute roles={['Manager', 'User']}><ErrorBoundary><MontagesPage /></ErrorBoundary></ProtectedRoute>} />
+              <Route path="/montages/:id" element={<ProtectedRoute roles={['Manager', 'User']}><ErrorBoundary><MontageDetailsPage /></ErrorBoundary></ProtectedRoute>} />
+              <Route path="/employees" element={<ProtectedRoute roles={['Manager']}><ErrorBoundary><EmployeesPage /></ErrorBoundary></ProtectedRoute>} />
+              <Route path="/employees/:id" element={<ProtectedRoute roles={['Manager']}><ErrorBoundary><EmployeeDetailsPage /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/air-conditioners" element={<ErrorBoundary><AirConditionersPage /></ErrorBoundary>} />
               <Route path="/air-conditioners/:id" element={<ErrorBoundary><AirConditionerDetailsPage /></ErrorBoundary>} />
               <Route path="/error-codes" element={<ErrorBoundary><ErrorCodesPage /></ErrorBoundary>} />
-              <Route path="/companies" element={<ErrorBoundary><CompaniesPage /></ErrorBoundary>} />
+              <Route path="/companies" element={<ProtectedRoute roles={['Admin']}><ErrorBoundary><CompaniesPage /></ErrorBoundary></ProtectedRoute>} />
+              <Route path="/reported-problems" element={<ProtectedRoute roles={['Admin']}><ErrorBoundary><ReportedProblemsPage /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/settings" element={<ErrorBoundary><SettingsPage /></ErrorBoundary>} />
               <Route path="/subscription" element={<ErrorBoundary><SubscriptionPage /></ErrorBoundary>} />
               <Route path="/subscription/success" element={<ErrorBoundary><SubscriptionSuccessPage /></ErrorBoundary>} />
+              
+              {/* Admin Routes */}
+              <Route path="/admin/companies" element={<ProtectedRoute roles={['Admin']}><ErrorBoundary><AdminCompaniesPage /></ErrorBoundary></ProtectedRoute>} />
+              <Route path="/admin/users" element={<ProtectedRoute roles={['Admin']}><ErrorBoundary><AdminUsersPage /></ErrorBoundary></ProtectedRoute>} />
+              <Route path="/admin/montages" element={<ProtectedRoute roles={['Admin']}><ErrorBoundary><AdminMontagesPage /></ErrorBoundary></ProtectedRoute>} />
             </Route>
 
             {/* 404 */}

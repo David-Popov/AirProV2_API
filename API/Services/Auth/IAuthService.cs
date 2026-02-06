@@ -1,5 +1,6 @@
 using API.DTOs;
-
+using API.DTOs.Auth;
+using API.Models;
 namespace API.Services.Auth;
 
 public interface IAuthService
@@ -13,6 +14,8 @@ public interface IAuthService
     Task<AuthUserDto?> GetCurrentUserAsync(string userId);
     
     Task<bool> UserExistsAsync(string email);
+    
+    Task<AuthUserDto> UpdateProfileAsync(string userId, UpdateProfileDto dto);
     
     // Employee management (for Managers)
     Task<EmployeeDto> CreateEmployeeAsync(CreateEmployeeDto dto, Guid companyId);

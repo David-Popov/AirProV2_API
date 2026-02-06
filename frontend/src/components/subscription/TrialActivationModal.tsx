@@ -63,9 +63,10 @@ export function TrialActivationModal({
           </DialogTitle>
           <DialogDescription className="space-y-3 pt-2">
             <p>
-              {t('subscription.trial_limit_reached',
-                { maxEmployees },
-                `You've reached the limit of ${maxEmployees} employees on the Free plan.`)}
+              {t('subscription.trial_limit_reached', {
+                maxEmployees,
+                defaultValue: `You've reached the limit of ${maxEmployees} employees on the Free plan.`
+              })}
             </p>
             <p className="font-medium text-foreground">
               {t('subscription.trial_benefits',

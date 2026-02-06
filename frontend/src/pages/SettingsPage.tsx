@@ -65,6 +65,16 @@ export default function SettingsPage() {
     pushEnabled: false
   })
 
+  const [isEditingProfile, setIsEditingProfile] = useState(false)
+  const [savingProfile, setSavingProfile] = useState(false)
+  const [profileForm, setProfileForm] = useState({
+    first_name: '',
+    middle_name: '',
+    last_name: '',
+    email: '',
+    phone_number: ''
+  })
+
   useEffect(() => {
     const tab = searchParams.get('tab')
     if (tab && ['profile', 'company', 'subscription', 'preferences'].includes(tab)) {
@@ -85,6 +95,19 @@ export default function SettingsPage() {
       loadCompany()
     } else {
       setLoading(false)
+    }
+  }, [user])
+
+  // Initialize profile form when user loads
+  useEffect(() => {
+    if (user) {
+      setProfileForm({
+        first_name: user.first_name || '',
+        middle_name: user.middle_name || '',
+        last_name: user.last_name || '',
+        email: user.email || '',
+        phone_number: user.phone_number || ''
+      })
     }
   }, [user])
   
@@ -152,6 +175,34 @@ export default function SettingsPage() {
     }
     setIsEditing(false)
   }
+
+  const handleSaveProfile = async () => {
+    try {
+      setSavingProfile(true)
+      const { authService } = await import('@/services/auth')
+      await authService.updateProfile(profileForm)
+      toast.success(t('settings.profile_updated', 'Profile updated successfully'))
+      setIsEditingProfile(false)
+      refreshUser()
+    } catch {
+      toast.error(t('settings.profile_update_error', 'Failed to update profile'))
+    } finally {
+      setSavingProfile(false)
+    }
+  }
+
+  const handleCancelProfileEdit = () => {
+    if (user) {
+      setProfileForm({
+        first_name: user.first_name || '',
+        middle_name: user.middle_name || '',
+        last_name: user.last_name || '',
+        email: user.email || '',
+        phone_number: user.phone_number || ''
+      })
+    }
+    setIsEditingProfile(false)
+  }
   
   const isAdmin = user?.roles.includes('Admin')
   const isManager = user?.roles.includes('Manager')
@@ -163,8 +214,10 @@ export default function SettingsPage() {
     { id: 'preferences', label: t('settings.preferences', 'Preferences'), icon: Settings }
   ] as const
   
-  // Hide company tab from Admin users
-  const tabs = isAdmin ? allTabs.filter(tab => tab.id !== 'company') : allTabs
+  // Hide company and subscription tabs from Admin users
+  const tabs = isAdmin 
+    ? allTabs.filter(tab => tab.id !== 'company' && tab.id !== 'subscription') 
+    : allTabs
 
   return (
     <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
@@ -228,24 +281,38 @@ export default function SettingsPage() {
             <div className="space-y-4 sm:space-y-6">
               <Card className="glass-card">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                    <User className="w-5 h-5 text-primary" />
-                    {t('settings.profile_info', 'Profile Information')}
-                  </CardTitle>
-                  <CardDescription className="text-sm">
-                    {t('settings.profile_desc', 'Your personal information')}
-                  </CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                        <User className="w-5 h-5 text-primary" />
+                        {t('settings.profile_info', 'Profile Information')}
+                      </CardTitle>
+                      <CardDescription className="text-sm">
+                        {t('settings.profile_desc', 'Your personal information')}
+                      </CardDescription>
+                    </div>
+                    {!isEditingProfile && (
+                      <Button variant="outline" size="sm" onClick={() => setIsEditingProfile(true)}>
+                        <Pencil className="w-4 h-4 mr-2" />
+                        {t('common.edit', 'Edit')}
+                      </Button>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl bg-muted/30">
                     <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                       <span className="text-lg sm:text-2xl font-bold text-primary">
-                        {user?.first_name?.charAt(0)}{user?.last_name?.charAt(0)}
+                        {(isEditingProfile ? profileForm.first_name : user?.first_name)?.charAt(0)}{(isEditingProfile ? profileForm.last_name : user?.last_name)?.charAt(0)}
                       </span>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-base sm:text-lg text-foreground truncate">{user?.full_name}</p>
-                      <p className="text-xs sm:text-sm text-muted-foreground truncate">{user?.email}</p>
+                      <p className="font-semibold text-base sm:text-lg text-foreground truncate">
+                        {isEditingProfile ? `${profileForm.first_name} ${profileForm.last_name}` : user?.full_name}
+                      </p>
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                        {isEditingProfile ? profileForm.email : user?.email}
+                      </p>
                       <div className="flex flex-wrap gap-1 sm:gap-2 mt-1 sm:mt-2">
                         {user?.roles.map(role => (
                           <Badge key={role} variant="secondary" className="text-xs">
@@ -259,21 +326,64 @@ export default function SettingsPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
                       <Label className="text-sm text-muted-foreground">{t('settings.first_name', 'First Name')}</Label>
-                      <Input value={user?.first_name || ''} disabled className="mt-1 bg-muted/20" />
+                      <Input 
+                        value={isEditingProfile ? profileForm.first_name : (user?.first_name || '')} 
+                        onChange={(e) => setProfileForm({...profileForm, first_name: e.target.value})}
+                        disabled={!isEditingProfile} 
+                        className={`mt-1 ${!isEditingProfile ? 'bg-muted/20' : ''}`}
+                      />
                     </div>
                     <div>
-                      <Label className="text-sm text-muted-foreground">{t('settings.last_name', 'Last Name')}</Label>
-                      <Input value={user?.last_name || ''} disabled className="mt-1 bg-muted/20" />
+                      <Label className="text-sm text-muted-foreground">{t('settings.middle_name', 'Middle Name')}</Label>
+                      <Input 
+                        value={isEditingProfile ? profileForm.middle_name : (user?.middle_name || '')} 
+                        onChange={(e) => setProfileForm({...profileForm, middle_name: e.target.value})}
+                        disabled={!isEditingProfile} 
+                        className={`mt-1 ${!isEditingProfile ? 'bg-muted/20' : ''}`}
+                      />
                     </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm text-muted-foreground">{t('settings.last_name', 'Last Name')}</Label>
+                    <Input 
+                      value={isEditingProfile ? profileForm.last_name : (user?.last_name || '')} 
+                      onChange={(e) => setProfileForm({...profileForm, last_name: e.target.value})}
+                      disabled={!isEditingProfile} 
+                      className={`mt-1 ${!isEditingProfile ? 'bg-muted/20' : ''}`}
+                    />
                   </div>
                   <div>
                     <Label className="text-sm text-muted-foreground">{t('settings.email', 'Email')}</Label>
-                    <Input value={user?.email || ''} disabled className="mt-1 bg-muted/20" />
+                    <Input 
+                      value={isEditingProfile ? profileForm.email : (user?.email || '')} 
+                      onChange={(e) => setProfileForm({...profileForm, email: e.target.value})}
+                      disabled={!isEditingProfile} 
+                      className={`mt-1 ${!isEditingProfile ? 'bg-muted/20' : ''}`}
+                    />
                   </div>
                   <div>
                     <Label className="text-sm text-muted-foreground">{t('settings.phone', 'Phone')}</Label>
-                    <Input value={user?.phone_number || t('settings.not_set', 'Not set')} disabled className="mt-1 bg-muted/20" />
+                    <Input 
+                      value={isEditingProfile ? profileForm.phone_number : (user?.phone_number || '')} 
+                      onChange={(e) => setProfileForm({...profileForm, phone_number: e.target.value})}
+                      disabled={!isEditingProfile} 
+                      placeholder={!isEditingProfile ? t('settings.not_set', 'Not set') : ''}
+                      className={`mt-1 ${!isEditingProfile ? 'bg-muted/20' : ''}`}
+                    />
                   </div>
+
+                  {isEditingProfile && (
+                    <div className="flex gap-3 pt-4 border-t border-border/50">
+                      <Button onClick={handleSaveProfile} disabled={savingProfile}>
+                        <Save className="w-4 h-4 mr-2" />
+                        {savingProfile ? t('common.saving', 'Saving...') : t('common.save', 'Save')}
+                      </Button>
+                      <Button variant="outline" onClick={handleCancelProfileEdit} disabled={savingProfile}>
+                        <X className="w-4 h-4 mr-2" />
+                        {t('common.cancel', 'Cancel')}
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
               
@@ -504,50 +614,52 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
               
-              {/* Notifications */}
-              <Card className="glass-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                    <Bell className="w-5 h-5 text-primary" />
-                    {t('settings.notifications', 'Notifications')}
-                  </CardTitle>
-                  <CardDescription className="text-sm">
-                    {t('settings.notifications_desc', 'Manage your notification preferences')}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between py-2 gap-4">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground">{t('settings.email_montages', 'Montage updates')}</p>
-                      <p className="text-xs sm:text-sm text-muted-foreground">{t('settings.email_montages_desc', 'Get notified about montage status changes')}</p>
+              {/* Notifications - Hidden from Admin */}
+              {!isAdmin && (
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                      <Bell className="w-5 h-5 text-primary" />
+                      {t('settings.notifications', 'Notifications')}
+                    </CardTitle>
+                    <CardDescription className="text-sm">
+                      {t('settings.notifications_desc', 'Manage your notification preferences')}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between py-2 gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-foreground">{t('settings.email_montages', 'Montage updates')}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">{t('settings.email_montages_desc', 'Get notified about montage status changes')}</p>
+                      </div>
+                      <Switch 
+                        checked={notifications.emailMontages} 
+                        onCheckedChange={(checked) => setNotifications({...notifications, emailMontages: checked})}
+                      />
                     </div>
-                    <Switch 
-                      checked={notifications.emailMontages} 
-                      onCheckedChange={(checked) => setNotifications({...notifications, emailMontages: checked})}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-t border-border/50 gap-4">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground">{t('settings.email_low_stock', 'Low stock alerts')}</p>
-                      <p className="text-xs sm:text-sm text-muted-foreground">{t('settings.email_low_stock_desc', 'Get notified when inventory is low')}</p>
+                    <div className="flex items-center justify-between py-2 border-t border-border/50 gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-foreground">{t('settings.email_low_stock', 'Low stock alerts')}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">{t('settings.email_low_stock_desc', 'Get notified when inventory is low')}</p>
+                      </div>
+                      <Switch 
+                        checked={notifications.emailLowStock} 
+                        onCheckedChange={(checked) => setNotifications({...notifications, emailLowStock: checked})}
+                      />
                     </div>
-                    <Switch 
-                      checked={notifications.emailLowStock} 
-                      onCheckedChange={(checked) => setNotifications({...notifications, emailLowStock: checked})}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-t border-border/50 gap-4">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground">{t('settings.email_subscription', 'Subscription reminders')}</p>
-                      <p className="text-xs sm:text-sm text-muted-foreground">{t('settings.email_subscription_desc', 'Get notified before subscription expires')}</p>
+                    <div className="flex items-center justify-between py-2 border-t border-border/50 gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-foreground">{t('settings.email_subscription', 'Subscription reminders')}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">{t('settings.email_subscription_desc', 'Get notified before subscription expires')}</p>
+                      </div>
+                      <Switch 
+                        checked={notifications.emailSubscription} 
+                        onCheckedChange={(checked) => setNotifications({...notifications, emailSubscription: checked})}
+                      />
                     </div>
-                    <Switch 
-                      checked={notifications.emailSubscription} 
-                      onCheckedChange={(checked) => setNotifications({...notifications, emailSubscription: checked})}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
         </div>
