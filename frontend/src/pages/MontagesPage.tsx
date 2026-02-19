@@ -45,7 +45,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { PageHeader, SearchBar, Pagination, LoadingState, EmptyState, ConfirmDialog } from '@/components/shared'
+import { PageHeader, SearchBar, Pagination, EmptyState, ConfirmDialog } from '@/components/shared'
+import { SkeletonTableRows, SkeletonMobileCards } from '@/components/skeletons'
 import { montageService, type MontageFilters } from '@/services/montages'
 import { 
   type Montage, 
@@ -315,7 +316,7 @@ export default function MontagesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
+    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300">
       <PageHeader
         title={t('montages.title')}
         subtitle={t('montages.subtitle')}
@@ -335,7 +336,7 @@ export default function MontagesPage() {
       >
         <Button
           variant="outline"
-          className="relative border-border hover:bg-accent text-foreground"
+          className="hidden sm:flex relative border-border hover:bg-accent text-foreground"
           onClick={() => {
             setTempFilters(activeFilters)
             setIsFilterOpen(true)
@@ -439,13 +440,7 @@ export default function MontagesPage() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
-                  <div className="flex justify-center">
-                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                  </div>
-                </TableCell>
-              </TableRow>
+              <SkeletonTableRows columns={7} />
             ) : items.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
@@ -454,9 +449,9 @@ export default function MontagesPage() {
               </TableRow>
             ) : (
               items.map((item) => (
-                <TableRow 
-                  key={item.id} 
-                  className="border-border hover:bg-muted/30 cursor-pointer transition-colors"
+                <TableRow
+                  key={item.id}
+                  className="border-border hover:bg-muted/30 cursor-pointer transition-colors animate-fade-in"
                   onClick={() => navigate(`/montages/${item.id}`)}
                 >
                   <TableCell>
@@ -590,14 +585,14 @@ export default function MontagesPage() {
       {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
         {isLoading ? (
-          <LoadingState />
+          <SkeletonMobileCards rows={4} />
         ) : items.length === 0 ? (
           <EmptyState icon={ClipboardList} message={t('montages.no_montages')} />
         ) : (
           items.map((item) => (
-            <Card 
-              key={item.id} 
-              className="glass-card cursor-pointer hover:border-primary/50 transition-all"
+            <Card
+              key={item.id}
+              className="glass-card cursor-pointer hover:border-primary/50 transition-all animate-fade-in"
               onClick={() => navigate(`/montages/${item.id}`)}
             >
               <CardContent className="p-4">
@@ -772,7 +767,7 @@ export default function MontagesPage() {
             {/* Client Info */}
             <div className="space-y-4">
                <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">{t('montages.client_info')}</h3>
-               <div className="grid grid-cols-2 gap-4">
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="clientName">{t('montages.client_name')}</Label>
                     <Input id="clientName" value={formData.client_name} onChange={(e) => setFormData({...formData, client_name: e.target.value})} className="bg-background border-input" required />
@@ -789,7 +784,7 @@ export default function MontagesPage() {
                     <Label htmlFor="clientCity">{t('montages.client_city')}</Label>
                     <Input id="clientCity" value={formData.client_city || ''} onChange={(e) => setFormData({...formData, client_city: e.target.value})} className="bg-background border-input" />
                   </div>
-                  <div className="col-span-2 grid gap-2">
+                  <div className="col-span-1 sm:col-span-2 grid gap-2">
                     <Label htmlFor="clientAddress">{t('montages.client_address')}</Label>
                     <Input id="clientAddress" value={formData.client_address || ''} onChange={(e) => setFormData({...formData, client_address: e.target.value})} className="bg-background border-input" />
                   </div>
@@ -799,7 +794,7 @@ export default function MontagesPage() {
             {/* Installation Details */}
             <div className="space-y-4">
                <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">{t('montages.installation_info')}</h3>
-               <div className="grid grid-cols-2 gap-4">
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="date">{t('common.date')}</Label>
                     <Input id="date" type="date" value={formData.installation_date} onChange={(e) => setFormData({...formData, installation_date: e.target.value})} className="bg-background border-input" required />
@@ -833,7 +828,7 @@ export default function MontagesPage() {
              {/* Financials */}
             <div className="space-y-4">
                <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">{t('montages.financials')}</h3>
-               <div className="grid grid-cols-3 gap-4">
+               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                    <div className="grid gap-2">
                     <Label htmlFor="price">{t('montages.total_price')}</Label>
                     <Input id="price" type="number" value={formData.total_price || 0} onChange={(e) => setFormData({...formData, total_price: Number(e.target.value)})} className="bg-background border-input" />
@@ -889,6 +884,24 @@ export default function MontagesPage() {
         cancelLabel={t('common.cancel', 'Cancel')}
         isLoading={isDeleting}
       />
+
+      {/* Mobile Filter FAB */}
+      <div className="sm:hidden fixed bottom-6 right-6 z-50">
+        <Button
+          className="relative h-14 w-14 rounded-full shadow-lg shadow-primary/30 bg-primary hover:bg-primary/90 text-primary-foreground p-0 flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
+          onClick={() => {
+            setTempFilters(activeFilters)
+            setIsFilterOpen(true)
+          }}
+        >
+          <Filter className="w-6 h-6" />
+          {Object.keys(activeFilters).length > 0 && (
+            <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full border-2 border-background flex items-center justify-center text-[10px] font-bold">
+              {Object.keys(activeFilters).length}
+            </span>
+          )}
+        </Button>
+      </div>
     </div>
   )
 }

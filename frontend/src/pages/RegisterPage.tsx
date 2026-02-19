@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuth } from '@/context'
 import { COMPANY_TYPE_OPTIONS } from '@/types'
 import { ModeToggle } from '@/components/mode-toggle'
@@ -154,12 +155,12 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-blue-50/30 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 flex items-center justify-center p-4 py-8">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 py-8">
       {/* Decorative background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 -left-40 w-80 h-80 bg-blue-400/10 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 right-0 w-64 h-64 bg-cyan-400/10 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/8 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 -left-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 right-0 w-64 h-64 bg-violet-400/5 rounded-full blur-3xl" />
       </div>
       
       {/* Theme toggle */}
@@ -170,7 +171,7 @@ export default function RegisterPage() {
       <div className="relative w-full max-w-md">
         {/* Logo */}
         <Link to="/" className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-12 h-12 bg-gradient-to-br from-primary to-blue-600 dark:from-primary dark:to-blue-400 rounded-xl flex items-center justify-center shadow-lg shadow-primary/25">
+          <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/25">
             <Snowflake className="w-6 h-6 text-white" />
           </div>
           <span className="font-bold text-2xl text-foreground">AirPro</span>
@@ -326,18 +327,21 @@ export default function RegisterPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="companyType" className="text-foreground font-medium">{t('auth.company_type')} *</Label>
-                    <select
-                      id="companyType"
+                    <Select
                       value={formData.companyType}
-                      onChange={(e) => setFormData({ ...formData, companyType: e.target.value })}
-                      className="w-full h-11 px-3 rounded-md bg-background border border-border text-foreground focus:ring-2 focus:ring-ring focus:border-input"
+                      onValueChange={(val) => setFormData({ ...formData, companyType: val })}
                     >
-                      {COMPANY_TYPE_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger id="companyType" className="h-11 bg-background border-border">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover border-border text-popover-foreground">
+                        {COMPANY_TYPE_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -413,7 +417,7 @@ export default function RegisterPage() {
                 )}
                 <Button
                   type="submit"
-                  className={`${step === 1 ? 'w-full' : 'flex-1'} h-11 bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 shadow-lg shadow-primary/25 font-medium`}
+                  className={`${step === 1 ? 'w-full' : 'flex-1'} h-11 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25 font-medium`}
                   disabled={isLoading}
                 >
                   {isLoading ? (

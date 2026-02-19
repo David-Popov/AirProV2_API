@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -30,9 +30,10 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { PageHeader, SearchBar, LoadingState, EmptyState, ConfirmDialog } from '@/components/shared'
-import { employeeService } from '@/services'
-import type { Employee, CreateEmployeeRequest, EmployeeLimits } from '@/types'
+import { PageHeader, SearchBar, EmptyState, ConfirmDialog } from '@/components/shared'
+import { SkeletonTableRows, SkeletonMobileCards } from '@/components/skeletons'
+import { useEmployees, useEmployeeLimits, useCreateEmployee, useDeleteEmployee, useActivateEmployee, useDeactivateEmployee } from '@/hooks'
+import type { Employee, CreateEmployeeRequest } from '@/types'
 import { TrialActivationModal, PremiumUpgradeModal } from '@/components/subscription'
 import { useAuth } from '@/context'
 
@@ -40,10 +41,7 @@ export default function EmployeesPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const [employees, setEmployees] = useState<Employee[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [employeeLimits, setEmployeeLimits] = useState<EmployeeLimits | null>(null)
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [newEmployee, setNewEmployee] = useState<CreateEmployeeRequest>({
@@ -54,43 +52,21 @@ export default function EmployeesPage() {
     phone_number: '',
     address: ''
   })
-  const [isSaving, setIsSaving] = useState(false)
-  
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
 
   const [trialModalOpen, setTrialModalOpen] = useState(false)
 
   const [premiumModalOpen, setPremiumModalOpen] = useState(false)
   const [premiumModalReason, setPremiumModalReason] = useState<'employee_limit' | 'trial_used' | 'general'>('general')
 
-  const loadEmployees = async () => {
-    setIsLoading(true)
-    try {
-      const data = await employeeService.getAll()
-      setEmployees(data)
-    } catch (error) {
-      toast.error(t('common.unknown_error'))
-      console.error(error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const loadEmployeeLimits = async () => {
-    try {
-      const limits = await employeeService.getLimits()
-      setEmployeeLimits(limits)
-    } catch (error) {
-      console.error('Failed to load employee limits:', error)
-    }
-  }
-
-  useEffect(() => {
-    loadEmployees()
-    loadEmployeeLimits()
-  }, [])
+  const { data: employees = [], isLoading } = useEmployees()
+  const { data: employeeLimits = null } = useEmployeeLimits()
+  const createEmployee = useCreateEmployee()
+  const deleteEmployee = useDeleteEmployee()
+  const activateEmployee = useActivateEmployee()
+  const deactivateEmployee = useDeactivateEmployee()
 
   const handleCreate = async () => {
     if (employeeLimits && !employeeLimits.can_add_more) {
@@ -176,19 +152,13 @@ export default function EmployeesPage() {
       return
     }
     
-    setIsSaving(true)
     try {
-      await employeeService.create(newEmployee)
+      await createEmployee.mutateAsync(newEmployee)
       toast.success(t('employees.created_success', 'Employee created successfully'))
       setIsDialogOpen(false)
-      await loadEmployees()
-      await loadEmployeeLimits() // Reload limits after creating employee
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
-      console.error(error)
-    } finally {
-      setIsSaving(false)
     }
   }
 
@@ -199,17 +169,14 @@ export default function EmployeesPage() {
 
   const handleDeleteConfirm = async () => {
     if (!employeeToDelete) return
-    
-    setIsDeleting(true)
+
     try {
-      await employeeService.delete(employeeToDelete.id)
+      await deleteEmployee.mutateAsync(employeeToDelete.id)
       toast.success(t('employees.deleted_success', 'Employee deleted successfully'))
-      loadEmployees()
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
     } finally {
-      setIsDeleting(false)
       setDeleteDialogOpen(false)
       setEmployeeToDelete(null)
     }
@@ -227,10 +194,8 @@ export default function EmployeesPage() {
     }
 
     try {
-      await employeeService.activate(employee.id)
+      await activateEmployee.mutateAsync(employee.id)
       toast.success(t('employees.activated_success', 'Employee activated successfully'))
-      await loadEmployees()
-      await loadEmployeeLimits()
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
@@ -241,10 +206,8 @@ export default function EmployeesPage() {
     e.stopPropagation()
 
     try {
-      await employeeService.deactivate(employee.id)
+      await deactivateEmployee.mutateAsync(employee.id)
       toast.success(t('employees.deactivated_success', 'Employee deactivated successfully'))
-      await loadEmployees()
-      await loadEmployeeLimits()
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
@@ -258,7 +221,7 @@ export default function EmployeesPage() {
   )
 
   return (
-    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
+    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300">
       <PageHeader
         title={t('employees.title')}
         subtitle={t('employees.subtitle')}
@@ -292,13 +255,7 @@ export default function EmployeesPage() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
-                  <div className="flex justify-center">
-                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                  </div>
-                </TableCell>
-              </TableRow>
+              <SkeletonTableRows columns={6} />
             ) : filteredEmployees.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center text-sm sm:text-base text-muted-foreground">
@@ -307,9 +264,9 @@ export default function EmployeesPage() {
               </TableRow>
             ) : (
               filteredEmployees.map((emp) => (
-                <TableRow 
-                  key={emp.id} 
-                  className="border-border hover:bg-muted/30 transition-colors cursor-pointer"
+                <TableRow
+                  key={emp.id}
+                  className="border-border hover:bg-muted/30 transition-colors cursor-pointer animate-fade-in"
                   onClick={() => navigate(`/employees/${emp.id}`)}
                 >
                   <TableCell className="font-medium text-foreground">{emp.full_name}</TableCell>
@@ -381,14 +338,14 @@ export default function EmployeesPage() {
       {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
         {isLoading ? (
-          <LoadingState />
+          <SkeletonMobileCards rows={4} />
         ) : filteredEmployees.length === 0 ? (
           <EmptyState icon={Users} message={t('employees.no_employees')} />
         ) : (
           filteredEmployees.map((emp) => (
-            <Card 
-              key={emp.id} 
-              className="glass-card cursor-pointer hover:border-primary/50 transition-all"
+            <Card
+              key={emp.id}
+              className="glass-card cursor-pointer hover:border-primary/50 transition-all animate-fade-in"
               onClick={() => navigate(`/employees/${emp.id}`)}
             >
               <CardContent className="p-4">
@@ -505,8 +462,8 @@ export default function EmployeesPage() {
               />
             </div>
             <DialogFooter>
-              <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSaving}>
-                {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={createEmployee.isPending}>
+                {createEmployee.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {t('employees.create_account')}
               </Button>
             </DialogFooter>
@@ -523,15 +480,14 @@ export default function EmployeesPage() {
         itemName={employeeToDelete ? `${employeeToDelete.full_name} (${employeeToDelete.email})` : undefined}
         confirmLabel={t('common.delete', 'Delete')}
         cancelLabel={t('common.cancel', 'Cancel')}
-        isLoading={isDeleting}
+        isLoading={deleteEmployee.isPending}
       />
 
       {/* Trial Activation Modal */}
       <TrialActivationModal
         isOpen={trialModalOpen}
         onClose={() => setTrialModalOpen(false)}
-        onSuccess={async () => {
-          await loadEmployeeLimits()
+        onSuccess={() => {
           setNewEmployee({
             email: '',
             password: '',

@@ -40,18 +40,14 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
-import { employeeService, montageService } from '@/services'
-import type { Employee, Montage } from '@/types'
+import { useEmployee, useUpdateEmployee, useDeleteEmployee, useResetEmployeePassword, useEmployeeMontages } from '@/hooks'
+import { EmployeeDetailsSkeleton } from '@/components/skeletons'
 
 export default function EmployeeDetailsPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { user, refreshUser } = useAuth()
-  const [employee, setEmployee] = useState<Employee | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [employeeMontages, setEmployeeMontages] = useState<Montage[]>([])
-  
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState({
     first_name: '',
@@ -59,57 +55,44 @@ export default function EmployeeDetailsPage() {
     phone_number: '',
     address: ''
   })
-  const [isSaving, setIsSaving] = useState(false)
-  
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  
+
   const [isResettingPassword, setIsResettingPassword] = useState(false)
   const [passwordForm, setPasswordForm] = useState({
     password: '',
     confirmPassword: ''
   })
-  const [isSavingPassword, setIsSavingPassword] = useState(false)
+  const { data: employee, isLoading, error: employeeError } = useEmployee(id!)
+  const { data: montagesData } = useEmployeeMontages(id!)
+  const updateEmployee = useUpdateEmployee()
+  const deleteEmployeeMutation = useDeleteEmployee()
+  const resetPassword = useResetEmployeePassword()
+
+  const employeeMontages = montagesData?.items ?? []
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!id) return
-      setIsLoading(true)
-      try {
-        const data = await employeeService.getById(id)
-        setEmployee(data)
-        setEditForm({
-          first_name: data.first_name,
-          last_name: data.last_name,
-          phone_number: data.phone_number || '',
-          address: data.address || ''
-        })
-        
-        try {
-          const montagesRes = await montageService.getAll(1, 100)
-          // Filter montages by user_id (if the montage has user assignment)
-          const empMontages = montagesRes.items.filter(m => m.user_id === id)
-          setEmployeeMontages(empMontages)
-        } catch {
-          console.log('Could not fetch employee montages')
-        }
-      } catch (error) {
-        toast.error(t('common.unknown_error'))
-        console.error(error)
-        navigate('/employees')
-      } finally {
-        setIsLoading(false)
-      }
+    if (employee) {
+      setEditForm({
+        first_name: employee.first_name,
+        last_name: employee.last_name,
+        phone_number: employee.phone_number || '',
+        address: employee.address || ''
+      })
     }
+  }, [employee])
 
-    fetchData()
-  }, [id, navigate, t])
+  useEffect(() => {
+    if (employeeError) {
+      toast.error(t('common.unknown_error'))
+      navigate('/employees')
+    }
+  }, [employeeError, navigate, t])
 
   const handleEditSave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!employee) return
 
-    setIsSaving(true)
     try {
       const updatePayload = {
         ...editForm,
@@ -118,11 +101,9 @@ export default function EmployeeDetailsPage() {
         address: editForm.address || null,
         phone_number: editForm.phone_number || null,
       }
-      
-      await employeeService.update(employee.id, updatePayload)
-      const updated = await employeeService.getById(employee.id)
-      setEmployee(updated)
-      
+
+      await updateEmployee.mutateAsync({ id: employee.id, data: updatePayload })
+
       if (user?.id === employee.id) {
         await refreshUser()
       }
@@ -132,24 +113,20 @@ export default function EmployeeDetailsPage() {
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
-    } finally {
-      setIsSaving(false)
     }
   }
 
   const handleDelete = async () => {
     if (!employee) return
 
-    setIsDeleting(true)
     try {
-      await employeeService.delete(employee.id)
+      await deleteEmployeeMutation.mutateAsync(employee.id)
       toast.success(t('employees.deleted_success', 'Employee deleted successfully'))
       navigate('/employees')
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
     } finally {
-      setIsDeleting(false)
       setDeleteDialogOpen(false)
     }
   }
@@ -190,12 +167,14 @@ export default function EmployeeDetailsPage() {
       return
     }
 
-    setIsSavingPassword(true)
     try {
-      await employeeService.update(employee.id, {
-        first_name: employee.first_name,
-        last_name: employee.last_name,
-        password: passwordForm.password
+      await resetPassword.mutateAsync({
+        id: employee.id,
+        data: {
+          first_name: employee.first_name,
+          last_name: employee.last_name,
+          password: passwordForm.password
+        }
       })
       toast.success(t('employees.password_reset_success', 'Password has been reset successfully'))
       setIsResettingPassword(false)
@@ -203,22 +182,16 @@ export default function EmployeeDetailsPage() {
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
-    } finally {
-      setIsSavingPassword(false)
     }
   }
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    )
+    return <EmployeeDetailsSkeleton />
   }
 
   if (!employee) {
     return (
-      <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8">
+      <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8">
         <p className="text-muted-foreground">{t('employees.not_found', 'Employee not found')}</p>
       </div>
     )
@@ -228,7 +201,7 @@ export default function EmployeeDetailsPage() {
   const activeMontages = employeeMontages.filter(m => m.status === 'InProgress' || m.status === 'Planned').length
 
   return (
-    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
+    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300 animate-fade-in">
       {/* Back Button */}
       <BackButton onClick={() => navigate('/employees')} />
 
@@ -267,7 +240,7 @@ export default function EmployeeDetailsPage() {
                 {t('employees.personal_info', 'Personal Information')}
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-6">
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">{t('auth.first_name')}</p>
                 <p className="font-medium text-foreground">{employee.first_name}</p>
@@ -487,8 +460,8 @@ export default function EmployeeDetailsPage() {
               />
             </div>
             <DialogFooter>
-              <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSaving}>
-                {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={updateEmployee.isPending}>
+                {updateEmployee.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {t('common.save_changes')}
               </Button>
             </DialogFooter>
@@ -517,10 +490,10 @@ export default function EmployeeDetailsPage() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              disabled={isDeleting}
+              disabled={deleteEmployeeMutation.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isDeleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {deleteEmployeeMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {t('common.delete', 'Delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -578,8 +551,8 @@ export default function EmployeeDetailsPage() {
               >
                 {t('common.cancel')}
               </Button>
-              <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSavingPassword}>
-                {isSavingPassword && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={resetPassword.isPending}>
+                {resetPassword.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {t('employees.set_password', 'Set Password')}
               </Button>
             </DialogFooter>

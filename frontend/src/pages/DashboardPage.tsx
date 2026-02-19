@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { 
-  ClipboardList, 
-  Package, 
-  Users, 
+import {
+  ClipboardList,
+  Package,
+  Users,
   TrendingUp,
   AlertTriangle,
   DollarSign,
@@ -14,8 +14,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/context'
-import { inventoryService, montageService, employeeService } from '@/services'
-import type { Montage } from '@/types'
+import { useMontages, useInventory, useEmployees } from '@/hooks'
 import {
   AreaChart,
   Area,
@@ -26,6 +25,7 @@ import {
   ResponsiveContainer
 } from 'recharts'
 import { RecentInventoryActivity } from '@/components/inventory/RecentInventoryActivity'
+import { DashboardSkeleton } from '@/components/skeletons'
 
 type TimePeriod = '1month' | '3months' | '6months' | '1year' | '2years'
 
@@ -39,99 +39,49 @@ export default function DashboardPage() {
   const { user } = useAuth()
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
-
-  const [stats, setStats] = useState({
-    activeMontages: 0,
-    completedMontages: 0,
-    inventoryCount: 0,
-    lowStockCount: 0,
-    employeeCount: 0
-  })
-
-  const [maintenanceReminders, setMaintenanceReminders] = useState<{
-    montage: Montage
-    maintenanceDate: Date
-    daysUntil: number
-    isOverdue: boolean
-  }[]>([])
-  const [allMontages, setAllMontages] = useState<Montage[]>([])
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('6months')
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const montagesRes = await montageService.getAll(1, 100)
-        const montages = montagesRes.items
-        setAllMontages(montages)
-        
-        // Fix status matching - backend returns 'InProgress', 'Planned', 'Completed', etc.
-        const active = montages.filter(m => 
-          m.status === 'InProgress' || m.status === 'Planned'
-        ).length
-        const completed = montages.filter(m => m.status === 'Completed').length
+  // Fetch data with React Query (cached, parallel)
+  const { data: montagesData, isLoading: isLoadingMontages } = useMontages(1, 100)
+  const { data: inventoryData, isLoading: isLoadingInventory } = useInventory(1, 100)
+  const { data: employeesData } = useEmployees()
 
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
-        
-        const reminders = montages
-          .filter(m => m.status === 'Completed' || m.payment_status === 'Paid')
-          .map(m => {
-            const installDate = new Date(m.completion_date || m.installation_date)
-            const maintenanceDate = new Date(installDate)
-            maintenanceDate.setFullYear(maintenanceDate.getFullYear() + 1)
-            
-            const timeDiff = maintenanceDate.getTime() - today.getTime()
-            const daysUntil = Math.ceil(timeDiff / (1000 * 60 * 60 * 24))
-            
-            return {
-              montage: m,
-              maintenanceDate,
-              daysUntil,
-              isOverdue: daysUntil < 0
-            }
-          })
-          .filter(r => r.daysUntil <= 60)
-          .sort((a, b) => a.daysUntil - b.daysUntil)
-          .slice(0, 5)
+  const allMontages = montagesData?.items ?? []
 
-        setMaintenanceReminders(reminders)
+  // Compute stats from cached data
+  const stats = useMemo(() => {
+    const activeMontages = allMontages.filter(m =>
+      m.status === 'InProgress' || m.status === 'Planned'
+    ).length
+    const completedMontages = allMontages.filter(m => m.status === 'Completed').length
+    const inventoryCount = inventoryData?.totalCount ?? 0
+    const lowStockCount = inventoryData?.items.filter(item => item.is_low_stock).length ?? 0
+    const employeeCount = user?.roles.includes('Manager') ? (employeesData?.length ?? 0) : 0
 
-        let inventoryCount = 0
-        let lowStockCount = 0
-        try {
-          const inventoryRes = await inventoryService.getAll(1, 1)
-          inventoryCount = inventoryRes.totalCount
-          const allInventory = await inventoryService.getAll(1, 100)
-          lowStockCount = allInventory.items.filter(item => item.is_low_stock).length
-        } catch (err) {
-          console.warn('Failed to fetch inventory stats', err)
-        }
+    return { activeMontages, completedMontages, inventoryCount, lowStockCount, employeeCount }
+  }, [allMontages, inventoryData, employeesData, user])
 
-        let employeeCount = 0
-        try {
-          if (user?.roles.includes('Manager')) {
-            const employeesRes = await employeeService.getAll()
-            employeeCount = employeesRes.length
-          }
-        } catch (err) {
-          console.warn('Failed to fetch employee stats', err)
-        }
+  // Compute maintenance reminders from montage data
+  const maintenanceReminders = useMemo(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
 
-        setStats({
-          activeMontages: active,
-          completedMontages: completed,
-          inventoryCount,
-          lowStockCount,
-          employeeCount
-        })
+    return allMontages
+      .filter(m => m.status === 'Completed' || m.payment_status === 'Paid')
+      .map(m => {
+        const installDate = new Date(m.completion_date || m.installation_date)
+        const maintenanceDate = new Date(installDate)
+        maintenanceDate.setFullYear(maintenanceDate.getFullYear() + 1)
 
-      } catch (error) {
-        console.error('Failed to fetch dashboard stats', error)
-      }
-    }
+        const timeDiff = maintenanceDate.getTime() - today.getTime()
+        const daysUntil = Math.ceil(timeDiff / (1000 * 60 * 60 * 24))
 
-    fetchStats()
-  }, [user])
+        return { montage: m, maintenanceDate, daysUntil, isOverdue: daysUntil < 0 }
+      })
+      .filter(r => r.daysUntil <= 60)
+      .sort((a, b) => a.daysUntil - b.daysUntil)
+      .slice(0, 5)
+  }, [allMontages])
 
   // Calculate revenue data based on selected time period
   const revenueData = useMemo((): RevenueDataPoint[] => {
@@ -143,59 +93,38 @@ export default function DashboardPage() {
     if (timePeriod === '2years') monthsBack = 24
 
     const data: RevenueDataPoint[] = []
-    
-    console.log('All montages for revenue:', allMontages.map(m => ({
-      id: m.id,
-      status: m.status,
-      payment_status: m.payment_status,
-      completion_date: m.completion_date,
-      installation_date: m.installation_date,
-      paid_amount: m.paid_amount,
-      total_price: m.total_price
-    })))
-    
+
     for (let i = monthsBack - 1; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
       const year = date.getFullYear()
       const month = date.getMonth()
-      
-      // Get montages for this month - count completed OR paid montages
+
       const monthMontages = allMontages.filter(m => {
         const isCompleted = m.status === 'Completed'
         const isPaid = m.payment_status === 'Paid'
-        
+
         if (!isCompleted && !isPaid) return false
-        
+
         const dateStr = m.completion_date || m.installation_date
         if (!dateStr) return false
-        
+
         const montageDate = new Date(dateStr)
-        const montageYear = montageDate.getFullYear()
-        const montageMonth = montageDate.getMonth()
-        
-        return montageYear === year && montageMonth === month
+        return montageDate.getFullYear() === year && montageDate.getMonth() === month
       })
 
       const revenue = monthMontages.reduce((sum, m) => sum + (m.paid_amount || m.total_price || 0), 0)
-      
-      const monthName = date.toLocaleDateString(i18n.language === 'bg' ? 'bg-BG' : 'en-US', { 
+
+      const monthName = date.toLocaleDateString(i18n.language === 'bg' ? 'bg-BG' : 'en-US', {
         month: monthsBack <= 3 ? 'long' : 'short',
         year: monthsBack > 12 ? '2-digit' : undefined
       })
 
-      data.push({
-        month: monthName,
-        revenue,
-        count: monthMontages.length
-      })
-      
-      console.log(`Month ${monthName}: ${monthMontages.length} montages, €${revenue}`)
+      data.push({ month: monthName, revenue, count: monthMontages.length })
     }
 
     return data
   }, [allMontages, timePeriod, i18n.language])
 
-  // Calculate total revenue for the period
   const totalRevenue = useMemo(() => {
     return revenueData.reduce((sum, d) => sum + d.revenue, 0)
   }, [revenueData])
@@ -204,8 +133,22 @@ export default function DashboardPage() {
     return revenueData.reduce((sum, d) => sum + d.count, 0)
   }, [revenueData])
 
+  if (isLoadingMontages && isLoadingInventory) {
+    return (
+      <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t('common.dashboard')}</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
+            {t('common.welcome', { name: user?.first_name })}
+          </p>
+        </div>
+        <DashboardSkeleton />
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
+    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300 animate-fade-in">
       {/* Header */}
       <div className="mb-6 sm:mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t('common.dashboard')}</h1>

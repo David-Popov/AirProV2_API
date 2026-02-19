@@ -23,14 +23,15 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { PageHeader, SearchBar, Pagination, LoadingState, EmptyState, ConfirmDialog } from '@/components/shared'
+import { PageHeader, SearchBar, Pagination, EmptyState, ConfirmDialog } from '@/components/shared'
+import { AirConditionersGridSkeleton } from '@/components/skeletons'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { airConditionerService } from '@/services'
+import { useAirConditioners, useCreateAirConditioner, useUpdateAirConditioner, useDeleteAirConditioner } from '@/hooks'
 import { useAuth } from '@/context'
 import type { AirConditioner, CreateAirConditionerRequest } from '@/types'
 
@@ -39,11 +40,9 @@ export default function AirConditionersPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const isAdmin = user?.roles.includes('Admin')
-  const [items, setItems] = useState<AirConditioner[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
 
   const [activeFilters, setActiveFilters] = useState({
     minPrice: 0,
@@ -58,47 +57,36 @@ export default function AirConditionersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [currentItem, setCurrentItem] = useState<Partial<CreateAirConditionerRequest> & { id?: string }>({})
-  const [isSaving, setIsSaving] = useState(false)
-  
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<AirConditioner | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
 
-  const loadItems = async () => {
-    setIsLoading(true)
-    try {
-      const filters = {
-        searchTerm,
-        brand: activeFilters.brand,
-        minPrice: activeFilters.minPrice > 0 ? activeFilters.minPrice : undefined,
-        maxPrice: activeFilters.maxPrice < 5000 ? activeFilters.maxPrice : undefined,
-        minKilowatts: activeFilters.minKilowatts > 0 ? activeFilters.minKilowatts : undefined,
-        maxKilowatts: activeFilters.maxKilowatts < 15 ? activeFilters.maxKilowatts : undefined,
-      };
-
-      const response = await airConditionerService.getAll(page, 12, filters)
-      setItems(response.items)
-      setTotalPages(response.totalPages)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : t('common.unknown_error')
-      toast.error(message)
-      console.error(error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
+  // Debounce search term
   useEffect(() => {
     const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm)
       setPage(1)
-      loadItems()
     }, 500)
     return () => clearTimeout(timer)
-  }, [searchTerm, activeFilters])
+  }, [searchTerm])
 
-  useEffect(() => {
-    loadItems()
-  }, [page])
+  // Build query filters
+  const queryFilters = {
+    searchTerm: debouncedSearch,
+    brand: activeFilters.brand,
+    minPrice: activeFilters.minPrice > 0 ? activeFilters.minPrice : undefined,
+    maxPrice: activeFilters.maxPrice < 5000 ? activeFilters.maxPrice : undefined,
+    minKilowatts: activeFilters.minKilowatts > 0 ? activeFilters.minKilowatts : undefined,
+    maxKilowatts: activeFilters.maxKilowatts < 15 ? activeFilters.maxKilowatts : undefined,
+  }
+
+  const { data, isLoading } = useAirConditioners(page, 12, queryFilters)
+  const items = data?.items ?? []
+  const totalPages = data?.totalPages ?? 1
+
+  const createAirConditioner = useCreateAirConditioner()
+  const updateAirConditioner = useUpdateAirConditioner()
+  const deleteAirConditioner = useDeleteAirConditioner()
 
   const handleApplyFilters = () => {
     setActiveFilters(tempFilters)
@@ -204,46 +192,41 @@ export default function AirConditionersPage() {
       return
     }
     
-    setIsSaving(true)
-    try {
-      const requestData = {
-        name: currentItem.name!,
-        brand: currentItem.brand,
-        model: currentItem.model,
-        kilowatts: currentItem.kilowatts,
-        price: currentItem.price,
-        description: currentItem.description,
-        image_url: currentItem.image_url || '',
-        pipe_size_liquid: currentItem.pipe_size_liquid,
-        pipe_size_gas: currentItem.pipe_size_gas,
-        max_pipe_length: currentItem.max_pipe_length,
-        max_height_difference: currentItem.max_height_difference,
-        refrigerant_type: currentItem.refrigerant_type,
-        factory_refrigerant_charge: currentItem.factory_refrigerant_charge,
-        power_supply_location: currentItem.power_supply_location,
-        cable_section: currentItem.cable_section,
-        recommended_fuse: currentItem.recommended_fuse,
-        indoor_dimensions: currentItem.indoor_dimensions,
-        outdoor_dimensions: currentItem.outdoor_dimensions,
-        weight_indoor: currentItem.weight_indoor,
-        weight_outdoor: currentItem.weight_outdoor
-      }
+    const requestData = {
+      name: currentItem.name!,
+      brand: currentItem.brand,
+      model: currentItem.model,
+      kilowatts: currentItem.kilowatts,
+      price: currentItem.price,
+      description: currentItem.description,
+      image_url: currentItem.image_url || '',
+      pipe_size_liquid: currentItem.pipe_size_liquid,
+      pipe_size_gas: currentItem.pipe_size_gas,
+      max_pipe_length: currentItem.max_pipe_length,
+      max_height_difference: currentItem.max_height_difference,
+      refrigerant_type: currentItem.refrigerant_type,
+      factory_refrigerant_charge: currentItem.factory_refrigerant_charge,
+      power_supply_location: currentItem.power_supply_location,
+      cable_section: currentItem.cable_section,
+      recommended_fuse: currentItem.recommended_fuse,
+      indoor_dimensions: currentItem.indoor_dimensions,
+      outdoor_dimensions: currentItem.outdoor_dimensions,
+      weight_indoor: currentItem.weight_indoor,
+      weight_outdoor: currentItem.weight_outdoor
+    }
 
+    try {
       if (isEditing && currentItem.id) {
-        await airConditionerService.update(currentItem.id, requestData)
+        await updateAirConditioner.mutateAsync({ id: currentItem.id, data: requestData })
         toast.success(t('air_conditioners.ac_updated'))
       } else {
-        await airConditionerService.create(requestData)
+        await createAirConditioner.mutateAsync(requestData)
         toast.success(t('air_conditioners.ac_created'))
       }
       setIsDialogOpen(false)
-      loadItems()
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
-      console.error(error)
-    } finally {
-      setIsSaving(false)
     }
   }
 
@@ -255,24 +238,21 @@ export default function AirConditionersPage() {
 
   const handleDeleteConfirm = async () => {
     if (!itemToDelete) return
-    
-    setIsDeleting(true)
+
     try {
-      await airConditionerService.delete(itemToDelete.id)
+      await deleteAirConditioner.mutateAsync(itemToDelete.id)
       toast.success(t('air_conditioners.ac_deleted'))
-      loadItems()
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
     } finally {
-      setIsDeleting(false)
       setDeleteDialogOpen(false)
       setItemToDelete(null)
     }
   }
 
   return (
-    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
+    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300">
       <PageHeader
         title={t('air_conditioners.title')}
         subtitle={t('air_conditioners.subtitle')}
@@ -384,11 +364,11 @@ export default function AirConditionersPage() {
 
       {/* Grid Content */}
       {isLoading ? (
-        <LoadingState className="h-64" />
+        <AirConditionersGridSkeleton />
       ) : items.length === 0 ? (
         <EmptyState message={t('air_conditioners.no_acs')} />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in">
           {items.map((item) => (
             <Card 
               key={item.id} 
@@ -712,8 +692,8 @@ export default function AirConditionersPage() {
             </div>
 
             <DialogFooter className="pt-4">
-              <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSaving}>
-                {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={createAirConditioner.isPending || updateAirConditioner.isPending}>
+                {(createAirConditioner.isPending || updateAirConditioner.isPending) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {t('common.save')}
               </Button>
             </DialogFooter>
@@ -730,7 +710,7 @@ export default function AirConditionersPage() {
         itemName={itemToDelete ? `${itemToDelete.brand} ${itemToDelete.name}` : undefined}
         confirmLabel={t('common.delete', 'Delete')}
         cancelLabel={t('common.cancel', 'Cancel')}
-        isLoading={isDeleting}
+        isLoading={deleteAirConditioner.isPending}
       />
 
       {/* Mobile Filter FAB - Bubble */}

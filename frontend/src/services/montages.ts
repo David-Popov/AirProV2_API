@@ -63,6 +63,10 @@ export const montageService = {
     return apiClient.delete(`/Montages/${id}`);
   },
 
+  async getByUserId(userId: string, pageNumber = 1, pageSize = 10): Promise<PagedList<Montage>> {
+    return apiClient.get<PagedList<Montage>>(`/Montages/user/${userId}?PageNumber=${pageNumber}&PageSize=${pageSize}`);
+  },
+
   async getByStatus(status: string, pageNumber = 1, pageSize = 10): Promise<PagedList<Montage>> {
     return apiClient.get<PagedList<Montage>>(`/Montages/status/${status}?PageNumber=${pageNumber}&PageSize=${pageSize}`);
   }

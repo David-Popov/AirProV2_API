@@ -20,13 +20,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from '@/components/ui/table'
 import {
   Dialog,
@@ -35,7 +35,15 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { PageHeader, SearchBar, Pagination, LoadingState, EmptyState, ConfirmDialog } from '@/components/shared'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { PageHeader, SearchBar, Pagination, EmptyState, ConfirmDialog } from '@/components/shared'
+import { SkeletonTableRows, SkeletonMobileCards } from '@/components/skeletons'
 import { useAuth } from '@/context'
 import { inventoryService } from '@/services'
 import type { InventoryItem, CreateInventoryItemRequest, UnitOfMeasure } from '@/types'
@@ -256,7 +264,7 @@ export default function InventoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
+    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300">
       <PageHeader
         title={t('inventory.title')}
         subtitle={t('inventory.subtitle')}
@@ -345,13 +353,7 @@ export default function InventoryPage() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
-                  <div className="flex justify-center">
-                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                  </div>
-                </TableCell>
-              </TableRow>
+              <SkeletonTableRows columns={7} />
             ) : items.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
@@ -360,7 +362,7 @@ export default function InventoryPage() {
               </TableRow>
             ) : (
               items.map((item) => (
-                <TableRow key={item.id} className="border-border hover:bg-muted/30 transition-colors">
+                <TableRow key={item.id} className="border-border hover:bg-muted/30 transition-colors animate-fade-in">
                   <TableCell className="font-medium text-foreground">{item.name}</TableCell>
                   <TableCell className="text-muted-foreground">{item.sku || '-'}</TableCell>
                   <TableCell className="text-foreground/80">
@@ -460,12 +462,12 @@ export default function InventoryPage() {
       {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
         {isLoading ? (
-          <LoadingState />
+          <SkeletonMobileCards rows={4} />
         ) : items.length === 0 ? (
           <EmptyState icon={Package} message={t('inventory.no_items')} />
         ) : (
           items.map((item) => (
-            <Card key={item.id} className="glass-card">
+            <Card key={item.id} className="glass-card animate-fade-in">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
@@ -587,18 +589,21 @@ export default function InventoryPage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="unit">{t('inventory.unit')}</Label>
-                <select
-                  id="unit"
+                <Select
                   value={currentItem.unit_of_measure}
-                  onChange={(e) => setCurrentItem({ ...currentItem, unit_of_measure: e.target.value as any })}
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  onValueChange={(val) => setCurrentItem({ ...currentItem, unit_of_measure: val as UnitOfMeasure })}
                 >
-                  {UNIT_OF_MEASURE_OPTIONS.map((u) => (
-                    <option key={u.value} value={u.value}>
-                      {u.label}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger id="unit" className="bg-background border-input">
+                    <SelectValue placeholder={t('inventory.unit')} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border text-popover-foreground">
+                    {UNIT_OF_MEASURE_OPTIONS.map((u) => (
+                      <SelectItem key={u.value} value={u.value}>
+                        {u.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
