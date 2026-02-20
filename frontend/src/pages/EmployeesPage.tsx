@@ -34,6 +34,7 @@ import { PageHeader, SearchBar, EmptyState, ConfirmDialog } from '@/components/s
 import { SkeletonTableRows, SkeletonMobileCards } from '@/components/skeletons'
 import { useEmployees, useEmployeeLimits, useCreateEmployee, useDeleteEmployee, useActivateEmployee, useDeactivateEmployee } from '@/hooks'
 import type { Employee, CreateEmployeeRequest } from '@/types'
+import { validatePasswordRules, isValidEmail } from '@/lib/validators'
 import { TrialActivationModal, PremiumUpgradeModal } from '@/components/subscription'
 import { useAuth } from '@/context'
 
@@ -101,32 +102,6 @@ export default function EmployeesPage() {
     setIsDialogOpen(true)
   }
 
-  // Password validation helper
-  const validatePassword = (password: string): string[] => {
-    const errors: string[] = []
-    if (password.length < 8) {
-      errors.push(t('validation.password_min_length', 'Password must be at least 8 characters'))
-    }
-    if (!/[A-Z]/.test(password)) {
-      errors.push(t('validation.password_uppercase', 'Password must contain at least one uppercase letter'))
-    }
-    if (!/[a-z]/.test(password)) {
-      errors.push(t('validation.password_lowercase', 'Password must contain at least one lowercase letter'))
-    }
-    if (!/[0-9]/.test(password)) {
-      errors.push(t('validation.password_number', 'Password must contain at least one number'))
-    }
-    if (!/[^a-zA-Z0-9]/.test(password)) {
-      errors.push(t('validation.password_special', 'Password must contain at least one special character'))
-    }
-    return errors
-  }
-
-  // Email validation helper
-  const validateEmail = (email: string): boolean => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-  }
-
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -140,11 +115,11 @@ export default function EmployeesPage() {
     }
     if (!newEmployee.email.trim()) {
       validationErrors.push(t('validation.email_required', 'Email is required'))
-    } else if (!validateEmail(newEmployee.email)) {
+    } else if (!isValidEmail(newEmployee.email)) {
       validationErrors.push(t('validation.email_invalid', 'Please enter a valid email address'))
     }
-    
-    const passwordErrors = validatePassword(newEmployee.password)
+
+    const passwordErrors = validatePasswordRules(newEmployee.password).map(key => t(key))
     validationErrors.push(...passwordErrors)
     
     if (validationErrors.length > 0) {

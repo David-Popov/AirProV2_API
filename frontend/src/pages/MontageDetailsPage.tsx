@@ -182,7 +182,11 @@ export default function MontageDetailsPage() {
       const updated = await montageService.getById(montage.id)
       setMontage(updated)
     } catch (error: any) {
-      toast.error(t('montages.status_update_failed'))
+      const message = error?.response?.data?.message 
+        || error?.response?.data 
+        || error?.message 
+        || t('montages.status_update_failed')
+      toast.error(message)
     }
   }
 
@@ -347,6 +351,12 @@ export default function MontageDetailsPage() {
                 <p className="text-foreground font-medium">
                   {montage.air_conditioner ? (
                     `${montage.air_conditioner.brand || ''} ${montage.air_conditioner.model || ''} - ${montage.air_conditioner.name}`
+                  ) : montage.custom_ac_brand || montage.custom_ac_model ? (
+                    <span className="flex items-center gap-1">
+                      {`${montage.custom_ac_brand || ''} ${montage.custom_ac_model || ''}`.trim()}
+                      {montage.custom_ac_kilowatts && <span className="text-muted-foreground ml-1">({montage.custom_ac_kilowatts} kW)</span>}
+                      <span className="text-xs text-muted-foreground ml-1">({t('montages.custom_ac', 'Custom')})</span>
+                    </span>
                   ) : (
                     '-'
                   )}

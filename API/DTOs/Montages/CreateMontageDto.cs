@@ -13,6 +13,15 @@ public class CreateMontageDto
     [JsonPropertyName("air_conditioner_id")]
     public Guid? AirConditionerId { get; set; }
     
+    [JsonPropertyName("custom_ac_brand")]
+    public string? CustomAcBrand { get; set; }
+    
+    [JsonPropertyName("custom_ac_model")]
+    public string? CustomAcModel { get; set; }
+    
+    [JsonPropertyName("custom_ac_kilowatts")]
+    public decimal? CustomAcKilowatts { get; set; }
+    
     [JsonPropertyName("client_name")]
     public string ClientName { get; set; } = string.Empty;
     

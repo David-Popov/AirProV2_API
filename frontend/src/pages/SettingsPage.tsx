@@ -48,7 +48,8 @@ export default function SettingsPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [companyForm, setCompanyForm] = useState({
-    name: '',
+    company_name: '',
+    company_type: '' as string,
     bulstat: '',
     vat_number: '',
     address: '',
@@ -91,23 +92,23 @@ export default function SettingsPage() {
   }, [searchParams, t, refreshUser])
   
   useEffect(() => {
-    if (user?.company_id) {
+    if (!user) {
+      setLoading(false)
+      return
+    }
+    // Initialize profile form from user data
+    setProfileForm({
+      first_name: user.first_name || '',
+      middle_name: user.middle_name || '',
+      last_name: user.last_name || '',
+      email: user.email || '',
+      phone_number: user.phone_number || ''
+    })
+    // Load company data if available
+    if (user.company_id) {
       loadCompany()
     } else {
       setLoading(false)
-    }
-  }, [user])
-
-  // Initialize profile form when user loads
-  useEffect(() => {
-    if (user) {
-      setProfileForm({
-        first_name: user.first_name || '',
-        middle_name: user.middle_name || '',
-        last_name: user.last_name || '',
-        email: user.email || '',
-        phone_number: user.phone_number || ''
-      })
     }
   }, [user])
   
@@ -119,7 +120,8 @@ export default function SettingsPage() {
       setCompany(data)
       // Initialize form with company data
       setCompanyForm({
-        name: data.name || '',
+        company_name: data.company_name || '',
+        company_type: data.company_type || '',
         bulstat: data.bulstat || '',
         vat_number: data.vat_number || '',
         address: data.address || '',
@@ -140,7 +142,8 @@ export default function SettingsPage() {
     try {
       setSaving(true)
       await companyService.update(company.id, {
-        name: companyForm.name,
+        company_name: companyForm.company_name,
+        company_type: companyForm.company_type as any,
         bulstat: companyForm.bulstat || null,
         vat_number: companyForm.vat_number || null,
         address: companyForm.address || null,
@@ -163,7 +166,8 @@ export default function SettingsPage() {
     // Reset form to original company data
     if (company) {
       setCompanyForm({
-        name: company.name || '',
+        company_name: company.company_name || '',
+        company_type: company.company_type || '',
         bulstat: company.bulstat || '',
         vat_number: company.vat_number || '',
         address: company.address || '',
@@ -441,14 +445,14 @@ export default function SettingsPage() {
                         <div className="space-y-2">
                           <Label className="text-sm text-muted-foreground">{t('settings.company_name', 'Company Name')}</Label>
                           <Input 
-                            value={companyForm.name} 
-                            onChange={(e) => setCompanyForm({...companyForm, name: e.target.value})}
+                            value={companyForm.company_name} 
+                            onChange={(e) => setCompanyForm({...companyForm, company_name: e.target.value})}
                             className="font-semibold"
                           />
                         </div>
                       ) : (
                         <>
-                          <h3 className="font-semibold text-base sm:text-lg text-foreground">{company.name}</h3>
+                          <h3 className="font-semibold text-base sm:text-lg text-foreground">{company.company_name}</h3>
                           <p className="text-muted-foreground text-xs sm:text-sm">{company.city || 'No city'} • {company.company_type}</p>
                         </>
                       )}

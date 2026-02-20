@@ -57,7 +57,7 @@ export default function CompaniesPage() {
   const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([])
   
   const [formData, setFormData] = useState<CreateCompanyRequest>({
-    name: '',
+    company_name: '',
     company_type: 'LLC',
     bulstat: '',
     vat_number: '',
@@ -97,7 +97,7 @@ export default function CompaniesPage() {
   
   // Filter companies by search
   const filteredCompanies = companies.filter(company =>
-    (company.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (company.company_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (company.bulstat || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (company.city || '').toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -182,7 +182,7 @@ export default function CompaniesPage() {
   const openEditDialog = (company: Company) => {
     setSelectedCompany(company)
     setFormData({
-      name: company.name,
+      company_name: company.company_name,
       company_type: company.company_type,
       bulstat: company.bulstat || '',
       vat_number: company.vat_number || '',
@@ -210,7 +210,7 @@ export default function CompaniesPage() {
   
   const resetForm = () => {
     setFormData({
-      name: '',
+      company_name: '',
       company_type: 'LLC',
       bulstat: '',
       vat_number: '',
@@ -392,7 +392,7 @@ export default function CompaniesPage() {
                     <tr key={company.id} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
                       <td className="py-4 px-4">
                         <div>
-                          <p className="font-medium text-foreground">{company.name}</p>
+                          <p className="font-medium text-foreground">{company.company_name}</p>
                           <p className="text-sm text-sm sm:text-base text-muted-foreground">{company.bulstat || 'No BULSTAT'}</p>
                         </div>
                       </td>
@@ -511,8 +511,8 @@ export default function CompaniesPage() {
               <div>
                 <label className="text-sm font-medium text-foreground">{t('companies.name', 'Company Name')} *</label>
                 <Input
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  value={formData.company_name}
+                  onChange={(e) => setFormData({...formData, company_name: e.target.value})}
                   placeholder={t('companies.name_placeholder', 'Enter company name')}
                 />
               </div>
@@ -648,7 +648,7 @@ export default function CompaniesPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {t('companies.users_for', 'Users for')} {selectedCompany?.name}
+              {t('companies.users_for', 'Users for')} {selectedCompany?.company_name}
             </DialogTitle>
           </DialogHeader>
           <div className="max-h-[400px] overflow-y-auto">
@@ -692,7 +692,7 @@ export default function CompaniesPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {t('companies.manage_subscription', 'Manage Subscription')} - {selectedCompany?.name}
+              {t('companies.manage_subscription', 'Manage Subscription')} - {selectedCompany?.company_name}
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">

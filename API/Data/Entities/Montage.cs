@@ -21,6 +21,17 @@ public class Montage
     [Column("air_conditioner_id")]
     public Guid? AirConditionerId { get; set; }
 
+    [Column("custom_ac_brand")]
+    [MaxLength(200)]
+    public string? CustomAcBrand { get; set; }
+
+    [Column("custom_ac_model")]
+    [MaxLength(200)]
+    public string? CustomAcModel { get; set; }
+
+    [Column("custom_ac_kilowatts", TypeName = "numeric(5, 2)")]
+    public decimal? CustomAcKilowatts { get; set; }
+
     [EncryptColumn]
     [Required]
     [Column("client_name")]

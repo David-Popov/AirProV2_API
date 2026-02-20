@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
 import { useEmployee, useUpdateEmployee, useDeleteEmployee, useResetEmployeePassword, useEmployeeMontages } from '@/hooks'
+import { validatePasswordRules } from '@/lib/validators'
 import { EmployeeDetailsSkeleton } from '@/components/skeletons'
 
 export default function EmployeeDetailsPage() {
@@ -131,27 +132,6 @@ export default function EmployeeDetailsPage() {
     }
   }
 
-  // Password validation helper
-  const validatePassword = (password: string): string[] => {
-    const errors: string[] = []
-    if (password.length < 8) {
-      errors.push(t('validation.password_min_length', 'Password must be at least 8 characters'))
-    }
-    if (!/[A-Z]/.test(password)) {
-      errors.push(t('validation.password_uppercase', 'Password must contain at least one uppercase letter'))
-    }
-    if (!/[a-z]/.test(password)) {
-      errors.push(t('validation.password_lowercase', 'Password must contain at least one lowercase letter'))
-    }
-    if (!/[0-9]/.test(password)) {
-      errors.push(t('validation.password_number', 'Password must contain at least one number'))
-    }
-    if (!/[^a-zA-Z0-9]/.test(password)) {
-      errors.push(t('validation.password_special', 'Password must contain at least one special character'))
-    }
-    return errors
-  }
-
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!employee) return
@@ -161,7 +141,7 @@ export default function EmployeeDetailsPage() {
       return
     }
 
-    const passwordErrors = validatePassword(passwordForm.password)
+    const passwordErrors = validatePasswordRules(passwordForm.password).map(key => t(key))
     if (passwordErrors.length > 0) {
       toast.error(passwordErrors.join('. '))
       return

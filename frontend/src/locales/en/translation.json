@@ -46,7 +46,10 @@
     "apply_filters": "Apply Filters",
     "clear_filters": "Clear Filters",
     "unlimited": "Unlimited",
-    "optional": "optional"
+    "optional": "optional",
+    "none": "None",
+    "search": "Search...",
+    "no_results": "No results found"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -346,6 +349,12 @@
     "total_price": "Total Price",
     "remaining": "Remaining",
     "ac_unit": "Air Conditioner Unit",
+    "select_from_database": "Select from database",
+    "or_add_custom": "Add custom",
+    "custom_ac_brand": "Brand",
+    "custom_ac_model": "Model",
+    "custom_ac_kilowatts": "Kilowatts",
+    "custom_ac": "Custom AC",
     "not_paid": "Unpaid",
     "partial": "Partially Paid",
     "paid": "Paid",
@@ -529,7 +538,18 @@
     "return_to_free_option": "Return to Free Plan",
     "return_to_free_description": "Return to Free plan with 2 active employees. All current employees will be deactivated.",
     "return_to_free_button": "Return to Free",
-    "returned_to_free": "Returned to Free plan. All employees have been deactivated."
+    "returned_to_free": "Returned to Free plan. All employees have been deactivated.",
+    "manage_billing": "Manage Your Subscription",
+    "manage_billing_desc": "Update payment methods, view invoices, or cancel your subscription through the Stripe Customer Portal.",
+    "update_payment": "Update Payment",
+    "update_payment_desc": "Change your payment method",
+    "view_invoices": "View Invoices",
+    "view_invoices_desc": "Download past invoices",
+    "cancel_sub": "Cancel Subscription",
+    "cancel_sub_desc": "Cancel anytime, no penalty",
+    "open_portal": "Open Stripe Customer Portal",
+    "manage_billing_trial_desc": "Once you subscribe through Stripe, you can manage your payment methods, view invoices, and cancel your subscription from here.",
+    "portal_available_after_subscribe": "Subscribe to a paid plan to unlock subscription management, including payment updates, invoices, and cancellation options."
   },
   "settings": {
     "title": "Settings",

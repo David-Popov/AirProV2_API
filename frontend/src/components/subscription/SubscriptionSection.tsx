@@ -7,7 +7,11 @@ import {
   CreditCard,
   Settings as SettingsIcon,
   ArrowRight,
-  Users
+  Users,
+  ExternalLink,
+  Receipt,
+  CreditCard as CreditCardIcon,
+  XCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -137,6 +141,95 @@ export default function SubscriptionSection() {
                 </Button>
               )}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Manage Subscription Card - visible for all users with subscription info */}
+      {subscriptionInfo && (
+        <Card className="glass-card border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <SettingsIcon className="w-5 h-5 text-primary" />
+              {t('subscription.manage_billing', 'Manage Your Subscription')}
+            </CardTitle>
+            <CardDescription>
+              {subscriptionInfo.hasStripeSubscription
+                ? t('subscription.manage_billing_desc', 'Update payment methods, view invoices, or cancel your subscription through the Stripe Customer Portal.')
+                : t('subscription.manage_billing_trial_desc', 'Once you subscribe through Stripe, you can manage your payment methods, view invoices, and cancel your subscription from here.')
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {subscriptionInfo.hasStripeSubscription ? (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/30">
+                    <div className="rounded-full p-2 bg-blue-500/10 mt-0.5 shrink-0">
+                      <CreditCardIcon className="w-4 h-4 text-blue-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{t('subscription.update_payment', 'Update Payment')}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{t('subscription.update_payment_desc', 'Change your payment method')}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/30">
+                    <div className="rounded-full p-2 bg-green-500/10 mt-0.5 shrink-0">
+                      <Receipt className="w-4 h-4 text-green-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{t('subscription.view_invoices', 'View Invoices')}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{t('subscription.view_invoices_desc', 'Download past invoices')}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/30">
+                    <div className="rounded-full p-2 bg-red-500/10 mt-0.5 shrink-0">
+                      <XCircle className="w-4 h-4 text-red-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{t('subscription.cancel_sub', 'Cancel Subscription')}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{t('subscription.cancel_sub_desc', 'Cancel anytime, no penalty')}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <Button 
+                  className="w-full sm:w-auto"
+                  onClick={handleManageSubscription}
+                  disabled={isRedirecting}
+                >
+                  {isRedirecting ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                  )}
+                  {t('subscription.open_portal', 'Open Stripe Customer Portal')}
+                </Button>
+              </>
+            ) : (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl bg-muted/30 border border-border/50">
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">
+                    {t('subscription.portal_available_after_subscribe', 'Subscribe to a paid plan to unlock subscription management, including payment updates, invoices, and cancellation options.')}
+                  </p>
+                </div>
+                {plan?.priceId && (
+                  <Button 
+                    variant="outline"
+                    className="shrink-0"
+                    onClick={handleSubscribe}
+                    disabled={isRedirecting}
+                  >
+                    {isRedirecting ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <ArrowRight className="w-4 h-4 mr-2" />
+                    )}
+                    {t('subscription.subscribe', 'Subscribe Now')}
+                  </Button>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

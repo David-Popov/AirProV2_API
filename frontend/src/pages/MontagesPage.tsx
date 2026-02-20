@@ -15,7 +15,10 @@ import {
   Snowflake,
   Phone,
   Wrench,
-  Filter
+  Filter,
+  Info,
+  Check,
+  ChevronsUpDown
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -48,8 +51,13 @@ import {
 import { PageHeader, SearchBar, Pagination, EmptyState, ConfirmDialog } from '@/components/shared'
 import { SkeletonTableRows, SkeletonMobileCards } from '@/components/skeletons'
 import { montageService, type MontageFilters } from '@/services/montages'
+import { airConditionerService } from '@/services/air-conditioner'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
+import { cn } from '@/lib/utils'
 import { 
   type Montage, 
+  type AirConditioner,
   type CreateMontageRequest,
   type UpdateMontageRequest,
   MONTAGE_STATUS_OPTIONS
@@ -62,6 +70,11 @@ interface MontageFormState extends CreateMontageRequest {
   outdoor_unit_serial?: string;
   paid_amount?: number;
   payment_status?: string;
+  completion_date?: string | null;
+  air_conditioner_id?: string | null;
+  custom_ac_brand?: string | null;
+  custom_ac_model?: string | null;
+  custom_ac_kilowatts?: number | null;
 }
 
 export default function MontagesPage() {
@@ -89,13 +102,18 @@ export default function MontagesPage() {
     client_address: '',
     client_city: '',
     installation_date: new Date().toISOString().split('T')[0],
+    completion_date: null,
     status: 'Planned',
     notes: '',
     total_price: 0,
     paid_amount: 0,
     payment_status: 'NotPaid',
     indoor_unit_serial: '',
-    outdoor_unit_serial: ''
+    outdoor_unit_serial: '',
+    air_conditioner_id: null,
+    custom_ac_brand: null,
+    custom_ac_model: null,
+    custom_ac_kilowatts: null
   }
 
   const [formData, setFormData] = useState<MontageFormState>(initialFormState)
@@ -104,6 +122,10 @@ export default function MontagesPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [activeFilters, setActiveFilters] = useState<MontageFilters>({})
   const [tempFilters, setTempFilters] = useState<MontageFilters>({})
+  const [airConditioners, setAirConditioners] = useState<AirConditioner[]>([])
+  const [isLoadingACs, setIsLoadingACs] = useState(false)
+  const [isCustomAc, setIsCustomAc] = useState(false)
+  const [acComboboxOpen, setAcComboboxOpen] = useState(false)
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -185,15 +207,31 @@ export default function MontagesPage() {
     loadItems()
   }, [page, activeFilters, searchTerm])
 
+  const loadAirConditioners = async () => {
+    setIsLoadingACs(true)
+    try {
+      const response = await airConditionerService.getAll(1, 100)
+      setAirConditioners(response.items)
+    } catch (error) {
+      console.error('Failed to load air conditioners:', error)
+    } finally {
+      setIsLoadingACs(false)
+    }
+  }
+
   const handleCreate = () => {
     setIsEditing(false)
     setFormData(initialFormState)
+    setIsCustomAc(false)
+    loadAirConditioners()
     setIsDialogOpen(true)
   }
 
   const handleEditClick = (e: React.MouseEvent, item: Montage) => {
     e.stopPropagation()
     setIsEditing(true)
+    const hasCustomAc = !item.air_conditioner_id && !!(item.custom_ac_brand || item.custom_ac_model)
+    setIsCustomAc(hasCustomAc)
     setFormData({
       id: item.id,
       client_name: item.client_name,
@@ -202,14 +240,20 @@ export default function MontagesPage() {
       client_address: item.client_address || '',
       client_city: item.client_city || '',
       installation_date: item.installation_date,
+      completion_date: item.completion_date || null,
       status: item.status || 'Planned',
       notes: item.notes || '',
       total_price: item.total_price || 0,
       paid_amount: item.paid_amount || 0,
       payment_status: item.payment_status || 'NotPaid',
       indoor_unit_serial: item.indoor_unit_serial || '',
-      outdoor_unit_serial: item.outdoor_unit_serial || ''
+      outdoor_unit_serial: item.outdoor_unit_serial || '',
+      air_conditioner_id: item.air_conditioner_id || null,
+      custom_ac_brand: item.custom_ac_brand || null,
+      custom_ac_model: item.custom_ac_model || null,
+      custom_ac_kilowatts: item.custom_ac_kilowatts || null
     })
+    loadAirConditioners()
     setIsDialogOpen(true)
   }
 
@@ -243,18 +287,30 @@ export default function MontagesPage() {
           client_address: formData.client_address,
           client_city: formData.client_city,
           installation_date: formData.installation_date,
+          completion_date: formData.completion_date,
           status: formData.status,
           notes: formData.notes,
           total_price: formData.total_price,
           paid_amount: formData.paid_amount,
           payment_status: formData.payment_status,
           indoor_unit_serial: formData.indoor_unit_serial,
-          outdoor_unit_serial: formData.outdoor_unit_serial
+          outdoor_unit_serial: formData.outdoor_unit_serial,
+          air_conditioner_id: isCustomAc ? null : formData.air_conditioner_id,
+          custom_ac_brand: isCustomAc ? formData.custom_ac_brand : null,
+          custom_ac_model: isCustomAc ? formData.custom_ac_model : null,
+          custom_ac_kilowatts: isCustomAc ? formData.custom_ac_kilowatts : null
         }
         await montageService.update(formData.id, updatePayload)
         toast.success(t('montages.updated_success', 'Montage updated successfully')) 
       } else {
-        await montageService.create(formData)
+        const createPayload: CreateMontageRequest = {
+          ...formData,
+          air_conditioner_id: isCustomAc ? null : formData.air_conditioner_id,
+          custom_ac_brand: isCustomAc ? formData.custom_ac_brand : null,
+          custom_ac_model: isCustomAc ? formData.custom_ac_model : null,
+          custom_ac_kilowatts: isCustomAc ? formData.custom_ac_kilowatts : null
+        }
+        await montageService.create(createPayload)
         toast.success(t('montages.created_success', 'Montage created successfully'))
       }
       setIsDialogOpen(false)
@@ -800,6 +856,10 @@ export default function MontagesPage() {
                     <Input id="date" type="date" value={formData.installation_date} onChange={(e) => setFormData({...formData, installation_date: e.target.value})} className="bg-background border-input" required />
                   </div>
                   <div className="grid gap-2">
+                    <Label htmlFor="completionDate">{t('montages.completion_date', 'Completion Date')}</Label>
+                    <Input id="completionDate" type="date" value={formData.completion_date || ''} onChange={(e) => setFormData({...formData, completion_date: e.target.value || null})} className="bg-background border-input" />
+                  </div>
+                  <div className="grid gap-2">
                     <Label htmlFor="status">{t('common.status')}</Label>
                     <Select value={formData.status || 'Planned'} onValueChange={(val: string) => setFormData({...formData, status: val})}>
                       <SelectTrigger className="bg-background border-input">
@@ -814,6 +874,114 @@ export default function MontagesPage() {
                       </SelectContent>
                     </Select>
                   </div>
+                  {/* AC Unit Section */}
+                  <div className="col-span-1 sm:col-span-2 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label>{t('montages.ac_unit', 'Air Conditioner Unit')}</Label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCustomAc(!isCustomAc)
+                          if (!isCustomAc) {
+                            setFormData({...formData, air_conditioner_id: null})
+                          } else {
+                            setFormData({...formData, custom_ac_brand: null, custom_ac_model: null, custom_ac_kilowatts: null})
+                          }
+                        }}
+                        className="text-xs text-primary hover:text-primary/80 font-medium transition-colors"
+                      >
+                        {isCustomAc ? t('montages.select_from_database', 'Select from database') : t('montages.or_add_custom', 'Add custom')}
+                      </button>
+                    </div>
+
+                    {!isCustomAc ? (
+                      <>
+                        <Popover open={acComboboxOpen} onOpenChange={setAcComboboxOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={acComboboxOpen}
+                              className="w-full justify-between bg-background border-input font-normal"
+                            >
+                              {formData.air_conditioner_id
+                                ? (() => {
+                                    const ac = airConditioners.find(a => a.id === formData.air_conditioner_id)
+                                    return ac ? `${ac.brand || ''} ${ac.model || ''} ${ac.kilowatts ? `(${ac.kilowatts} kW)` : ''}`.trim() : t('montages.select_ac', 'Select AC unit')
+                                  })()
+                                : isLoadingACs ? t('common.loading', 'Loading...') : t('montages.select_ac', 'Select AC unit')}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                            <Command>
+                              <CommandInput placeholder={t('common.search', 'Search...')} />
+                              <CommandList>
+                                <CommandEmpty>{t('common.no_results', 'No results found')}</CommandEmpty>
+                                <CommandGroup>
+                                  <CommandItem
+                                    value="__none__"
+                                    onSelect={() => {
+                                      setFormData({...formData, air_conditioner_id: null})
+                                      setAcComboboxOpen(false)
+                                    }}
+                                  >
+                                    <Check className={cn("mr-2 h-4 w-4", !formData.air_conditioner_id ? "opacity-100" : "opacity-0")} />
+                                    {t('common.none', 'None')}
+                                  </CommandItem>
+                                  {airConditioners.map((ac) => (
+                                    <CommandItem
+                                      key={ac.id}
+                                      value={`${ac.brand || ''} ${ac.model || ''} ${ac.name || ''} ${ac.kilowatts || ''}`}
+                                      onSelect={() => {
+                                        setFormData({...formData, air_conditioner_id: ac.id})
+                                        setAcComboboxOpen(false)
+                                      }}
+                                    >
+                                      <Check className={cn("mr-2 h-4 w-4", formData.air_conditioner_id === ac.id ? "opacity-100" : "opacity-0")} />
+                                      {ac.brand} {ac.model} {ac.kilowatts ? `(${ac.kilowatts} kW)` : ''}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+
+                        {/* AC Info Preview */}
+                        {formData.air_conditioner_id && (() => {
+                          const selectedAC = airConditioners.find(ac => ac.id === formData.air_conditioner_id)
+                          if (!selectedAC) return null
+                          return (
+                            <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/5 border border-primary/10">
+                              <Info className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                              <div className="text-sm">
+                                <span className="font-medium text-foreground">{selectedAC.brand} {selectedAC.model}</span>
+                                {selectedAC.kilowatts && <span className="text-muted-foreground ml-2">· {selectedAC.kilowatts} kW</span>}
+                                {selectedAC.refrigerant_type && <span className="text-muted-foreground ml-2">· {selectedAC.refrigerant_type}</span>}
+                              </div>
+                            </div>
+                          )
+                        })()}
+                      </>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="grid gap-1.5">
+                          <Label htmlFor="customBrand" className="text-xs">{t('montages.custom_ac_brand', 'Brand')}</Label>
+                          <Input id="customBrand" placeholder="e.g. Daikin" value={formData.custom_ac_brand || ''} onChange={(e) => setFormData({...formData, custom_ac_brand: e.target.value || null})} className="bg-background border-input" />
+                        </div>
+                        <div className="grid gap-1.5">
+                          <Label htmlFor="customModel" className="text-xs">{t('montages.custom_ac_model', 'Model')}</Label>
+                          <Input id="customModel" placeholder="e.g. FTXF35A" value={formData.custom_ac_model || ''} onChange={(e) => setFormData({...formData, custom_ac_model: e.target.value || null})} className="bg-background border-input" />
+                        </div>
+                        <div className="grid gap-1.5">
+                          <Label htmlFor="customKw" className="text-xs">{t('montages.custom_ac_kilowatts', 'Kilowatts')}</Label>
+                          <Input id="customKw" type="number" step="0.1" placeholder="e.g. 3.5" value={formData.custom_ac_kilowatts || ''} onChange={(e) => setFormData({...formData, custom_ac_kilowatts: e.target.value ? Number(e.target.value) : null})} className="bg-background border-input" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                    <div className="grid gap-2">
                     <Label htmlFor="indoorSerial">{t('montages.indoor_serial')}</Label>
                     <Input id="indoorSerial" value={formData.indoor_unit_serial || ''} onChange={(e) => setFormData({...formData, indoor_unit_serial: e.target.value})} className="bg-background border-input" />

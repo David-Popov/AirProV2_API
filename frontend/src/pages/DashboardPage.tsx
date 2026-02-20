@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { formatCurrency } from '@/lib/formatters'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -125,13 +126,8 @@ export default function DashboardPage() {
     return data
   }, [allMontages, timePeriod, i18n.language])
 
-  const totalRevenue = useMemo(() => {
-    return revenueData.reduce((sum, d) => sum + d.revenue, 0)
-  }, [revenueData])
-
-  const totalMontagesInPeriod = useMemo(() => {
-    return revenueData.reduce((sum, d) => sum + d.count, 0)
-  }, [revenueData])
+  const totalRevenue = revenueData.reduce((sum, d) => sum + d.revenue, 0)
+  const totalMontagesInPeriod = revenueData.reduce((sum, d) => sum + d.count, 0)
 
   if (isLoadingMontages && isLoadingInventory) {
     return (
@@ -254,7 +250,7 @@ export default function DashboardPage() {
               <div>
                 <p className="text-sm text-muted-foreground">{t('dashboard.total_revenue', 'Total Revenue')}</p>
                 <p className="text-2xl font-bold text-green-500">
-                  €{totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {formatCurrency(totalRevenue)}
                 </p>
               </div>
             </div>
@@ -305,7 +301,7 @@ export default function DashboardPage() {
                     labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold' }}
                     formatter={(value, name) => {
                       if (name === 'revenue' && typeof value === 'number') {
-                        return [`€${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, t('dashboard.revenue', 'Revenue')]
+                        return [formatCurrency(value), t('dashboard.revenue', 'Revenue')]
                       }
                       return [value, name]
                     }}

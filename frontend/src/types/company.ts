@@ -3,7 +3,7 @@ import type { CompanyType } from './common';
 
 export interface Company {
   id: string;
-  name: string;
+  company_name: string;
   company_type: CompanyType;
   bulstat?: string | null;
   vat_number?: string | null;
@@ -37,7 +37,7 @@ export interface CompanyUser {
 }
 
 export interface CreateCompanyRequest {
-  name: string;
+  company_name: string;
   company_type: CompanyType;
   bulstat?: string | null;
   vat_number?: string | null;

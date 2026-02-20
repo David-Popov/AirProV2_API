@@ -48,6 +48,7 @@ import { useAuth } from '@/context'
 import { inventoryService } from '@/services'
 import type { InventoryItem, CreateInventoryItemRequest, UnitOfMeasure } from '@/types'
 import { UNIT_OF_MEASURE_OPTIONS } from '@/types'
+import { generateSKU } from '@/lib/generators'
 
 export default function InventoryPage() {
   const { user } = useAuth()
@@ -251,16 +252,7 @@ export default function InventoryPage() {
   }
 
   const generateSku = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    let result = ''
-    for (let i = 0; i < 8; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length))
-    }
-    const p1 = result.substring(0, 4)
-    const p2 = result.substring(4, 8)
-    const sku = `INV-${p1}-${p2}`
-    
-    setCurrentItem(prev => ({ ...prev, sku }))
+    setCurrentItem(prev => ({ ...prev, sku: generateSKU() }))
   }
 
   return (

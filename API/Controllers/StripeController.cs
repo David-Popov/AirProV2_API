@@ -100,8 +100,8 @@ public class StripeController : ControllerBase
 
         try
         {
-            // Use frontend URL (port 5173) not backend URL
-            var frontendBaseUrl = "http://localhost:5173";
+            // Use frontend URL (port 3000) not backend URL
+            var frontendBaseUrl = "http://localhost:3000";
             var successUrl = $"{frontendBaseUrl}/settings?tab=subscription&success=true";
             var cancelUrl = $"{frontendBaseUrl}/settings?tab=subscription";
 
@@ -149,7 +149,7 @@ public class StripeController : ControllerBase
 
         try
         {
-            var returnUrl = "http://localhost:5173/settings?tab=subscription";
+            var returnUrl = "http://localhost:3000/settings?tab=subscription";
             var portalUrl = await _stripeService.CreateCustomerPortalSessionAsync(user.Company, returnUrl);
 
             return Ok(new { url = portalUrl });

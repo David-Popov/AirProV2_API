@@ -21,6 +21,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuth } from '@/context'
+import { validatePasswordRules, isValidEmail } from '@/lib/validators'
 import { COMPANY_TYPE_OPTIONS } from '@/types'
 import { ModeToggle } from '@/components/mode-toggle'
 
@@ -67,28 +68,14 @@ export default function RegisterPage() {
     }
     if (!formData.email.trim()) {
       errors.push(t('validation.email_required'))
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    } else if (!isValidEmail(formData.email)) {
       errors.push(t('validation.email_invalid'))
     }
 
     if (!formData.password) {
       errors.push(t('validation.password_required'))
     } else {
-      if (formData.password.length < 8) {
-        errors.push(t('validation.password_min_length'))
-      }
-      if (!/[A-Z]/.test(formData.password)) {
-        errors.push(t('validation.password_uppercase'))
-      }
-      if (!/[a-z]/.test(formData.password)) {
-        errors.push(t('validation.password_lowercase'))
-      }
-      if (!/[0-9]/.test(formData.password)) {
-        errors.push(t('validation.password_number'))
-      }
-      if (!/[^a-zA-Z0-9]/.test(formData.password)) {
-        errors.push(t('validation.password_special'))
-      }
+      errors.push(...validatePasswordRules(formData.password).map(key => t(key)))
     }
 
     if (!formData.confirmPassword) {

@@ -11,6 +11,13 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
@@ -22,6 +29,8 @@ interface PaymentStatusNavigatorProps {
   disabled?: boolean
   getPaymentStatusLabel: (status: string) => string
 }
+
+const PAYMENT_STATUSES = ['NotPaid', 'PartiallyPaid', 'Paid']
 
 export function PaymentStatusNavigator({ 
   currentStatus, 
@@ -36,49 +45,44 @@ export function PaymentStatusNavigator({
   const [tempAmount, setTempAmount] = useState(paidAmount)
   const [nextStatusTarget, setNextStatusTarget] = useState<string>('')
   
-  const getNextStatus = () => {
-    switch (currentStatus) {
-      case 'NotPaid': return 'PartiallyPaid'
-      case 'PartiallyPaid': return 'Paid'
-      case 'Paid': return 'PartiallyPaid'
-      default: return 'NotPaid'
+  const currentIndex = PAYMENT_STATUSES.indexOf(currentStatus)
+  
+  const getStatusColor = (status?: string) => {
+    const s = status || currentStatus
+    switch (s) {
+      case 'Paid':
+        return 'bg-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/30 border-green-500/20'
+      case 'PartiallyPaid':
+        return 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/30 border-yellow-500/20'
+      case 'NotPaid':
+        return 'bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/30 border-red-500/20'
+      default:
+        return ''
     }
   }
-  
-  const getPreviousStatus = () => {
-    switch (currentStatus) {
-      case 'PartiallyPaid': return 'NotPaid'
-      case 'Paid': return 'PartiallyPaid'
-      default: return 'NotPaid'
-    }
-  }
-  
-  const handleNext = () => {
-    const nextStatus = getNextStatus()
-    
-    if (nextStatus === 'Paid') {
-      onStatusChange(nextStatus, totalPrice)
-    } else if (nextStatus === 'PartiallyPaid') {
-      setNextStatusTarget(nextStatus)
+
+  const triggerStatusChange = (targetStatus: string) => {
+    if (targetStatus === currentStatus) return
+
+    if (targetStatus === 'Paid') {
+      onStatusChange(targetStatus, totalPrice)
+    } else if (targetStatus === 'PartiallyPaid') {
+      setNextStatusTarget(targetStatus)
       setTempAmount(paidAmount || 0)
       setShowAmountDialog(true)
-    } else {
-      onStatusChange(nextStatus)
+    } else if (targetStatus === 'NotPaid') {
+      onStatusChange(targetStatus, 0)
     }
+  }
+
+  const handleNext = () => {
+    if (currentIndex >= PAYMENT_STATUSES.length - 1) return
+    triggerStatusChange(PAYMENT_STATUSES[currentIndex + 1])
   }
   
   const handlePrevious = () => {
-    const prevStatus = getPreviousStatus()
-    
-    if (prevStatus === 'NotPaid') {
-      onStatusChange(prevStatus, 0)
-    } else if (prevStatus === 'PartiallyPaid') {
-      setNextStatusTarget(prevStatus)
-      setTempAmount(paidAmount || 0)
-      setShowAmountDialog(true)
-    } else {
-      onStatusChange(prevStatus)
-    }
+    if (currentIndex <= 0) return
+    triggerStatusChange(PAYMENT_STATUSES[currentIndex - 1])
   }
   
   const handleSaveAmount = () => {
@@ -91,19 +95,6 @@ export function PaymentStatusNavigator({
     setShowAmountDialog(false)
   }
   
-  const getStatusColor = () => {
-    switch (currentStatus) {
-      case 'Paid':
-        return 'bg-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/30 border-green-500/20'
-      case 'PartiallyPaid':
-        return 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/30 border-yellow-500/20'
-      case 'NotPaid':
-        return 'bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/30 border-red-500/20'
-      default:
-        return ''
-    }
-  }
-  
   return (
     <>
       <div className="flex items-center gap-2">
@@ -111,22 +102,34 @@ export function PaymentStatusNavigator({
           size="icon"
           variant="ghost"
           onClick={handlePrevious}
-          disabled={disabled || currentStatus === 'NotPaid'}
+          disabled={disabled || currentIndex <= 0}
           className="h-8 w-8"
         >
           <ChevronLeft className="w-4 h-4" />
         </Button>
-        <Badge 
-          variant="outline"
-          className={getStatusColor()}
+        <Select
+          value={currentStatus}
+          onValueChange={(val) => triggerStatusChange(val)}
+          disabled={disabled}
         >
-          {getPaymentStatusLabel(currentStatus)}
-        </Badge>
+          <SelectTrigger className={`w-auto min-w-[130px] h-8 border text-xs font-medium px-3 ${getStatusColor()}`}>
+            <SelectValue>{getPaymentStatusLabel(currentStatus)}</SelectValue>
+          </SelectTrigger>
+          <SelectContent className="bg-popover border-border text-popover-foreground">
+            {PAYMENT_STATUSES.map((status) => (
+              <SelectItem key={status} value={status} className="cursor-pointer">
+                <Badge variant="outline" className={`${getStatusColor(status)} border-0 bg-transparent px-0`}>
+                  {getPaymentStatusLabel(status)}
+                </Badge>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Button
           size="icon"
           variant="ghost"
           onClick={handleNext}
-          disabled={disabled}
+          disabled={disabled || currentIndex >= PAYMENT_STATUSES.length - 1}
           className="h-8 w-8"
         >
           <ChevronRight className="w-4 h-4" />

@@ -46,6 +46,9 @@ public class MontageService : IMontageService
                 CompanyId = dto.CompanyId,
                 UserId = dto.UserId,
                 AirConditionerId = dto.AirConditionerId,
+                CustomAcBrand = dto.CustomAcBrand,
+                CustomAcModel = dto.CustomAcModel,
+                CustomAcKilowatts = dto.CustomAcKilowatts,
                 ClientName = dto.ClientName,
                 ClientPhone = dto.ClientPhone,
                 ClientEmail = dto.ClientEmail,
@@ -82,6 +85,9 @@ public class MontageService : IMontageService
             }
 
             montage.AirConditionerId = dto.AirConditionerId;
+            montage.CustomAcBrand = dto.CustomAcBrand;
+            montage.CustomAcModel = dto.CustomAcModel;
+            montage.CustomAcKilowatts = dto.CustomAcKilowatts;
             montage.ClientName = dto.ClientName;
             montage.ClientPhone = dto.ClientPhone;
             montage.ClientEmail = dto.ClientEmail;
@@ -290,6 +296,9 @@ public class MontageService : IMontageService
                     CompanyId = m.CompanyId,
                     UserId = m.UserId,
                     AirConditionerId = m.AirConditionerId,
+                    CustomAcBrand = m.CustomAcBrand,
+                    CustomAcModel = m.CustomAcModel,
+                    CustomAcKilowatts = m.CustomAcKilowatts,
                     ClientName = m.ClientName,
                     ClientPhone = m.ClientPhone,
                     ClientEmail = m.ClientEmail,
@@ -381,6 +390,9 @@ public class MontageService : IMontageService
                     CompanyId = m.CompanyId,
                     UserId = m.UserId,
                     AirConditionerId = m.AirConditionerId,
+                    CustomAcBrand = m.CustomAcBrand,
+                    CustomAcModel = m.CustomAcModel,
+                    CustomAcKilowatts = m.CustomAcKilowatts,
                     ClientName = m.ClientName,
                     ClientPhone = m.ClientPhone,
                     ClientEmail = m.ClientEmail,
@@ -436,6 +448,9 @@ public class MontageService : IMontageService
                     CompanyId = m.CompanyId,
                     UserId = m.UserId,
                     AirConditionerId = m.AirConditionerId,
+                    CustomAcBrand = m.CustomAcBrand,
+                    CustomAcModel = m.CustomAcModel,
+                    CustomAcKilowatts = m.CustomAcKilowatts,
                     ClientName = m.ClientName,
                     ClientPhone = m.ClientPhone,
                     ClientEmail = m.ClientEmail,
@@ -491,6 +506,9 @@ public class MontageService : IMontageService
                     CompanyId = m.CompanyId,
                     UserId = m.UserId,
                     AirConditionerId = m.AirConditionerId,
+                    CustomAcBrand = m.CustomAcBrand,
+                    CustomAcModel = m.CustomAcModel,
+                    CustomAcKilowatts = m.CustomAcKilowatts,
                     ClientName = m.ClientName,
                     ClientPhone = m.ClientPhone,
                     ClientEmail = m.ClientEmail,
@@ -546,6 +564,9 @@ public class MontageService : IMontageService
                     CompanyId = m.CompanyId,
                     UserId = m.UserId,
                     AirConditionerId = m.AirConditionerId,
+                    CustomAcBrand = m.CustomAcBrand,
+                    CustomAcModel = m.CustomAcModel,
+                    CustomAcKilowatts = m.CustomAcKilowatts,
                     ClientName = m.ClientName,
                     ClientPhone = m.ClientPhone,
                     ClientEmail = m.ClientEmail,
@@ -601,6 +622,9 @@ public class MontageService : IMontageService
                     CompanyId = m.CompanyId,
                     UserId = m.UserId,
                     AirConditionerId = m.AirConditionerId,
+                    CustomAcBrand = m.CustomAcBrand,
+                    CustomAcModel = m.CustomAcModel,
+                    CustomAcKilowatts = m.CustomAcKilowatts,
                     ClientName = m.ClientName,
                     ClientPhone = m.ClientPhone,
                     ClientEmail = m.ClientEmail,
@@ -649,6 +673,9 @@ public class MontageService : IMontageService
            CompanyId = montage.CompanyId,
            UserId = montage.UserId,
            AirConditionerId = montage.AirConditionerId,
+           CustomAcBrand = montage.CustomAcBrand,
+           CustomAcModel = montage.CustomAcModel,
+           CustomAcKilowatts = montage.CustomAcKilowatts,
            ClientName = montage.ClientName,
            ClientPhone = montage.ClientPhone,
            ClientEmail = montage.ClientEmail,
