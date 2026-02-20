@@ -18,17 +18,20 @@ public class StripeController : ControllerBase
     private readonly IStripeService _stripeService;
     private readonly ApplicationDbContext _context;
     private readonly StripeSettings _stripeSettings;
+    private readonly string _frontendBaseUrl;
     private readonly ILogger<StripeController> _logger;
 
     public StripeController(
         IStripeService stripeService,
         ApplicationDbContext context,
         IOptions<StripeSettings> stripeSettings,
+        IOptions<EmailSettings> emailSettings,
         ILogger<StripeController> logger)
     {
         _stripeService = stripeService;
         _context = context;
         _stripeSettings = stripeSettings.Value;
+        _frontendBaseUrl = emailSettings.Value.WebsiteUrl.TrimEnd('/');
         _logger = logger;
     }
 
@@ -100,10 +103,8 @@ public class StripeController : ControllerBase
 
         try
         {
-            // Use frontend URL (port 3000) not backend URL
-            var frontendBaseUrl = "http://localhost:3000";
-            var successUrl = $"{frontendBaseUrl}/settings?tab=subscription&success=true";
-            var cancelUrl = $"{frontendBaseUrl}/settings?tab=subscription";
+            var successUrl = $"{_frontendBaseUrl}/settings?tab=subscription&success=true";
+            var cancelUrl = $"{_frontendBaseUrl}/settings?tab=subscription";
 
             var checkoutUrl = await _stripeService.CreateCheckoutSessionAsync(
                 user.Company, 
@@ -149,7 +150,7 @@ public class StripeController : ControllerBase
 
         try
         {
-            var returnUrl = "http://localhost:3000/settings?tab=subscription";
+            var returnUrl = $"{_frontendBaseUrl}/settings?tab=subscription";
             var portalUrl = await _stripeService.CreateCustomerPortalSessionAsync(user.Company, returnUrl);
 
             return Ok(new { url = portalUrl });
