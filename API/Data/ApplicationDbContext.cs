@@ -1,5 +1,8 @@
 using API.Data.Entities;
 using API.Data.Seeds;
+using EntityFrameworkCore.EncryptColumn.Extension;
+using EntityFrameworkCore.EncryptColumn.Interfaces;
+using EntityFrameworkCore.EncryptColumn.Util;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -8,10 +11,14 @@ namespace API.Data;
 
 public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+    private readonly IEncryptionProvider _encryptionProvider;
+
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IConfiguration configuration)
     : base(options)
     {
-        
+        var encryptionKey = configuration["EncryptionSettings:Key"]
+                            ?? throw new InvalidOperationException("EncryptionSettings:Key is not configured");
+        _encryptionProvider = new GenerateEncryptionProvider(encryptionKey);
     }
     
     public DbSet<AirConditioner> AirConditioners { get; set; }
@@ -29,23 +36,31 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<MontagePhoto> MontagePhotos { get; set; }
 
     public DbSet<InventoryAuditLog> InventoryAuditLogs { get; set; }
+
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
+    
+    public DbSet<ReportedProblem> ReportedProblems { get; set; }
+    
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
-        
+
+        builder.UseEncryption(_encryptionProvider);
+
         builder.Entity<Company>(entity =>
         {
             entity.HasKey(e => e.Id);
-        
+
             entity.Property(e => e.Id).HasDefaultValueSql("gen_random_uuid()");
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("now()");
             entity.HasIndex(e => e.IsActive).HasDatabaseName("idx_companies_is_active");
-            entity.HasIndex(e => e.Bulstat).HasDatabaseName("idx_companies_bulstat");
         });
 
         builder.Entity<ApplicationUser>(entity =>
         {
+            entity.HasQueryFilter(u => !u.IsDeleted);
+            
             entity.HasOne(u => u.Company)
                 .WithMany(c => c.Users)
                 .HasForeignKey(u => u.CompanyId)
@@ -88,14 +103,13 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.Id).HasDefaultValueSql("gen_random_uuid()");
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("now()");
-            
+
             entity.HasIndex(e => e.CompanyId).HasDatabaseName("idx_montages_company_id");
             entity.HasIndex(e => e.UserId).HasDatabaseName("idx_montages_user_id");
             entity.HasIndex(e => e.AirConditionerId).HasDatabaseName("idx_montages_air_conditioner_id");
             entity.HasIndex(e => e.Status).HasDatabaseName("idx_montages_status");
             entity.HasIndex(e => e.InstallationDate).HasDatabaseName("idx_montages_installation_date");
-            entity.HasIndex(e => e.ClientName).HasDatabaseName("idx_montages_client_name");
-            
+
             entity.HasOne(e => e.AirConditioner)
                   .WithMany()
                   .HasForeignKey(e => e.AirConditionerId)
@@ -192,6 +206,38 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                   .WithMany()
                   .HasForeignKey(e => e.RelatedMontageId)
                   .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // RefreshToken configuration
+        builder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasDefaultValueSql("gen_random_uuid()");
+            
+            entity.HasIndex(e => e.Token).IsUnique().HasDatabaseName("idx_refresh_tokens_token");
+            entity.HasIndex(e => e.UserId).HasDatabaseName("idx_refresh_tokens_user_id");
+
+            entity.HasOne(e => e.ApplicationUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ReportedProblem configuration - user-submitted problem reports
+        builder.Entity<ReportedProblem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+            
+            entity.HasIndex(e => e.UserId).HasDatabaseName("idx_reported_problems_user_id");
+            entity.HasIndex(e => e.Category).HasDatabaseName("idx_reported_problems_category");
+            entity.HasIndex(e => e.CreatedAt).HasDatabaseName("idx_reported_problems_created_at");
+            
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

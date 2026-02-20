@@ -9,4 +9,6 @@ export * from './montage-inventory';
 export * from './montage-photos';
 export * from './stripe';
 export * from './inventoryAuditService';
+export * from './problem-reports';
+
 

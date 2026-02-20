@@ -13,8 +13,8 @@ export const authService = {
   async login(data: LoginRequest): Promise<AuthResponse> {
     const response = await apiClient.post<AuthResponse>('/auth/login', data, false);
     
-    // Store token in localStorage
     localStorage.setItem('token', response.token);
+    localStorage.setItem('refresh_token', response.refresh_token);
     localStorage.setItem('token_expiration', response.token_expiration);
     localStorage.setItem('user', JSON.stringify(response.user));
     
@@ -27,8 +27,8 @@ export const authService = {
   async register(data: RegisterRequest): Promise<AuthResponse> {
     const response = await apiClient.post<AuthResponse>('/auth/register', data, false);
     
-    // Store token in localStorage
     localStorage.setItem('token', response.token);
+    localStorage.setItem('refresh_token', response.refresh_token);
     localStorage.setItem('token_expiration', response.token_expiration);
     localStorage.setItem('user', JSON.stringify(response.user));
     
@@ -43,6 +43,25 @@ export const authService = {
   },
 
   /**
+   * Refresh token
+   */
+  async refreshToken(token: string, refreshToken: string): Promise<AuthResponse> {
+    const response = await apiClient.post<AuthResponse>('/auth/refresh-token', {
+      token,
+      refresh_token: refreshToken
+    }, false);
+    
+    localStorage.setItem('token', response.token);
+    localStorage.setItem('refresh_token', response.refresh_token);
+    localStorage.setItem('token_expiration', response.token_expiration);
+    localStorage.setItem('user', JSON.stringify(response.user));
+    
+    return response;
+  },
+
+
+
+  /**
    * Check if email is available
    */
   async checkEmail(email: string): Promise<{ available: boolean }> {
@@ -50,10 +69,24 @@ export const authService = {
   },
 
   /**
+   * Update user profile
+   */
+  async updateProfile(data: {
+    first_name: string;
+    middle_name?: string;
+    last_name: string;
+    email: string;
+    phone_number?: string;
+  }): Promise<AuthUser> {
+    return apiClient.put<AuthUser>('/auth/profile', data);
+  },
+
+  /**
    * Logout - clear local storage
    */
   logout(): void {
     localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('token_expiration');
     localStorage.removeItem('user');
   },
@@ -69,7 +102,6 @@ export const authService = {
       return false;
     }
     
-    // Check if token is expired
     const expirationDate = new Date(expiration);
     if (expirationDate <= new Date()) {
       this.logout();
@@ -100,5 +132,12 @@ export const authService = {
    */
   getToken(): string | null {
     return localStorage.getItem('token');
+  },
+
+  /**
+   * Get stored refresh token
+   */
+  getRefreshToken(): string | null {
+    return localStorage.getItem('refresh_token');
   },
 };

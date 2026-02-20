@@ -39,6 +39,9 @@ export interface Montage {
   company_id?: string | null;
   user_id?: string | null;
   air_conditioner_id?: string | null;
+  custom_ac_brand?: string | null;
+  custom_ac_model?: string | null;
+  custom_ac_kilowatts?: number | null;
   client_name: string;
   client_phone?: string | null;
   client_email?: string | null;
@@ -63,12 +66,16 @@ export interface Montage {
 
 export interface CreateMontageRequest {
   air_conditioner_id?: string | null;
+  custom_ac_brand?: string | null;
+  custom_ac_model?: string | null;
+  custom_ac_kilowatts?: number | null;
   client_name: string;
   client_phone?: string | null;
   client_email?: string | null;
   client_address?: string | null;
   client_city?: string | null;
   installation_date: string;
+  completion_date?: string | null;
   status?: string | null;
   total_price?: number | null;
   notes?: string | null;

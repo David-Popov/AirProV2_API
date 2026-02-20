@@ -8,26 +8,21 @@ export function cn(...inputs: ClassValue[]) {
 export function extractErrorMessage(errorData: unknown): string {
   if (!errorData) return 'An error occurred';
   
-  // Handle string responses
   if (typeof errorData === 'string') {
     return errorData;
   }
   
-  // Handle object responses
   if (typeof errorData === 'object') {
     const err = errorData as Record<string, unknown>;
     
-    // Handle { message: "..." }
     if (err.message && typeof err.message === 'string') {
       return err.message;
     }
     
-    // Handle { errors: ["...", "..."] } (standard validation errors)
     if (Array.isArray(err.errors)) {
       return err.errors.filter(e => typeof e === 'string').join('. ');
     }
     
-    // Handle { errors: { field: ["...", "..."] } } (ASP.NET model validation)
     if (err.errors && typeof err.errors === 'object' && !Array.isArray(err.errors)) {
       const fieldErrors = err.errors as Record<string, string[]>;
       const messages: string[] = [];
@@ -41,12 +36,10 @@ export function extractErrorMessage(errorData: unknown): string {
       }
     }
     
-    // Handle { error: "..." } 
     if (err.error && typeof err.error === 'string') {
       return err.error;
     }
     
-    // Handle ASP.NET Identity errors: [{ description: "..." }, ...]
     if (Array.isArray(errorData)) {
       const descriptions = (errorData as Array<{description?: string}>)
         .filter(e => e.description)
@@ -56,7 +49,6 @@ export function extractErrorMessage(errorData: unknown): string {
       }
     }
     
-    // Handle { title: "...", detail: "..." } (Problem Details)
     if (err.title && typeof err.title === 'string') {
       const detail = err.detail && typeof err.detail === 'string' ? `: ${err.detail}` : '';
       return `${err.title}${detail}`;

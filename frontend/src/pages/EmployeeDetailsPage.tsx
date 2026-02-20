@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/context'
-import { 
-  ChevronLeft, 
+import {
   Loader2,
   User,
   Phone,
@@ -17,6 +16,7 @@ import {
   AlertTriangle,
   KeyRound
 } from 'lucide-react'
+import { BackButton } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -40,19 +40,15 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
-import { employeeService, montageService } from '@/services'
-import type { Employee, Montage } from '@/types'
+import { useEmployee, useUpdateEmployee, useDeleteEmployee, useResetEmployeePassword, useEmployeeMontages } from '@/hooks'
+import { validatePasswordRules } from '@/lib/validators'
+import { EmployeeDetailsSkeleton } from '@/components/skeletons'
 
 export default function EmployeeDetailsPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { user, refreshUser } = useAuth()
-  const [employee, setEmployee] = useState<Employee | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [employeeMontages, setEmployeeMontages] = useState<Montage[]>([])
-  
-  // Edit state
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState({
     first_name: '',
@@ -60,77 +56,55 @@ export default function EmployeeDetailsPage() {
     phone_number: '',
     address: ''
   })
-  const [isSaving, setIsSaving] = useState(false)
-  
-  // Delete state
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  
-  // Password reset state
+
   const [isResettingPassword, setIsResettingPassword] = useState(false)
   const [passwordForm, setPasswordForm] = useState({
     password: '',
     confirmPassword: ''
   })
-  const [isSavingPassword, setIsSavingPassword] = useState(false)
+  const { data: employee, isLoading, error: employeeError } = useEmployee(id!)
+  const { data: montagesData } = useEmployeeMontages(id!)
+  const updateEmployee = useUpdateEmployee()
+  const deleteEmployeeMutation = useDeleteEmployee()
+  const resetPassword = useResetEmployeePassword()
+
+  const employeeMontages = montagesData?.items ?? []
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!id) return
-      setIsLoading(true)
-      try {
-        const data = await employeeService.getById(id)
-        setEmployee(data)
-        setEditForm({
-          first_name: data.first_name,
-          last_name: data.last_name,
-          phone_number: data.phone_number || '',
-          address: data.address || ''
-        })
-        
-        // Try to fetch montages assigned to this employee
-        try {
-          const montagesRes = await montageService.getAll(1, 100)
-          // Filter montages by user_id (if the montage has user assignment)
-          const empMontages = montagesRes.items.filter(m => m.user_id === id)
-          setEmployeeMontages(empMontages)
-        } catch {
-          // Montages fetch failed, that's okay
-          console.log('Could not fetch employee montages')
-        }
-      } catch (error) {
-        toast.error(t('common.unknown_error'))
-        console.error(error)
-        navigate('/employees')
-      } finally {
-        setIsLoading(false)
-      }
+    if (employee) {
+      setEditForm({
+        first_name: employee.first_name,
+        last_name: employee.last_name,
+        phone_number: employee.phone_number || '',
+        address: employee.address || ''
+      })
     }
+  }, [employee])
 
-    fetchData()
-  }, [id, navigate, t])
+  useEffect(() => {
+    if (employeeError) {
+      toast.error(t('common.unknown_error'))
+      navigate('/employees')
+    }
+  }, [employeeError, navigate, t])
 
   const handleEditSave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!employee) return
 
-    setIsSaving(true)
     try {
-      // Include email and other required fields from the existing employee object
       const updatePayload = {
         ...editForm,
         email: employee.email,
         middle_name: employee.middle_name,
-        // Ensure we don't sending null for optional fields if they are empty strings in form
         address: editForm.address || null,
         phone_number: editForm.phone_number || null,
       }
-      
-      await employeeService.update(employee.id, updatePayload)
-      const updated = await employeeService.getById(employee.id)
-      setEmployee(updated)
-      
-      // If updating the currently logged in user, refresh the auth context
+
+      await updateEmployee.mutateAsync({ id: employee.id, data: updatePayload })
+
       if (user?.id === employee.id) {
         await refreshUser()
       }
@@ -140,72 +114,47 @@ export default function EmployeeDetailsPage() {
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
-    } finally {
-      setIsSaving(false)
     }
   }
 
   const handleDelete = async () => {
     if (!employee) return
 
-    setIsDeleting(true)
     try {
-      await employeeService.delete(employee.id)
+      await deleteEmployeeMutation.mutateAsync(employee.id)
       toast.success(t('employees.deleted_success', 'Employee deleted successfully'))
       navigate('/employees')
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
     } finally {
-      setIsDeleting(false)
       setDeleteDialogOpen(false)
     }
-  }
-
-  // Password validation helper
-  const validatePassword = (password: string): string[] => {
-    const errors: string[] = []
-    if (password.length < 8) {
-      errors.push(t('validation.password_min_length', 'Password must be at least 8 characters'))
-    }
-    if (!/[A-Z]/.test(password)) {
-      errors.push(t('validation.password_uppercase', 'Password must contain at least one uppercase letter'))
-    }
-    if (!/[a-z]/.test(password)) {
-      errors.push(t('validation.password_lowercase', 'Password must contain at least one lowercase letter'))
-    }
-    if (!/[0-9]/.test(password)) {
-      errors.push(t('validation.password_number', 'Password must contain at least one number'))
-    }
-    if (!/[^a-zA-Z0-9]/.test(password)) {
-      errors.push(t('validation.password_special', 'Password must contain at least one special character'))
-    }
-    return errors
   }
 
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!employee) return
 
-    // Validate passwords match
     if (passwordForm.password !== passwordForm.confirmPassword) {
       toast.error(t('validation.passwords_not_match', 'Passwords do not match'))
       return
     }
 
-    // Validate password strength
-    const passwordErrors = validatePassword(passwordForm.password)
+    const passwordErrors = validatePasswordRules(passwordForm.password).map(key => t(key))
     if (passwordErrors.length > 0) {
       toast.error(passwordErrors.join('. '))
       return
     }
 
-    setIsSavingPassword(true)
     try {
-      await employeeService.update(employee.id, {
-        first_name: employee.first_name,
-        last_name: employee.last_name,
-        password: passwordForm.password
+      await resetPassword.mutateAsync({
+        id: employee.id,
+        data: {
+          first_name: employee.first_name,
+          last_name: employee.last_name,
+          password: passwordForm.password
+        }
       })
       toast.success(t('employees.password_reset_success', 'Password has been reset successfully'))
       setIsResettingPassword(false)
@@ -213,22 +162,16 @@ export default function EmployeeDetailsPage() {
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
-    } finally {
-      setIsSavingPassword(false)
     }
   }
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    )
+    return <EmployeeDetailsSkeleton />
   }
 
   if (!employee) {
     return (
-      <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8">
+      <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8">
         <p className="text-muted-foreground">{t('employees.not_found', 'Employee not found')}</p>
       </div>
     )
@@ -238,18 +181,9 @@ export default function EmployeeDetailsPage() {
   const activeMontages = employeeMontages.filter(m => m.status === 'InProgress' || m.status === 'Planned').length
 
   return (
-    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
+    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300 animate-fade-in">
       {/* Back Button */}
-      <div className="mb-4">
-        <Button 
-          variant="outline" 
-          size="icon" 
-          onClick={() => navigate('/employees')} 
-          className="bg-card text-muted-foreground hover:text-foreground shadow-sm"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </Button>
-      </div>
+      <BackButton onClick={() => navigate('/employees')} />
 
       {/* Header */}
       <div className="mb-6 sm:mb-8">
@@ -286,7 +220,7 @@ export default function EmployeeDetailsPage() {
                 {t('employees.personal_info', 'Personal Information')}
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-6">
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">{t('auth.first_name')}</p>
                 <p className="font-medium text-foreground">{employee.first_name}</p>
@@ -506,8 +440,8 @@ export default function EmployeeDetailsPage() {
               />
             </div>
             <DialogFooter>
-              <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSaving}>
-                {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={updateEmployee.isPending}>
+                {updateEmployee.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {t('common.save_changes')}
               </Button>
             </DialogFooter>
@@ -536,10 +470,10 @@ export default function EmployeeDetailsPage() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              disabled={isDeleting}
+              disabled={deleteEmployeeMutation.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isDeleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {deleteEmployeeMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {t('common.delete', 'Delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -597,8 +531,8 @@ export default function EmployeeDetailsPage() {
               >
                 {t('common.cancel')}
               </Button>
-              <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSavingPassword}>
-                {isSavingPassword && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={resetPassword.isPending}>
+                {resetPassword.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {t('employees.set_password', 'Set Password')}
               </Button>
             </DialogFooter>

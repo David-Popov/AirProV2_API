@@ -1,13 +1,16 @@
+using System.Security.Claims;
 using API.Common;
 using API.DTOs;
 using API.Services.Inventory;
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class InventoryController : ControllerBase
 {
     private readonly IInventoryService _service;
@@ -31,7 +34,7 @@ public class InventoryController : ControllerBase
     }
 
     /// <summary>
-    /// Get all inventory items with pagination
+    /// Get all inventory items with pagination for the current user's company
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -40,7 +43,13 @@ public class InventoryController : ControllerBase
     {
         try
         {
-            var result = await _service.GetAllAsync(pageParameters);
+            var companyId = GetCurrentUserCompanyId();
+            if (companyId == null)
+            {
+                return BadRequest(new { message = "User is not associated with a company" });
+            }
+
+            var result = await _service.GetByCompanyIdAsync(companyId.Value, pageParameters);
             return Ok(result);
         }
         catch (Exception ex)
@@ -51,16 +60,22 @@ public class InventoryController : ControllerBase
     }
 
     /// <summary>
-    /// Get all low stock items
+    /// Get all low stock items for the current user's company
     /// </summary>
     [HttpGet("low-stock")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<PagedList<InventoryItemDto>>> GetLowStock([FromQuery] PageParameters pageParameters)
-    { 
+    {
         try
         {
-            var result = await _service.GetLowStockAsync(pageParameters);
+            var companyId = GetCurrentUserCompanyId();
+            if (companyId == null)
+            {
+                return BadRequest(new { message = "User is not associated with a company" });
+            }
+
+            var result = await _service.GetLowStockByCompanyIdAsync(companyId.Value, pageParameters);
             return Ok(result);
         }
         catch (Exception ex)
@@ -86,8 +101,14 @@ public class InventoryController : ControllerBase
                 return BadRequest("Id is required");
             }
 
+            var companyId = GetCurrentUserCompanyId();
+            if (companyId == null)
+            {
+                return BadRequest(new { message = "User is not associated with a company" });
+            }
+
             var result = await _service.GetByIdAsync(id);
-            if (result == null)
+            if (result == null || result.CompanyId != companyId)
             {
                 return NotFound(new { message = "Inventory item not found" });
             }
@@ -302,6 +323,18 @@ public class InventoryController : ControllerBase
                 return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
             }
 
+            var companyId = GetCurrentUserCompanyId();
+            if (companyId == null)
+            {
+                return BadRequest(new { message = "User is not associated with a company" });
+            }
+
+            var existing = await _service.GetByIdAsync(id);
+            if (existing == null || existing.CompanyId != companyId)
+            {
+                return NotFound(new { message = "Inventory item not found" });
+            }
+
             dto.UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             var result = await _service.AdjustQuantityAsync(id, dto);
             return Ok(result);
@@ -332,6 +365,18 @@ public class InventoryController : ControllerBase
     {
         try
         {
+            var companyId = GetCurrentUserCompanyId();
+            if (companyId == null)
+            {
+                return BadRequest(new { message = "User is not associated with a company" });
+            }
+
+            var existing = await _service.GetByIdAsync(id);
+            if (existing == null || existing.CompanyId != companyId)
+            {
+                return NotFound(new { message = "Inventory item not found" });
+            }
+
             await _service.UpdateStatusAsync(id, request.IsActive);
             return NoContent();
         }
@@ -357,6 +402,18 @@ public class InventoryController : ControllerBase
     {
         try
         {
+            var companyId = GetCurrentUserCompanyId();
+            if (companyId == null)
+            {
+                return BadRequest(new { message = "User is not associated with a company" });
+            }
+
+            var existing = await _service.GetByIdAsync(id);
+            if (existing == null || existing.CompanyId != companyId)
+            {
+                return NotFound(new { message = "Inventory item not found" });
+            }
+
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             await _service.ArchiveAsync(id, userId);
             return NoContent();
@@ -383,6 +440,18 @@ public class InventoryController : ControllerBase
     {
         try
         {
+            var companyId = GetCurrentUserCompanyId();
+            if (companyId == null)
+            {
+                return BadRequest(new { message = "User is not associated with a company" });
+            }
+
+            var existing = await _service.GetByIdAsync(id);
+            if (existing == null || existing.CompanyId != companyId)
+            {
+                return NotFound(new { message = "Inventory item not found" });
+            }
+
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             await _service.RestoreAsync(id, userId);
             return NoContent();
@@ -428,6 +497,18 @@ public class InventoryController : ControllerBase
     {
         try
         {
+            var companyId = GetCurrentUserCompanyId();
+            if (companyId == null)
+            {
+                return BadRequest(new { message = "User is not associated with a company" });
+            }
+
+            var existing = await _service.GetByIdAsync(id);
+            if (existing == null || existing.CompanyId != companyId)
+            {
+                return NotFound(new { message = "Inventory item not found" });
+            }
+
             var canDelete = await _service.CanDeleteAsync(id);
             if (!canDelete)
             {
@@ -442,5 +523,15 @@ public class InventoryController : ControllerBase
             _logger.LogError(ex, ex.Message);
             return StatusCode(500, new { message = ex.Message });
         }
+    }
+
+    private Guid? GetCurrentUserCompanyId()
+    {
+        var companyIdClaim = User.FindFirstValue("company_id");
+        if (string.IsNullOrEmpty(companyIdClaim))
+        {
+            return null;
+        }
+        return Guid.TryParse(companyIdClaim, out var companyId) ? companyId : null;
     }
 }

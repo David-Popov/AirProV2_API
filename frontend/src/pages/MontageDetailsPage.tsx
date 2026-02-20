@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { 
-  ChevronLeft, 
+import {
   Loader2,
   Calendar,
   MapPin,
@@ -38,10 +37,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { BackButton } from '@/components/shared'
 
 import { toast } from 'sonner'
 import { montageService, inventoryService, montageInventoryService } from '@/services'
-import { type Montage, type InventoryItem, type MontageInventoryItem, MONTAGE_STATUS_OPTIONS, PAYMENT_STATUS_OPTIONS } from '@/types'
+import { type Montage, type InventoryItem, type MontageInventoryItem } from '@/types'
 import { MontagePhotosSection, MontageLocationMap, StatusNavigator, PaymentStatusNavigator } from '@/components/montage'
 
 
@@ -52,7 +52,6 @@ export default function MontageDetailsPage() {
   const [montage, setMontage] = useState<Montage | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   
-  // Materials state
   const [isAddingMaterial, setIsAddingMaterial] = useState(false)
   const [availableItems, setAvailableItems] = useState<InventoryItem[]>([])
   const [selectedItemId, setSelectedItemId] = useState('')
@@ -91,12 +90,10 @@ export default function MontageDetailsPage() {
     fetchData()
   }, [id])
 
-  // Load available inventory items when dialog opens
   useEffect(() => {
     if (isAddingMaterial && availableItems.length === 0) {
       const fetchItems = async () => {
         try {
-          // Get all items (pagination might be needed later if list is huge)
           const result = await inventoryService.getAll(1, 100)
           setAvailableItems(result.items.filter(i => (i.quantity ?? 0) > 0))
         } catch (error) {
@@ -122,13 +119,11 @@ export default function MontageDetailsPage() {
       toast.success(t('montages.material_added'))
       setIsAddingMaterial(false)
       
-      // Reset form
       setSelectedItemId('')
       setQuantity(1)
       setNotes('')
       setMaterialSearch('')
       
-      // Refresh montage data to show new material
       const updatedMontage = await montageService.getById(montage.id)
       setMontage(updatedMontage)
     } catch (error: any) {
@@ -146,7 +141,6 @@ export default function MontageDetailsPage() {
       await montageInventoryService.removeMaterial(materialId)
       toast.success(t('montages.material_removed', 'Material removed successfully'))
       
-      // Refresh montage data
       const updatedMontage = await montageService.getById(montage.id)
       setMontage(updatedMontage)
     } catch (error) {
@@ -162,7 +156,6 @@ export default function MontageDetailsPage() {
       await montageInventoryService.updateQuantity(editingMaterial.id, editQuantity)
       toast.success(t('montages.material_updated'))
       setEditingMaterial(null)
-      // Refresh montage data
       const updatedMontage = await montageService.getById(montage.id)
       setMontage(updatedMontage)
     } catch (error) {
@@ -186,11 +179,14 @@ export default function MontageDetailsPage() {
       const statusLabel = getStatusLabel(newStatus)
       toast.success(t('montages.status_changed_to', { status: statusLabel }))
       
-      // Refresh data
       const updated = await montageService.getById(montage.id)
       setMontage(updated)
     } catch (error: any) {
-      toast.error(t('montages.status_update_failed'))
+      const message = error?.response?.data?.message 
+        || error?.response?.data 
+        || error?.message 
+        || t('montages.status_update_failed')
+      toast.error(message)
     }
   }
 
@@ -209,7 +205,6 @@ export default function MontageDetailsPage() {
       
       toast.success(message)
       
-      // Refresh data
       const updated = await montageService.getById(montage.id)
       setMontage(updated)
     } catch (error: any) {
@@ -228,7 +223,7 @@ export default function MontageDetailsPage() {
 
   if (!montage) {
     return (
-      <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 text-foreground">
+      <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 text-foreground">
         Montage not found
       </div>
     )
@@ -243,28 +238,32 @@ export default function MontageDetailsPage() {
   }
 
   const getStatusLabel = (val?: string | null) => {
-    if (!val) return 'Planned'
-    return MONTAGE_STATUS_OPTIONS.find(o => o.value === val)?.label || val
+    if (!val) return t('montages.status_planned', 'Planned')
+    const statusMap: Record<string, string> = {
+      'Planned': t('montages.status_planned', 'Planned'),
+      'InProgress': t('montages.status_in_progress', 'In Progress'),
+      'Completed': t('montages.status_completed', 'Completed'),
+      'Canceled': t('montages.status_canceled', 'Cancelled'),
+      'Overdue': t('montages.status_overdue', 'Overdue')
+    }
+    return statusMap[val] || val
   }
   
   const getPaymentStatusLabel = (val?: string | null) => {
-    if (!val) return 'Not Paid'
-    return PAYMENT_STATUS_OPTIONS.find(o => o.value === val)?.label || val
+    if (!val) return t('montages.payment_not_paid', 'Not Paid')
+    const paymentStatusMap: Record<string, string> = {
+      'NotPaid': t('montages.payment_not_paid', 'Not Paid'),
+      'PartiallyPaid': t('montages.payment_partially_paid', 'Partially Paid'),
+      'Paid': t('montages.payment_paid', 'Paid'),
+      'Overdue': t('montages.payment_overdue', 'Overdue')
+    }
+    return paymentStatusMap[val] || val
   }
 
   return (
-    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
+    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300">
       {/* Back Button */}
-      <div className="mb-4">
-        <Button 
-          variant="outline" 
-          size="icon"
-          onClick={() => navigate('/montages')}
-          className="bg-card text-muted-foreground hover:text-foreground shadow-sm"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </Button>
-      </div>
+      <BackButton onClick={() => navigate('/montages')} />
 
       {/* Header */}
       <div className="mb-6 sm:mb-8">
@@ -352,6 +351,12 @@ export default function MontageDetailsPage() {
                 <p className="text-foreground font-medium">
                   {montage.air_conditioner ? (
                     `${montage.air_conditioner.brand || ''} ${montage.air_conditioner.model || ''} - ${montage.air_conditioner.name}`
+                  ) : montage.custom_ac_brand || montage.custom_ac_model ? (
+                    <span className="flex items-center gap-1">
+                      {`${montage.custom_ac_brand || ''} ${montage.custom_ac_model || ''}`.trim()}
+                      {montage.custom_ac_kilowatts && <span className="text-muted-foreground ml-1">({montage.custom_ac_kilowatts} kW)</span>}
+                      <span className="text-xs text-muted-foreground ml-1">({t('montages.custom_ac', 'Custom')})</span>
+                    </span>
                   ) : (
                     '-'
                   )}
@@ -583,7 +588,6 @@ export default function MontageDetailsPage() {
           montageId={montage.id}
           photos={montage.photos}
           onPhotosChange={async () => {
-            // Refresh montage data to get updated photos
             const updatedMontage = await montageService.getById(montage.id)
             setMontage(updatedMontage)
           }}

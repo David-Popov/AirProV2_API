@@ -1,4 +1,3 @@
-// Inventory Types
 
 export type UnitOfMeasure = 
   | 'Pieces'

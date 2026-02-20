@@ -1,4 +1,5 @@
 using API.Models;
+using API.Services.Email;
 using API.Services.Stripe;
 using Minio;
 
@@ -24,6 +25,10 @@ public static class ExternalServicesExtensions
         // Stripe
         services.Configure<StripeSettings>(config.GetSection("StripeSettings"));
         services.AddScoped<IStripeService, StripeService>();
+
+        // Email
+        services.Configure<EmailSettings>(config.GetSection("EmailSettings"));
+        services.AddScoped<IEmailService, EmailService>();
 
         return services;
     }

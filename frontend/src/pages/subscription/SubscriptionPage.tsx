@@ -28,7 +28,6 @@ export default function SubscriptionPage() {
   useEffect(() => {
     fetchData()
     
-    // Check for success redirect
     const sessionId = searchParams.get('session_id')
     if (sessionId) {
       toast.success(t('subscription.payment_success'))

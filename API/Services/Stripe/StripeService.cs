@@ -1,6 +1,7 @@
 using API.Data;
 using API.Data.Entities;
 using API.Models;
+using API.Services.Email;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Stripe;
@@ -13,16 +14,19 @@ public class StripeService : IStripeService
     private readonly ApplicationDbContext _context;
     private readonly StripeSettings _stripeSettings;
     private readonly ILogger<StripeService> _logger;
+    private readonly IEmailService _emailService;
 
     public StripeService(
         ApplicationDbContext context,
         IOptions<StripeSettings> stripeSettings,
-        ILogger<StripeService> logger)
+        ILogger<StripeService> logger,
+        IEmailService emailService)
     {
         _context = context;
         _stripeSettings = stripeSettings.Value;
         _logger = logger;
-        
+        _emailService = emailService;
+
         StripeConfiguration.ApiKey = _stripeSettings.SecretKey;
     }
 
@@ -209,8 +213,18 @@ public class StripeService : IStripeService
         company.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
-        
-        _logger.LogInformation("Checkout completed for company {CompanyId}, subscription {SubscriptionId}", 
+
+        // Send subscription purchased email
+        try
+        {
+            await _emailService.SendSubscriptionPurchasedEmailAsync(company, "Premium");
+        }
+        catch (Exception emailEx)
+        {
+            _logger.LogWarning(emailEx, "Failed to send subscription email for company {CompanyId}", companyId);
+        }
+
+        _logger.LogInformation("Checkout completed for company {CompanyId}, subscription {SubscriptionId}",
             companyId, session.SubscriptionId);
     }
 
@@ -238,9 +252,11 @@ public class StripeService : IStripeService
         var targetCompany = await _context.Companies.FindAsync(companyId);
         if (targetCompany == null) return;
 
+        var previousStatus = targetCompany.SubscriptionStatus.ToString();
+
         targetCompany.StripeSubscriptionId = subscription.Id;
         targetCompany.SubscriptionCurrentPeriodEnd = subscription.CurrentPeriodEnd;
-        
+
         // Update subscription status based on Stripe status
         targetCompany.SubscriptionStatus = subscription.Status switch
         {
@@ -251,20 +267,34 @@ public class StripeService : IStripeService
             "trialing" => SubscriptionStatus.Trial,
             _ => targetCompany.SubscriptionStatus
         };
-        
+
         targetCompany.IsSubscriptionActive = subscription.Status == "active" || subscription.Status == "trialing";
-        
+
         // Determine plan from price
         if (subscription.Items?.Data?.Any() == true)
         {
             var priceId = subscription.Items.Data[0].Price.Id;
             targetCompany.SubscriptionPlan = GetPlanFromPriceId(priceId);
         }
-        
+
         targetCompany.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
-        
-        _logger.LogInformation("Subscription updated for company {CompanyId}: Status={Status}", 
+
+        // Send status change email if status actually changed
+        var newStatus = targetCompany.SubscriptionStatus.ToString();
+        if (previousStatus != newStatus)
+        {
+            try
+            {
+                await _emailService.SendSubscriptionStatusChangedEmailAsync(targetCompany, previousStatus, newStatus);
+            }
+            catch (Exception emailEx)
+            {
+                _logger.LogWarning(emailEx, "Failed to send status change email for company {CompanyId}", companyId);
+            }
+        }
+
+        _logger.LogInformation("Subscription updated for company {CompanyId}: Status={Status}",
             companyId, subscription.Status);
     }
 
@@ -282,12 +312,24 @@ public class StripeService : IStripeService
             return;
         }
 
+        var previousStatus = company.SubscriptionStatus.ToString();
+
         company.SubscriptionStatus = SubscriptionStatus.Cancelled;
         company.IsSubscriptionActive = false;
         company.UpdatedAt = DateTime.UtcNow;
-        
+
         await _context.SaveChangesAsync();
-        
+
+        // Send cancellation email
+        try
+        {
+            await _emailService.SendSubscriptionStatusChangedEmailAsync(company, previousStatus, "Cancelled");
+        }
+        catch (Exception emailEx)
+        {
+            _logger.LogWarning(emailEx, "Failed to send cancellation email for company {CompanyId}", company.Id);
+        }
+
         _logger.LogInformation("Subscription cancelled for company {CompanyId}", company.Id);
     }
 

@@ -12,6 +12,9 @@ public class AuthResponseDto
     
     [JsonPropertyName("token_expiration")]
     public DateTime TokenExpiration { get; set; }
+
+    [JsonPropertyName("refresh_token")]
+    public string RefreshToken { get; set; } = string.Empty;
     
     [JsonPropertyName("user")]
     public AuthUserDto User { get; set; } = new();

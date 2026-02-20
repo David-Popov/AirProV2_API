@@ -31,8 +31,10 @@ public static class CompanySeedData
                 Email = "office@airpro.bg",
                 IsCompanyOwner = true,
                 WarrantyDefaultMonths = 24,
-                SubscriptionPlan = SubscriptionPlan.Premium,
+                SubscriptionPlan = SubscriptionPlan.Free,
+                SubscriptionStatus = SubscriptionStatus.Active,
                 IsSubscriptionActive = true,
+                HasUsedTrial = false,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             },
@@ -52,6 +54,10 @@ public static class CompanySeedData
                 IsCompanyOwner = true,
                 WarrantyDefaultMonths = 12,
                 SubscriptionPlan = SubscriptionPlan.FreeTrial,
+                SubscriptionStatus = SubscriptionStatus.Trial,
+                TrialStartDate = DateTime.UtcNow,
+                TrialEndDate = DateTime.UtcNow.AddMonths(6),
+                HasUsedTrial = true,
                 IsSubscriptionActive = true,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
@@ -71,8 +77,10 @@ public static class CompanySeedData
                 Email = "contact@tehnoklima.bg",
                 IsCompanyOwner = true,
                 WarrantyDefaultMonths = 12,
-                SubscriptionPlan = SubscriptionPlan.Premium,
+                SubscriptionPlan = SubscriptionPlan.Free,
+                SubscriptionStatus = SubscriptionStatus.Active,
                 IsSubscriptionActive = true,
+                HasUsedTrial = false,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             }

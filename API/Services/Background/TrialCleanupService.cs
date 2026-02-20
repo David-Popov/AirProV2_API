@@ -1,5 +1,7 @@
 using API.Data;
+using API.Data.Entities;
 using API.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Services.Background;
@@ -31,7 +33,8 @@ public class TrialCleanupService : BackgroundService
             }
 
             // Run every 24 hours
-            await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+            // await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+            await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
         }
     }
 
@@ -39,6 +42,7 @@ public class TrialCleanupService : BackgroundService
     {
         using var scope = _serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
         var expiredCompanies = await context.Companies
             .Where(c => c.SubscriptionStatus == SubscriptionStatus.Trial &&
@@ -50,55 +54,45 @@ public class TrialCleanupService : BackgroundService
             return;
         }
 
-        _logger.LogInformation($"Found {expiredCompanies.Count} expired trial companies. Starting cleanup.");
+        _logger.LogInformation($"Found {expiredCompanies.Count} expired trial companies. Marking as expired.");
 
         foreach (var company in expiredCompanies)
         {
-            await DeleteCompanyDataAsync(context, company, stoppingToken);
+            await MarkTrialAsExpiredAsync(context, company, stoppingToken);
         }
     }
 
-    private async Task DeleteCompanyDataAsync(ApplicationDbContext context, Data.Entities.Company company, CancellationToken stoppingToken)
+    /// <summary>
+    /// Marks trial as expired WITHOUT deactivating employees.
+    /// Employees will be deactivated only when user chooses "Return to Free Plan" from the modal.
+    /// </summary>
+    private async Task MarkTrialAsExpiredAsync(
+        ApplicationDbContext context,
+        Data.Entities.Company company,
+        CancellationToken stoppingToken)
     {
         await using var transaction = await context.Database.BeginTransactionAsync(stoppingToken);
         try
         {
-            _logger.LogInformation($"Deleting data for expired company: {company.CompanyName} ({company.Id})");
+            _logger.LogInformation($"Marking trial as expired for company: {company.CompanyName} ({company.Id})");
 
-            // 1. Delete Montages
-            // Direct SQL delete for performance is often better, but let's stick to EF Core for now
-            // or use ExecuteDeleteAsync() which is available in newer EF Core versions (7+)
-            await context.Montages
-                .Where(m => m.CompanyId == company.Id)
-                .ExecuteDeleteAsync(stoppingToken);
+            // Only mark as expired - do NOT deactivate employees yet
+            // User will be shown a modal to choose: Upgrade to Premium OR Return to Free Plan
+            company.SubscriptionStatus = SubscriptionStatus.Expired;
+            company.IsSubscriptionActive = false;
+            company.UpdatedAt = DateTime.UtcNow;
 
-            // 2. Delete Inventory Items (Cascade is set in DB Context, but explicit delete is safer)
-            await context.InventoryItems
-                .Where(i => i.CompanyId == company.Id)
-                .ExecuteDeleteAsync(stoppingToken);
-
-            // 3. Delete Users (This will also delete their roles/claims via Identity tables cascade usually, but ApplicationUser table needs cleaning)
-            // Note: If using Identity with full AspNetUsers tables, we should ideally use UserManager, 
-            // but effectively deleting the User record cascades to UserRoles, UserClaims etc.
-            // We need to be careful if we have other entities linked to Users.
-            var users = await context.Users.Where(u => u.CompanyId == company.Id).ToListAsync(stoppingToken);
-            if (users.Any())
-            {
-                context.Users.RemoveRange(users);
-                await context.SaveChangesAsync(stoppingToken);
-            }
-
-            // 4. Delete Company
-            context.Companies.Remove(company);
             await context.SaveChangesAsync(stoppingToken);
-
             await transaction.CommitAsync(stoppingToken);
-            _logger.LogInformation($"Successfully deleted company {company.CompanyName}");
+
+            _logger.LogInformation(
+                $"Successfully marked trial as expired for company {company.CompanyName}. " +
+                $"User will choose next action via modal.");
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync(stoppingToken);
-            _logger.LogError(ex, $"Failed to delete company {company.CompanyName} ({company.Id})");
+            _logger.LogError(ex, $"Failed to mark trial as expired for company {company.CompanyName} ({company.Id})");
         }
     }
 }

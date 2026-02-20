@@ -22,7 +22,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize auth state from localStorage
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -31,7 +30,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (storedUser) {
             setUser(storedUser);
           } else {
-            // If no stored user but token exists, fetch from API
             const fetchedUser = await authService.getCurrentUser();
             setUser(fetchedUser);
             localStorage.setItem('user', JSON.stringify(fetchedUser));

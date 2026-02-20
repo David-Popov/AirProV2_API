@@ -156,6 +156,10 @@ namespace API.Data.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
@@ -168,6 +172,14 @@ namespace API.Data.Migrations
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
                         .HasColumnName("first_name");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -237,13 +249,13 @@ namespace API.Data.Migrations
                         .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("Address")
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
                         .HasColumnName("address");
 
                     b.Property<string>("Bulstat")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("bulstat");
 
                     b.Property<string>("City")
@@ -268,9 +280,13 @@ namespace API.Data.Migrations
                         .HasDefaultValueSql("now()");
 
                     b.Property<string>("Email")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("email");
+
+                    b.Property<bool>("HasUsedTrial")
+                        .HasColumnType("boolean")
+                        .HasColumnName("has_used_trial");
 
                     b.Property<bool?>("IsActive")
                         .HasColumnType("boolean")
@@ -289,8 +305,8 @@ namespace API.Data.Migrations
                         .HasColumnName("is_vat_registered");
 
                     b.Property<string>("Phone")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
                         .HasColumnName("phone");
 
                     b.Property<string>("PostalCode")
@@ -335,8 +351,8 @@ namespace API.Data.Migrations
                         .HasDefaultValueSql("now()");
 
                     b.Property<string>("VatNumber")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("vat_number");
 
                     b.Property<int?>("WarrantyDefaultMonths")
@@ -344,9 +360,6 @@ namespace API.Data.Migrations
                         .HasColumnName("warranty_default_months");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("Bulstat")
-                        .HasDatabaseName("idx_companies_bulstat");
 
                     b.HasIndex("IsActive")
                         .HasDatabaseName("idx_companies_is_active");
@@ -555,29 +568,29 @@ namespace API.Data.Migrations
                         .HasColumnName("air_conditioner_id");
 
                     b.Property<string>("ClientAddress")
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)")
+                        .HasMaxLength(400)
+                        .HasColumnType("character varying(400)")
                         .HasColumnName("client_address");
 
                     b.Property<string>("ClientCity")
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("client_city");
 
                     b.Property<string>("ClientEmail")
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("client_email");
 
                     b.Property<string>("ClientName")
                         .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("client_name");
 
                     b.Property<string>("ClientPhone")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
                         .HasColumnName("client_phone");
 
                     b.Property<Guid?>("CompanyId")
@@ -593,6 +606,20 @@ namespace API.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("now()");
+
+                    b.Property<string>("CustomAcBrand")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("custom_ac_brand");
+
+                    b.Property<decimal?>("CustomAcKilowatts")
+                        .HasColumnType("numeric(5, 2)")
+                        .HasColumnName("custom_ac_kilowatts");
+
+                    b.Property<string>("CustomAcModel")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("custom_ac_model");
 
                     b.Property<string>("IndoorUnitSerial")
                         .HasMaxLength(150)
@@ -645,9 +672,6 @@ namespace API.Data.Migrations
 
                     b.HasIndex("AirConditionerId")
                         .HasDatabaseName("idx_montages_air_conditioner_id");
-
-                    b.HasIndex("ClientName")
-                        .HasDatabaseName("idx_montages_client_name");
 
                     b.HasIndex("CompanyId")
                         .HasDatabaseName("idx_montages_company_id");
@@ -774,6 +798,117 @@ namespace API.Data.Migrations
                         .HasDatabaseName("idx_montage_photos_order");
 
                     b.ToTable("montage_photos");
+                });
+
+            modelBuilder.Entity("API.Data.Entities.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTime>("CreationDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("creation_date");
+
+                    b.Property<DateTime>("ExpiryDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expiry_date");
+
+                    b.Property<bool>("Invalidated")
+                        .HasColumnType("boolean")
+                        .HasColumnName("invalidated");
+
+                    b.Property<string>("JwtId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("jwt_id");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("token");
+
+                    b.Property<bool>("Used")
+                        .HasColumnType("boolean")
+                        .HasColumnName("used");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Token")
+                        .IsUnique()
+                        .HasDatabaseName("idx_refresh_tokens_token");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("idx_refresh_tokens_user_id");
+
+                    b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("API.Data.Entities.ReportedProblem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("integer")
+                        .HasColumnName("category");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("ScreenshotContentType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("screenshot_content_type");
+
+                    b.Property<string>("ScreenshotFileName")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("screenshot_file_name");
+
+                    b.Property<string>("ScreenshotObjectName")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("screenshot_object_name");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Category")
+                        .HasDatabaseName("idx_reported_problems_category");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("idx_reported_problems_created_at");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("idx_reported_problems_user_id");
+
+                    b.ToTable("reported_problems");
                 });
 
             modelBuilder.Entity("ErrorCode", b =>
@@ -1068,6 +1203,28 @@ namespace API.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Montage");
+                });
+
+            modelBuilder.Entity("API.Data.Entities.RefreshToken", b =>
+                {
+                    b.HasOne("API.Data.Entities.ApplicationUser", "ApplicationUser")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ApplicationUser");
+                });
+
+            modelBuilder.Entity("API.Data.Entities.ReportedProblem", b =>
+                {
+                    b.HasOne("API.Data.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ErrorCode", b =>

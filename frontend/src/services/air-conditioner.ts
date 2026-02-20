@@ -10,9 +10,22 @@ import type {
 } from '@/types';
 
 export const airConditionerService = {
-  getAll: async (page = 1, pageSize = 10) => {
+  getAll: async (page = 1, pageSize = 10, filters?: Record<string, any>) => {
+    const params = new URLSearchParams({
+      pageNumber: page.toString(),
+      pageSize: pageSize.toString(),
+    });
+
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+            params.append(key, value.toString());
+        }
+      });
+    }
+
     return await apiClient.get<PagedList<AirConditioner>>(
-      `/AirConditioners?PageNumber=${page}&PageSize=${pageSize}`
+      `/AirConditioners?${params.toString()}`
     );
   },
 
@@ -32,7 +45,6 @@ export const airConditionerService = {
     await apiClient.delete(`/AirConditioners/${id}`);
   },
 
-  // Error Code methods
   getErrorCodes: async (airConditionerId: string, page = 1, pageSize = 10) => {
     return await apiClient.get<PagedList<ErrorCode>>(
       `/AirConditioners/${airConditionerId}/error-codes?PageNumber=${page}&PageSize=${pageSize}`

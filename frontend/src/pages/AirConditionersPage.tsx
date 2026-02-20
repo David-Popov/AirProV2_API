@@ -1,18 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { 
-  Snowflake, 
-  Plus, 
-  Search, 
-  Edit, 
-  Trash, 
-  ChevronLeft, 
-  ChevronRight,
+import {
+  Snowflake,
+  Plus,
+  Edit,
+  Trash,
   Loader2,
   Zap,
   MoreVertical,
-  AlertTriangle
+  Filter
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -26,23 +23,15 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+import { PageHeader, SearchBar, Pagination, EmptyState, ConfirmDialog } from '@/components/shared'
+import { AirConditionersGridSkeleton } from '@/components/skeletons'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { airConditionerService } from '@/services'
+import { useAirConditioners, useCreateAirConditioner, useUpdateAirConditioner, useDeleteAirConditioner } from '@/hooks'
 import { useAuth } from '@/context'
 import type { AirConditioner, CreateAirConditionerRequest } from '@/types'
 
@@ -51,43 +40,81 @@ export default function AirConditionersPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const isAdmin = user?.roles.includes('Admin')
-  const [items, setItems] = useState<AirConditioner[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
 
-  // Dialog State
+  const [activeFilters, setActiveFilters] = useState({
+    minPrice: 0,
+    maxPrice: 5000,
+    minKilowatts: 0,
+    maxKilowatts: 15,
+    brand: ''
+  })
+  const [tempFilters, setTempFilters] = useState(activeFilters)
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
+
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [currentItem, setCurrentItem] = useState<Partial<CreateAirConditionerRequest> & { id?: string }>({})
-  const [isSaving, setIsSaving] = useState(false)
-  
-  // Delete confirmation state
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<AirConditioner | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
 
-  const loadItems = async () => {
-    setIsLoading(true)
-    try {
-      // Use 12 items per page for cleaner grid (3 or 4 columns)
-      const response = await airConditionerService.getAll(page, 12)
-      setItems(response.items)
-      // Ensure backend returns correct total_pages based on pageSize=12
-      setTotalPages(response.totalPages)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : t('common.unknown_error')
-      toast.error(message)
-      console.error(error)
-    } finally {
-      setIsLoading(false)
-    }
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm)
+      setPage(1)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
+  // Build query filters
+  const queryFilters = {
+    searchTerm: debouncedSearch,
+    brand: activeFilters.brand,
+    minPrice: activeFilters.minPrice > 0 ? activeFilters.minPrice : undefined,
+    maxPrice: activeFilters.maxPrice < 5000 ? activeFilters.maxPrice : undefined,
+    minKilowatts: activeFilters.minKilowatts > 0 ? activeFilters.minKilowatts : undefined,
+    maxKilowatts: activeFilters.maxKilowatts < 15 ? activeFilters.maxKilowatts : undefined,
   }
 
-  useEffect(() => {
-    loadItems()
-  }, [page])
+  const { data, isLoading } = useAirConditioners(page, 12, queryFilters)
+  const items = data?.items ?? []
+  const totalPages = data?.totalPages ?? 1
+
+  const createAirConditioner = useCreateAirConditioner()
+  const updateAirConditioner = useUpdateAirConditioner()
+  const deleteAirConditioner = useDeleteAirConditioner()
+
+  const handleApplyFilters = () => {
+    setActiveFilters(tempFilters)
+    setIsFilterOpen(false)
+    setPage(1) // Reset to page 1 on filter application
+  }
+
+  const handleClearFilters = () => {
+    const defaults = {
+        minPrice: 0,
+        maxPrice: 5000,
+        minKilowatts: 0,
+        maxKilowatts: 15,
+        brand: ''
+    };
+    setTempFilters(defaults)
+    setActiveFilters(defaults)
+    setSearchTerm('')
+    setIsFilterOpen(false)
+  }
+
+  const getActiveFilterCount = () => {
+    let count = 0
+    if (activeFilters.brand) count++
+    if (activeFilters.minPrice > 0 || activeFilters.maxPrice < 5000) count++
+    if (activeFilters.minKilowatts > 0 || activeFilters.maxKilowatts < 15) count++
+    return count
+  }
 
   const handleCreate = () => {
     setIsEditing(false)
@@ -99,7 +126,6 @@ export default function AirConditionersPage() {
       price: 0,
       description: '',
       image_url: '',
-      // Technical Specifications - initialized as undefined
       pipe_size_liquid: undefined,
       pipe_size_gas: undefined,
       max_pipe_length: undefined,
@@ -129,19 +155,15 @@ export default function AirConditionersPage() {
       price: item.price,
       description: item.description,
       image_url: item.image_url,
-      // Technical Specifications - Piping
       pipe_size_liquid: item.pipe_size_liquid,
       pipe_size_gas: item.pipe_size_gas,
       max_pipe_length: item.max_pipe_length,
       max_height_difference: item.max_height_difference,
-      // Technical Specifications - Refrigerant
       refrigerant_type: item.refrigerant_type,
       factory_refrigerant_charge: item.factory_refrigerant_charge,
-      // Technical Specifications - Electrical
       power_supply_location: item.power_supply_location,
       cable_section: item.cable_section,
       recommended_fuse: item.recommended_fuse,
-      // Technical Specifications - Dimensions & Weight
       indoor_dimensions: item.indoor_dimensions,
       outdoor_dimensions: item.outdoor_dimensions,
       weight_indoor: item.weight_indoor,
@@ -153,7 +175,6 @@ export default function AirConditionersPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Client-side validation
     const validationErrors: string[] = []
     
     if (!currentItem.name?.trim()) {
@@ -171,50 +192,41 @@ export default function AirConditionersPage() {
       return
     }
     
-    setIsSaving(true)
-    try {
-      const requestData = {
-        name: currentItem.name!,
-        brand: currentItem.brand,
-        model: currentItem.model,
-        kilowatts: currentItem.kilowatts,
-        price: currentItem.price,
-        description: currentItem.description,
-        image_url: currentItem.image_url || '',
-        // Technical Specifications - Piping
-        pipe_size_liquid: currentItem.pipe_size_liquid,
-        pipe_size_gas: currentItem.pipe_size_gas,
-        max_pipe_length: currentItem.max_pipe_length,
-        max_height_difference: currentItem.max_height_difference,
-        // Technical Specifications - Refrigerant
-        refrigerant_type: currentItem.refrigerant_type,
-        factory_refrigerant_charge: currentItem.factory_refrigerant_charge,
-        // Technical Specifications - Electrical
-        power_supply_location: currentItem.power_supply_location,
-        cable_section: currentItem.cable_section,
-        recommended_fuse: currentItem.recommended_fuse,
-        // Technical Specifications - Dimensions & Weight
-        indoor_dimensions: currentItem.indoor_dimensions,
-        outdoor_dimensions: currentItem.outdoor_dimensions,
-        weight_indoor: currentItem.weight_indoor,
-        weight_outdoor: currentItem.weight_outdoor
-      }
+    const requestData = {
+      name: currentItem.name!,
+      brand: currentItem.brand,
+      model: currentItem.model,
+      kilowatts: currentItem.kilowatts,
+      price: currentItem.price,
+      description: currentItem.description,
+      image_url: currentItem.image_url || '',
+      pipe_size_liquid: currentItem.pipe_size_liquid,
+      pipe_size_gas: currentItem.pipe_size_gas,
+      max_pipe_length: currentItem.max_pipe_length,
+      max_height_difference: currentItem.max_height_difference,
+      refrigerant_type: currentItem.refrigerant_type,
+      factory_refrigerant_charge: currentItem.factory_refrigerant_charge,
+      power_supply_location: currentItem.power_supply_location,
+      cable_section: currentItem.cable_section,
+      recommended_fuse: currentItem.recommended_fuse,
+      indoor_dimensions: currentItem.indoor_dimensions,
+      outdoor_dimensions: currentItem.outdoor_dimensions,
+      weight_indoor: currentItem.weight_indoor,
+      weight_outdoor: currentItem.weight_outdoor
+    }
 
+    try {
       if (isEditing && currentItem.id) {
-        await airConditionerService.update(currentItem.id, requestData)
+        await updateAirConditioner.mutateAsync({ id: currentItem.id, data: requestData })
         toast.success(t('air_conditioners.ac_updated'))
       } else {
-        await airConditionerService.create(requestData)
+        await createAirConditioner.mutateAsync(requestData)
         toast.success(t('air_conditioners.ac_created'))
       }
       setIsDialogOpen(false)
-      loadItems()
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
-      console.error(error)
-    } finally {
-      setIsSaving(false)
     }
   }
 
@@ -226,74 +238,138 @@ export default function AirConditionersPage() {
 
   const handleDeleteConfirm = async () => {
     if (!itemToDelete) return
-    
-    setIsDeleting(true)
+
     try {
-      await airConditionerService.delete(itemToDelete.id)
+      await deleteAirConditioner.mutateAsync(itemToDelete.id)
       toast.success(t('air_conditioners.ac_deleted'))
-      loadItems()
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
     } finally {
-      setIsDeleting(false)
       setDeleteDialogOpen(false)
       setItemToDelete(null)
     }
   }
 
-  const renderItems = searchTerm 
-    ? items.filter(i => 
-        i.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        i.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        i.model?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : items
-
   return (
-    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
-            <Snowflake className="w-6 sm:w-8 h-6 sm:h-8 text-primary" />
-            {t('air_conditioners.title')}
-          </h1>
-          <p className="text-sm sm:text-base text-muted-foreground">{t('air_conditioners.subtitle')}</p>
-        </div>
-        {isAdmin && (
+    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300">
+      <PageHeader
+        title={t('air_conditioners.title')}
+        subtitle={t('air_conditioners.subtitle')}
+        icon={Snowflake}
+        action={isAdmin ? (
           <Button onClick={handleCreate} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
             <Plus className="w-4 h-4 mr-2" />
             {t('air_conditioners.add_ac')}
           </Button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
-      {/* Search */}
-      <div className="flex gap-4 mb-6">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input 
-            placeholder={t('air_conditioners.search_placeholder')}
-            className="pl-10 bg-background/50 border-input text-foreground hover:bg-background/80 transition-colors"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </div>
+      <SearchBar
+        value={searchTerm}
+        onChange={setSearchTerm}
+        placeholder={t('air_conditioners.search_placeholder')}
+        className="mb-6"
+        inputClassName="max-w-sm"
+      >
+        <Button
+          variant="outline"
+          className="hidden lg:flex relative border-border hover:bg-accent text-foreground"
+          onClick={() => setIsFilterOpen(true)}
+        >
+          <Filter className="w-4 h-4 mr-2" />
+          {t('common.filter', 'Filter')}
+          {getActiveFilterCount() > 0 && (
+            <span className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-primary text-primary-foreground text-[10px]">
+              {getActiveFilterCount()}
+            </span>
+          )}
+        </Button>
+      </SearchBar>
+
+      {/* Filter Dialog */}
+      <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+        <DialogContent className="bg-card border-border text-card-foreground sm:max-w-[425px] overflow-y-auto max-h-[85vh]">
+          <DialogHeader>
+            <DialogTitle>{t('air_conditioners.filter_title', 'Filter Air Conditioners')}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {/* Brand Filter */}
+            <div className="grid gap-2">
+              <Label>{t('air_conditioners.brand')}</Label>
+              <Input 
+                placeholder={t('air_conditioners.brand_placeholder', 'e.g. Daikin')}
+                value={tempFilters.brand}
+                onChange={(e) => setTempFilters({...tempFilters, brand: e.target.value})}
+                className="bg-background border-input"
+              />
+            </div>
+
+            {/* Price Range */}
+            <div className="space-y-2">
+              <Label>{t('air_conditioners.price_range')}</Label>
+              <div className="flex items-center gap-2">
+                  <Input 
+                    type="number"
+                    placeholder="Min"
+                    value={tempFilters.minPrice}
+                    onChange={(e) => setTempFilters({...tempFilters, minPrice: Number(e.target.value)})}
+                    className="bg-background border-input"
+                  />
+                  <span className="text-muted-foreground">-</span>
+                  <Input 
+                    type="number"
+                    placeholder="Max"
+                    value={tempFilters.maxPrice}
+                    onChange={(e) => setTempFilters({...tempFilters, maxPrice: Number(e.target.value)})}
+                    className="bg-background border-input"
+                  />
+              </div>
+            </div>
+
+            {/* Power Range */}
+            <div className="space-y-2">
+              <Label>{t('air_conditioners.power_range')} (kW)</Label>
+               <div className="flex items-center gap-2">
+                  <Input 
+                    type="number"
+                    placeholder="Min"
+                    step="0.1"
+                    value={tempFilters.minKilowatts}
+                    onChange={(e) => setTempFilters({...tempFilters, minKilowatts: Number(e.target.value)})}
+                    className="bg-background border-input"
+                  />
+                  <span className="text-muted-foreground">-</span>
+                  <Input 
+                    type="number"
+                    placeholder="Max"
+                    step="0.1"
+                    value={tempFilters.maxKilowatts}
+                    onChange={(e) => setTempFilters({...tempFilters, maxKilowatts: Number(e.target.value)})}
+                    className="bg-background border-input"
+                  />
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="flex-col sm:flex-col gap-2">
+            <Button onClick={handleApplyFilters} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+              {t('common.apply_filters', 'Apply Filters')}
+            </Button>
+            <Button variant="outline" onClick={handleClearFilters} className="w-full border-border hover:bg-accent text-foreground">
+              {t('common.clear_filters', 'Clear Filters')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Grid Content */}
       {isLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
-      ) : renderItems.length === 0 ? (
-        <div className="text-center text-muted-foreground py-12">
-          {t('air_conditioners.no_acs')}
-        </div>
+        <AirConditionersGridSkeleton />
+      ) : items.length === 0 ? (
+        <EmptyState message={t('air_conditioners.no_acs')} />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {renderItems.map((item) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in">
+          {items.map((item) => (
             <Card 
               key={item.id} 
               className="glass-card overflow-hidden hover:border-primary/50 transition-colors cursor-pointer group"
@@ -354,36 +430,15 @@ export default function AirConditionersPage() {
         </div>
       )}
 
-     {/* Pagination */}
-      <div className="flex items-center justify-end space-x-2 py-8">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPage(p => Math.max(1, p - 1))}
-          disabled={page === 1}
-          className="border-border text-muted-foreground hover:bg-muted hover:text-foreground"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          {t('common.previous')}
-        </Button>
-        <span className="text-sm text-sm sm:text-base text-muted-foreground">
-          {t('common.page', { current: page, total: totalPages || 1 })}
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            if (page < totalPages) {
-              setPage(p => p + 1)
-            }
-          }}
-          disabled={page >= totalPages}
-          className="border-border text-muted-foreground hover:bg-muted hover:text-foreground"
-        >
-          {t('common.next')}
-          <ChevronRight className="w-4 h-4" />
-        </Button>
-      </div>
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        previousLabel={t('common.previous')}
+        nextLabel={t('common.next')}
+        pageLabel={t('common.page', { current: page, total: totalPages || 1 })}
+        className="justify-center py-8"
+      />
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -637,8 +692,8 @@ export default function AirConditionersPage() {
             </div>
 
             <DialogFooter className="pt-4">
-              <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSaving}>
-                {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={createAirConditioner.isPending || updateAirConditioner.isPending}>
+                {(createAirConditioner.isPending || updateAirConditioner.isPending) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {t('common.save')}
               </Button>
             </DialogFooter>
@@ -646,38 +701,32 @@ export default function AirConditionersPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="bg-card border-border">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-foreground">
-              <AlertTriangle className="w-5 h-5 text-destructive" />
-              {t('common.confirm_delete_title', 'Delete Air Conditioner')}
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm sm:text-base text-muted-foreground">
-              {t('air_conditioners.delete_confirmation', 'Are you sure you want to delete this air conditioner? This action cannot be undone.')}
-              {itemToDelete && (
-                <span className="block mt-2 font-medium text-foreground">
-                  {itemToDelete.brand} {itemToDelete.name}
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleDeleteConfirm}
+        title={t('common.confirm_delete_title', 'Delete Air Conditioner')}
+        description={t('air_conditioners.delete_confirmation', 'Are you sure you want to delete this air conditioner? This action cannot be undone.')}
+        itemName={itemToDelete ? `${itemToDelete.brand} ${itemToDelete.name}` : undefined}
+        confirmLabel={t('common.delete', 'Delete')}
+        cancelLabel={t('common.cancel', 'Cancel')}
+        isLoading={deleteAirConditioner.isPending}
+      />
+
+      {/* Mobile Filter FAB - Bubble */}
+      <div className="lg:hidden fixed bottom-6 right-6 z-50">
+        <Button 
+            className="h-14 w-14 rounded-full shadow-lg shadow-primary/30 bg-primary hover:bg-primary/90 text-primary-foreground p-0 flex items-center justify-center transform transition-transform hover:scale-105 active:scale-95"
+            onClick={() => setIsFilterOpen(true)}
+        >
+            <Filter className="w-6 h-6" />
+            {getActiveFilterCount() > 0 && (
+                <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full border-2 border-background flex items-center justify-center text-[10px] font-bold">
+                    {getActiveFilterCount()}
                 </span>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="border-border text-foreground hover:bg-muted">
-              {t('common.cancel', 'Cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isDeleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {t('common.delete', 'Delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            )}
+        </Button>
+      </div>
     </div>
   )
 }

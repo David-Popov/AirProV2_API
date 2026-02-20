@@ -46,6 +46,9 @@ public class MontageService : IMontageService
                 CompanyId = dto.CompanyId,
                 UserId = dto.UserId,
                 AirConditionerId = dto.AirConditionerId,
+                CustomAcBrand = dto.CustomAcBrand,
+                CustomAcModel = dto.CustomAcModel,
+                CustomAcKilowatts = dto.CustomAcKilowatts,
                 ClientName = dto.ClientName,
                 ClientPhone = dto.ClientPhone,
                 ClientEmail = dto.ClientEmail,
@@ -82,6 +85,9 @@ public class MontageService : IMontageService
             }
 
             montage.AirConditionerId = dto.AirConditionerId;
+            montage.CustomAcBrand = dto.CustomAcBrand;
+            montage.CustomAcModel = dto.CustomAcModel;
+            montage.CustomAcKilowatts = dto.CustomAcKilowatts;
             montage.ClientName = dto.ClientName;
             montage.ClientPhone = dto.ClientPhone;
             montage.ClientEmail = dto.ClientEmail;
@@ -234,7 +240,7 @@ public class MontageService : IMontageService
         }
     }
 
-    public async Task<PagedList<MontageDto>> GetAllAsync(PageParameters pageParameters)
+    public async Task<PagedList<MontageDto>> GetAllAsync(MontageParameters parameters)
     {
         try
         {
@@ -243,6 +249,46 @@ public class MontageService : IMontageService
                 .Include(m => m.AirConditioner)
                 .Include(m => m.UsedMaterials)
                     .ThenInclude(um => um.InventoryItem)
+                .AsQueryable();
+
+            if (parameters.StartDate.HasValue)
+            {
+                var startDate = DateOnly.FromDateTime(parameters.StartDate.Value);
+                query = query.Where(m => m.InstallationDate >= startDate);
+            }
+
+            if (parameters.EndDate.HasValue)
+            {
+                var endDate = DateOnly.FromDateTime(parameters.EndDate.Value);
+                query = query.Where(m => m.InstallationDate <= endDate);
+            }
+
+            if (!string.IsNullOrWhiteSpace(parameters.Status))
+            {
+                // Try parse enum or search by string if stored as string? Database stores int usually if enum.
+                // Assuming Status is stored as string or int. 
+                // In AddMontageAsync it uses Enum to parse.
+                // Let's check Entity configuration. Usually Enums are ints by default unless configured.
+                // But let's check how GetByStatusAsync does it: .Where(m => m.Status.ToString().ToLower() == status.ToLower())
+                // That suggests EF Core translation might be tricky or it's evaluated client side? No, EF Core can translate ToString() in some versions but generally it's better to parse before query.
+                
+                if (Enum.TryParse<MontageStatus>(parameters.Status, true, out var statusEnum))
+                {
+                   query = query.Where(m => m.Status == statusEnum);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(parameters.ClientName))
+            {
+                query = query.Where(m => m.ClientName.ToLower().Contains(parameters.ClientName.ToLower()));
+            }
+
+            if (!string.IsNullOrWhiteSpace(parameters.ClientPhone))
+            {
+                query = query.Where(m => m.ClientPhone.Contains(parameters.ClientPhone));
+            }
+
+            var dtoQuery = query
                 .OrderByDescending(m => m.InstallationDate)
                 .Select(m => new MontageDto
                 {
@@ -250,6 +296,9 @@ public class MontageService : IMontageService
                     CompanyId = m.CompanyId,
                     UserId = m.UserId,
                     AirConditionerId = m.AirConditionerId,
+                    CustomAcBrand = m.CustomAcBrand,
+                    CustomAcModel = m.CustomAcModel,
+                    CustomAcKilowatts = m.CustomAcKilowatts,
                     ClientName = m.ClientName,
                     ClientPhone = m.ClientPhone,
                     ClientEmail = m.ClientEmail,
@@ -281,7 +330,7 @@ public class MontageService : IMontageService
                         : null
                 });
 
-            return await PagedList<MontageDto>.CreateAsync(query, pageParameters);
+            return await PagedList<MontageDto>.CreateAsync(dtoQuery, parameters);
         }
         catch (Exception e)
         {
@@ -290,7 +339,7 @@ public class MontageService : IMontageService
         }
     }
 
-    public async Task<PagedList<MontageDto>> GetByCompanyIdAsync(Guid companyId, PageParameters pageParameters)
+    public async Task<PagedList<MontageDto>> GetByCompanyIdAsync(Guid companyId, MontageParameters parameters)
     {
         try
         {
@@ -300,6 +349,40 @@ public class MontageService : IMontageService
                 .Include(m => m.UsedMaterials)
                     .ThenInclude(um => um.InventoryItem)
                 .Where(m => m.CompanyId == companyId)
+                .AsQueryable();
+
+            // Apply filters from MontageParameters
+            if (parameters.StartDate.HasValue)
+            {
+                var startDate = DateOnly.FromDateTime(parameters.StartDate.Value);
+                query = query.Where(m => m.InstallationDate >= startDate);
+            }
+
+            if (parameters.EndDate.HasValue)
+            {
+                var endDate = DateOnly.FromDateTime(parameters.EndDate.Value);
+                query = query.Where(m => m.InstallationDate <= endDate);
+            }
+
+            if (!string.IsNullOrWhiteSpace(parameters.Status))
+            {
+                if (Enum.TryParse<MontageStatus>(parameters.Status, true, out var statusEnum))
+                {
+                   query = query.Where(m => m.Status == statusEnum);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(parameters.ClientName))
+            {
+                query = query.Where(m => m.ClientName.ToLower().Contains(parameters.ClientName.ToLower()));
+            }
+
+            if (!string.IsNullOrWhiteSpace(parameters.ClientPhone))
+            {
+                query = query.Where(m => m.ClientPhone.Contains(parameters.ClientPhone));
+            }
+
+            var dtoQuery = query
                 .OrderByDescending(m => m.InstallationDate)
                 .Select(m => new MontageDto
                 {
@@ -307,6 +390,9 @@ public class MontageService : IMontageService
                     CompanyId = m.CompanyId,
                     UserId = m.UserId,
                     AirConditionerId = m.AirConditionerId,
+                    CustomAcBrand = m.CustomAcBrand,
+                    CustomAcModel = m.CustomAcModel,
+                    CustomAcKilowatts = m.CustomAcKilowatts,
                     ClientName = m.ClientName,
                     ClientPhone = m.ClientPhone,
                     ClientEmail = m.ClientEmail,
@@ -335,8 +421,8 @@ public class MontageService : IMontageService
                         ImageUrl = m.AirConditioner.ImageUrl,
                     } : null
                 });
-            
-            return await PagedList<MontageDto>.CreateAsync(query, pageParameters);
+
+            return await PagedList<MontageDto>.CreateAsync(dtoQuery, parameters);
         }
         catch (Exception e)
         {
@@ -362,6 +448,9 @@ public class MontageService : IMontageService
                     CompanyId = m.CompanyId,
                     UserId = m.UserId,
                     AirConditionerId = m.AirConditionerId,
+                    CustomAcBrand = m.CustomAcBrand,
+                    CustomAcModel = m.CustomAcModel,
+                    CustomAcKilowatts = m.CustomAcKilowatts,
                     ClientName = m.ClientName,
                     ClientPhone = m.ClientPhone,
                     ClientEmail = m.ClientEmail,
@@ -417,6 +506,9 @@ public class MontageService : IMontageService
                     CompanyId = m.CompanyId,
                     UserId = m.UserId,
                     AirConditionerId = m.AirConditionerId,
+                    CustomAcBrand = m.CustomAcBrand,
+                    CustomAcModel = m.CustomAcModel,
+                    CustomAcKilowatts = m.CustomAcKilowatts,
                     ClientName = m.ClientName,
                     ClientPhone = m.ClientPhone,
                     ClientEmail = m.ClientEmail,
@@ -472,6 +564,9 @@ public class MontageService : IMontageService
                     CompanyId = m.CompanyId,
                     UserId = m.UserId,
                     AirConditionerId = m.AirConditionerId,
+                    CustomAcBrand = m.CustomAcBrand,
+                    CustomAcModel = m.CustomAcModel,
+                    CustomAcKilowatts = m.CustomAcKilowatts,
                     ClientName = m.ClientName,
                     ClientPhone = m.ClientPhone,
                     ClientEmail = m.ClientEmail,
@@ -527,6 +622,9 @@ public class MontageService : IMontageService
                     CompanyId = m.CompanyId,
                     UserId = m.UserId,
                     AirConditionerId = m.AirConditionerId,
+                    CustomAcBrand = m.CustomAcBrand,
+                    CustomAcModel = m.CustomAcModel,
+                    CustomAcKilowatts = m.CustomAcKilowatts,
                     ClientName = m.ClientName,
                     ClientPhone = m.ClientPhone,
                     ClientEmail = m.ClientEmail,
@@ -575,6 +673,9 @@ public class MontageService : IMontageService
            CompanyId = montage.CompanyId,
            UserId = montage.UserId,
            AirConditionerId = montage.AirConditionerId,
+           CustomAcBrand = montage.CustomAcBrand,
+           CustomAcModel = montage.CustomAcModel,
+           CustomAcKilowatts = montage.CustomAcKilowatts,
            ClientName = montage.ClientName,
            ClientPhone = montage.ClientPhone,
            ClientEmail = montage.ClientEmail,

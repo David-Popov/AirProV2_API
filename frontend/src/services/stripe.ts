@@ -54,6 +54,13 @@ class StripeService {
     const portalUrl = await this.createPortalSession();
     window.location.href = portalUrl;
   }
+
+  /**
+   * Return to Free plan after trial expiration - deactivates all employees
+   */
+  async returnToFreePlan(): Promise<void> {
+    await apiClient.post('/Stripe/return-to-free', {});
+  }
 }
 
 export const stripeService = new StripeService();

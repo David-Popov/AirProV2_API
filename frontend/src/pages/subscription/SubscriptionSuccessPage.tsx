@@ -11,7 +11,6 @@ export default function SubscriptionSuccessPage() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    // Celebrate with confetti
     const duration = 3 * 1000
     const animationEnd = Date.now() + duration
     const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 }

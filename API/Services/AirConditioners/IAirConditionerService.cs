@@ -13,7 +13,7 @@ public interface IAirConditionerService
     
     Task<AirConditionerDto?> GetByIdAsync(Guid airConditionerId);
     
-    Task<PagedList<AirConditionerDto>> GetAirConditionersAsync(PageParameters pageParameters);
+    Task<PagedList<AirConditionerDto>> GetAirConditionersAsync(AirConditionerParameters parameters);
     
     Task AddErrorCodeAsync(CreateErrorCodeDto dto);
     

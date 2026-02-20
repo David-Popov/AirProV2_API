@@ -40,7 +40,6 @@ import { COMPANY_TYPE_OPTIONS, SUBSCRIPTION_PLANS, SUBSCRIPTION_STATUSES } from 
 export default function CompaniesPage() {
   const { t } = useTranslation()
   
-  // State
   const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -48,7 +47,6 @@ export default function CompaniesPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   
-  // Modal states
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -58,9 +56,8 @@ export default function CompaniesPage() {
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
   const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([])
   
-  // Form state
   const [formData, setFormData] = useState<CreateCompanyRequest>({
-    name: '',
+    company_name: '',
     company_type: 'LLC',
     bulstat: '',
     vat_number: '',
@@ -80,7 +77,6 @@ export default function CompaniesPage() {
     end_date: ''
   })
   
-  // Load companies
   useEffect(() => {
     loadCompanies()
   }, [currentPage])
@@ -101,7 +97,7 @@ export default function CompaniesPage() {
   
   // Filter companies by search
   const filteredCompanies = companies.filter(company =>
-    (company.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (company.company_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (company.bulstat || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (company.city || '').toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -186,7 +182,7 @@ export default function CompaniesPage() {
   const openEditDialog = (company: Company) => {
     setSelectedCompany(company)
     setFormData({
-      name: company.name,
+      company_name: company.company_name,
       company_type: company.company_type,
       bulstat: company.bulstat || '',
       vat_number: company.vat_number || '',
@@ -214,7 +210,7 @@ export default function CompaniesPage() {
   
   const resetForm = () => {
     setFormData({
-      name: '',
+      company_name: '',
       company_type: 'LLC',
       bulstat: '',
       vat_number: '',
@@ -263,7 +259,7 @@ export default function CompaniesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
+    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -396,7 +392,7 @@ export default function CompaniesPage() {
                     <tr key={company.id} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
                       <td className="py-4 px-4">
                         <div>
-                          <p className="font-medium text-foreground">{company.name}</p>
+                          <p className="font-medium text-foreground">{company.company_name}</p>
                           <p className="text-sm text-sm sm:text-base text-muted-foreground">{company.bulstat || 'No BULSTAT'}</p>
                         </div>
                       </td>
@@ -515,8 +511,8 @@ export default function CompaniesPage() {
               <div>
                 <label className="text-sm font-medium text-foreground">{t('companies.name', 'Company Name')} *</label>
                 <Input
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  value={formData.company_name}
+                  onChange={(e) => setFormData({...formData, company_name: e.target.value})}
                   placeholder={t('companies.name_placeholder', 'Enter company name')}
                 />
               </div>
@@ -652,7 +648,7 @@ export default function CompaniesPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {t('companies.users_for', 'Users for')} {selectedCompany?.name}
+              {t('companies.users_for', 'Users for')} {selectedCompany?.company_name}
             </DialogTitle>
           </DialogHeader>
           <div className="max-h-[400px] overflow-y-auto">
@@ -696,7 +692,7 @@ export default function CompaniesPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {t('companies.manage_subscription', 'Manage Subscription')} - {selectedCompany?.name}
+              {t('companies.manage_subscription', 'Manage Subscription')} - {selectedCompany?.company_name}
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">

@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { 
-  Users, 
-  Plus, 
-  Search, 
-  Trash, 
+import {
+  Users,
+  Plus,
+  Trash,
   Loader2,
-  AlertTriangle
+  CheckCircle,
+  XCircle
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -15,13 +15,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from '@/components/ui/table'
 import {
   Dialog,
@@ -30,27 +30,20 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { employeeService } from '@/services'
+import { PageHeader, SearchBar, EmptyState, ConfirmDialog } from '@/components/shared'
+import { SkeletonTableRows, SkeletonMobileCards } from '@/components/skeletons'
+import { useEmployees, useEmployeeLimits, useCreateEmployee, useDeleteEmployee, useActivateEmployee, useDeactivateEmployee } from '@/hooks'
 import type { Employee, CreateEmployeeRequest } from '@/types'
+import { validatePasswordRules, isValidEmail } from '@/lib/validators'
+import { TrialActivationModal, PremiumUpgradeModal } from '@/components/subscription'
+import { useAuth } from '@/context'
 
 export default function EmployeesPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const [employees, setEmployees] = useState<Employee[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const { user } = useAuth()
   const [searchTerm, setSearchTerm] = useState('')
 
-  // Dialog State
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [newEmployee, setNewEmployee] = useState<CreateEmployeeRequest>({
     email: '',
@@ -60,31 +53,44 @@ export default function EmployeesPage() {
     phone_number: '',
     address: ''
   })
-  const [isSaving, setIsSaving] = useState(false)
-  
-  // Delete confirmation state
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
 
-  const loadEmployees = async () => {
-    setIsLoading(true)
-    try {
-      const data = await employeeService.getAll()
-      setEmployees(data)
-    } catch (error) {
-      toast.error(t('common.unknown_error'))
-      console.error(error)
-    } finally {
-      setIsLoading(false)
+  const [trialModalOpen, setTrialModalOpen] = useState(false)
+
+  const [premiumModalOpen, setPremiumModalOpen] = useState(false)
+  const [premiumModalReason, setPremiumModalReason] = useState<'employee_limit' | 'trial_used' | 'general'>('general')
+
+  const { data: employees = [], isLoading } = useEmployees()
+  const { data: employeeLimits = null } = useEmployeeLimits()
+  const createEmployee = useCreateEmployee()
+  const deleteEmployee = useDeleteEmployee()
+  const activateEmployee = useActivateEmployee()
+  const deactivateEmployee = useDeactivateEmployee()
+
+  const handleCreate = async () => {
+    if (employeeLimits && !employeeLimits.can_add_more) {
+      if (employeeLimits.subscription_plan === 'Free') {
+        if (user?.has_used_trial) {
+          setPremiumModalReason('trial_used')
+          setPremiumModalOpen(true)
+          return
+        } else {
+          setTrialModalOpen(true)
+          return
+        }
+      } else if (employeeLimits.subscription_plan === 'FreeTrial') {
+        setPremiumModalReason('employee_limit')
+        setPremiumModalOpen(true)
+        return
+      } else {
+        setPremiumModalReason('general')
+        setPremiumModalOpen(true)
+        return
+      }
     }
-  }
 
-  useEffect(() => {
-    loadEmployees()
-  }, [])
-
-  const handleCreate = () => {
     setNewEmployee({
       email: '',
       password: '',
@@ -96,36 +102,9 @@ export default function EmployeesPage() {
     setIsDialogOpen(true)
   }
 
-  // Password validation helper
-  const validatePassword = (password: string): string[] => {
-    const errors: string[] = []
-    if (password.length < 8) {
-      errors.push(t('validation.password_min_length', 'Password must be at least 8 characters'))
-    }
-    if (!/[A-Z]/.test(password)) {
-      errors.push(t('validation.password_uppercase', 'Password must contain at least one uppercase letter'))
-    }
-    if (!/[a-z]/.test(password)) {
-      errors.push(t('validation.password_lowercase', 'Password must contain at least one lowercase letter'))
-    }
-    if (!/[0-9]/.test(password)) {
-      errors.push(t('validation.password_number', 'Password must contain at least one number'))
-    }
-    if (!/[^a-zA-Z0-9]/.test(password)) {
-      errors.push(t('validation.password_special', 'Password must contain at least one special character'))
-    }
-    return errors
-  }
-
-  // Email validation helper
-  const validateEmail = (email: string): boolean => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-  }
-
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Client-side validation
     const validationErrors: string[] = []
     
     if (!newEmployee.first_name.trim()) {
@@ -136,11 +115,11 @@ export default function EmployeesPage() {
     }
     if (!newEmployee.email.trim()) {
       validationErrors.push(t('validation.email_required', 'Email is required'))
-    } else if (!validateEmail(newEmployee.email)) {
+    } else if (!isValidEmail(newEmployee.email)) {
       validationErrors.push(t('validation.email_invalid', 'Please enter a valid email address'))
     }
-    
-    const passwordErrors = validatePassword(newEmployee.password)
+
+    const passwordErrors = validatePasswordRules(newEmployee.password).map(key => t(key))
     validationErrors.push(...passwordErrors)
     
     if (validationErrors.length > 0) {
@@ -148,18 +127,13 @@ export default function EmployeesPage() {
       return
     }
     
-    setIsSaving(true)
     try {
-      await employeeService.create(newEmployee)
+      await createEmployee.mutateAsync(newEmployee)
       toast.success(t('employees.created_success', 'Employee created successfully'))
       setIsDialogOpen(false)
-      loadEmployees()
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
-      console.error(error)
-    } finally {
-      setIsSaving(false)
     }
   }
 
@@ -170,19 +144,48 @@ export default function EmployeesPage() {
 
   const handleDeleteConfirm = async () => {
     if (!employeeToDelete) return
-    
-    setIsDeleting(true)
+
     try {
-      await employeeService.delete(employeeToDelete.id)
+      await deleteEmployee.mutateAsync(employeeToDelete.id)
       toast.success(t('employees.deleted_success', 'Employee deleted successfully'))
-      loadEmployees()
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
     } finally {
-      setIsDeleting(false)
       setDeleteDialogOpen(false)
       setEmployeeToDelete(null)
+    }
+  }
+
+  const handleActivateEmployee = async (e: React.MouseEvent, employee: Employee) => {
+    e.stopPropagation()
+
+    if (employeeLimits && !employeeLimits.can_add_more) {
+      toast.error(
+        t('employees.cannot_activate_limit',
+          `Cannot activate more employees. Your plan allows ${employeeLimits.max_count} active employees.`)
+      )
+      return
+    }
+
+    try {
+      await activateEmployee.mutateAsync(employee.id)
+      toast.success(t('employees.activated_success', 'Employee activated successfully'))
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t('common.unknown_error')
+      toast.error(message)
+    }
+  }
+
+  const handleDeactivateEmployee = async (e: React.MouseEvent, employee: Employee) => {
+    e.stopPropagation()
+
+    try {
+      await deactivateEmployee.mutateAsync(employee.id)
+      toast.success(t('employees.deactivated_success', 'Employee deactivated successfully'))
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t('common.unknown_error')
+      toast.error(message)
     }
   }
 
@@ -193,34 +196,24 @@ export default function EmployeesPage() {
   )
 
   return (
-    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-64 lg:pt-8 transition-colors duration-300">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
-            <Users className="w-6 sm:w-8 h-6 sm:h-8 text-primary" />
-            {t('employees.title')}
-          </h1>
-          <p className="text-sm sm:text-base text-muted-foreground">{t('employees.subtitle')}</p>
-        </div>
-        <Button onClick={handleCreate} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
-          <Plus className="w-4 h-4 mr-2" />
-          {t('employees.add_employee')}
-        </Button>
-      </div>
+    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300">
+      <PageHeader
+        title={t('employees.title')}
+        subtitle={t('employees.subtitle')}
+        icon={Users}
+        action={
+          <Button onClick={handleCreate} className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
+            <Plus className="w-4 h-4 mr-2" />
+            {t('employees.add_employee')}
+          </Button>
+        }
+      />
 
-      {/* Search */}
-      <div className="flex gap-4 mb-4 sm:mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input 
-            placeholder={t('employees.search_placeholder')}
-            className="pl-10 bg-background/50 border-input text-foreground hover:bg-background/80 transition-colors"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </div>
+      <SearchBar
+        value={searchTerm}
+        onChange={setSearchTerm}
+        placeholder={t('employees.search_placeholder')}
+      />
 
       {/* Table - Desktop */}
       <div className="hidden md:block glass-card rounded-xl overflow-hidden">
@@ -237,13 +230,7 @@ export default function EmployeesPage() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
-                  <div className="flex justify-center">
-                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                  </div>
-                </TableCell>
-              </TableRow>
+              <SkeletonTableRows columns={6} />
             ) : filteredEmployees.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center text-sm sm:text-base text-muted-foreground">
@@ -252,9 +239,9 @@ export default function EmployeesPage() {
               </TableRow>
             ) : (
               filteredEmployees.map((emp) => (
-                <TableRow 
-                  key={emp.id} 
-                  className="border-border hover:bg-muted/30 transition-colors cursor-pointer"
+                <TableRow
+                  key={emp.id}
+                  className="border-border hover:bg-muted/30 transition-colors cursor-pointer animate-fade-in"
                   onClick={() => navigate(`/employees/${emp.id}`)}
                 >
                   <TableCell className="font-medium text-foreground">{emp.full_name}</TableCell>
@@ -280,8 +267,34 @@ export default function EmployeesPage() {
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-2">
-                      <Button 
-                        variant="ghost" 
+                      {/* Activate/Deactivate toggle - only for User role */}
+                      {!emp.roles.includes('Manager') && (
+                        <>
+                          {emp.is_active ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-orange-500 hover:text-orange-400 hover:bg-orange-500/10"
+                              onClick={(e) => handleDeactivateEmployee(e, emp)}
+                              title={t('employees.deactivate', 'Deactivate')}
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-green-500 hover:text-green-400 hover:bg-green-500/10"
+                              onClick={(e) => handleActivateEmployee(e, emp)}
+                              title={t('employees.activate', 'Activate')}
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </>
+                      )}
+                      <Button
+                        variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10"
                         onClick={(e) => { e.stopPropagation(); handleDeleteClick(emp) }}
@@ -300,19 +313,14 @@ export default function EmployeesPage() {
       {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
+          <SkeletonMobileCards rows={4} />
         ) : filteredEmployees.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <Users className="w-12 h-12 mx-auto mb-3 opacity-20" />
-            <p>{t('employees.no_employees')}</p>
-          </div>
+          <EmptyState icon={Users} message={t('employees.no_employees')} />
         ) : (
           filteredEmployees.map((emp) => (
-            <Card 
-              key={emp.id} 
-              className="glass-card cursor-pointer hover:border-primary/50 transition-all"
+            <Card
+              key={emp.id}
+              className="glass-card cursor-pointer hover:border-primary/50 transition-all animate-fade-in"
               onClick={() => navigate(`/employees/${emp.id}`)}
             >
               <CardContent className="p-4">
@@ -429,8 +437,8 @@ export default function EmployeesPage() {
               />
             </div>
             <DialogFooter>
-              <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSaving}>
-                {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={createEmployee.isPending}>
+                {createEmployee.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {t('employees.create_account')}
               </Button>
             </DialogFooter>
@@ -438,38 +446,42 @@ export default function EmployeesPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="bg-card border-border">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-foreground">
-              <AlertTriangle className="w-5 h-5 text-destructive" />
-              {t('common.confirm_delete_title', 'Delete Employee')}
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm sm:text-base text-muted-foreground">
-              {t('employees.delete_confirmation', 'Are you sure you want to delete this employee? This action cannot be undone.')}
-              {employeeToDelete && (
-                <span className="block mt-2 font-medium text-foreground">
-                  {employeeToDelete.full_name} ({employeeToDelete.email})
-                </span>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="border-border text-foreground hover:bg-muted">
-              {t('common.cancel', 'Cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isDeleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {t('common.delete', 'Delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleDeleteConfirm}
+        title={t('common.confirm_delete_title', 'Delete Employee')}
+        description={t('employees.delete_confirmation', 'Are you sure you want to delete this employee? This action cannot be undone.')}
+        itemName={employeeToDelete ? `${employeeToDelete.full_name} (${employeeToDelete.email})` : undefined}
+        confirmLabel={t('common.delete', 'Delete')}
+        cancelLabel={t('common.cancel', 'Cancel')}
+        isLoading={deleteEmployee.isPending}
+      />
+
+      {/* Trial Activation Modal */}
+      <TrialActivationModal
+        isOpen={trialModalOpen}
+        onClose={() => setTrialModalOpen(false)}
+        onSuccess={() => {
+          setNewEmployee({
+            email: '',
+            password: '',
+            first_name: '',
+            last_name: '',
+            phone_number: '',
+            address: ''
+          })
+          setIsDialogOpen(true)
+        }}
+        maxEmployees={employeeLimits?.max_count || 2}
+      />
+
+      {/* Premium Upgrade Modal */}
+      <PremiumUpgradeModal
+        isOpen={premiumModalOpen}
+        onClose={() => setPremiumModalOpen(false)}
+        reason={premiumModalReason}
+      />
     </div>
   )
 }

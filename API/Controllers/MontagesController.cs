@@ -1,15 +1,18 @@
+using System.Security.Claims;
 using API.Common;
 using API.DTOs;
 using API.Services;
 using API.Services.Montages;
 using API.Validators;
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class MontagesController : ControllerBase
 {
     private readonly IMontageService _service;
@@ -30,16 +33,22 @@ public class MontagesController : ControllerBase
     }
 
     /// <summary>
-    /// Get all montages with pagination
+    /// Get all montages with pagination for the current user's company
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<PagedList<MontageDto>>> GetAll([FromQuery] PageParameters pageParameters)
+    public async Task<ActionResult<PagedList<MontageDto>>> GetAll([FromQuery] MontageParameters parameters)
     {
         try
         {
-            var result = await _service.GetAllAsync(pageParameters);
+            var companyId = GetCurrentUserCompanyId();
+            if (companyId == null)
+            {
+                return BadRequest(new { message = "User is not associated with a company" });
+            }
+
+            var result = await _service.GetByCompanyIdAsync(companyId.Value, parameters);
             return Ok(result);
         }
         catch (Exception ex)
@@ -64,9 +73,15 @@ public class MontagesController : ControllerBase
             {
                 return BadRequest("Id is required");
             }
-            
+
+            var companyId = GetCurrentUserCompanyId();
+            if (companyId == null)
+            {
+                return BadRequest(new { message = "User is not associated with a company" });
+            }
+
             var result = await _service.GetByIdAsync(id);
-            if (result == null)
+            if (result == null || result.CompanyId != companyId)
             {
                 return NotFound(new { message = "Montage not found" });
             }
@@ -110,11 +125,11 @@ public class MontagesController : ControllerBase
     [HttpGet("company/{companyId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<PagedList<MontageDto>>> GetByCompanyId(Guid companyId, [FromQuery] PageParameters pageParameters)
+    public async Task<ActionResult<PagedList<MontageDto>>> GetByCompanyId(Guid companyId, [FromQuery] MontageParameters parameters)
     {
         try
         {
-            var result = await _service.GetByCompanyIdAsync(companyId, pageParameters);
+            var result = await _service.GetByCompanyIdAsync(companyId, parameters);
             return Ok(result);
         }
         catch (Exception ex)
@@ -224,6 +239,22 @@ public class MontagesController : ControllerBase
                 return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
             }
 
+            // Populate CompanyId and UserId from JWT token
+            var companyId = GetCurrentUserCompanyId();
+            if (companyId == null)
+            {
+                return BadRequest(new { message = "User is not associated with a company" });
+            }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest(new { message = "User ID not found" });
+            }
+
+            dto.CompanyId = companyId.Value;
+            dto.UserId = userId;
+
             await _service.AddMontageAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = Guid.NewGuid() }, dto);
         }
@@ -250,6 +281,19 @@ public class MontagesController : ControllerBase
             if (!validationResult.IsValid)
             {
                 return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            }
+
+            var companyId = GetCurrentUserCompanyId();
+            if (companyId == null)
+            {
+                return BadRequest(new { message = "User is not associated with a company" });
+            }
+
+            // Check if montage belongs to user's company
+            var existing = await _service.GetByIdAsync(id);
+            if (existing == null || existing.CompanyId != companyId)
+            {
+                return NotFound(new { message = "Montage not found" });
             }
 
             await _service.UpdateMontageAsync(id, dto);
@@ -283,6 +327,19 @@ public class MontagesController : ControllerBase
                 return BadRequest(new { message = "Status is required" });
             }
 
+            var companyId = GetCurrentUserCompanyId();
+            if (companyId == null)
+            {
+                return BadRequest(new { message = "User is not associated with a company" });
+            }
+
+            // Check if montage belongs to user's company
+            var existing = await _service.GetByIdAsync(id);
+            if (existing == null || existing.CompanyId != companyId)
+            {
+                return NotFound(new { message = "Montage not found" });
+            }
+
             await _service.UpdateMontageStatusAsync(id, dto.Status);
             return NoContent();
         }
@@ -314,6 +371,19 @@ public class MontagesController : ControllerBase
                 return BadRequest(new { message = "Payment status is required" });
             }
 
+            var companyId = GetCurrentUserCompanyId();
+            if (companyId == null)
+            {
+                return BadRequest(new { message = "User is not associated with a company" });
+            }
+
+            // Check if montage belongs to user's company
+            var existing = await _service.GetByIdAsync(id);
+            if (existing == null || existing.CompanyId != companyId)
+            {
+                return NotFound(new { message = "Montage not found" });
+            }
+
             await _service.UpdatePaymentStatusAsync(id, dto.PaymentStatus, dto.PaidAmount);
             return NoContent();
         }
@@ -338,6 +408,19 @@ public class MontagesController : ControllerBase
     {
         try
         {
+            var companyId = GetCurrentUserCompanyId();
+            if (companyId == null)
+            {
+                return BadRequest(new { message = "User is not associated with a company" });
+            }
+
+            // Check if montage belongs to user's company
+            var existing = await _service.GetByIdAsync(id);
+            if (existing == null || existing.CompanyId != companyId)
+            {
+                return NotFound(new { message = "Montage not found" });
+            }
+
             await _service.DeleteMontageAsync(id);
             return NoContent();
         }
@@ -346,5 +429,15 @@ public class MontagesController : ControllerBase
             _logger.LogError(ex, ex.Message);
             return StatusCode(500, new { message = ex.Message });
         }
+    }
+
+    private Guid? GetCurrentUserCompanyId()
+    {
+        var companyIdClaim = User.FindFirstValue("company_id");
+        if (string.IsNullOrEmpty(companyIdClaim))
+        {
+            return null;
+        }
+        return Guid.TryParse(companyIdClaim, out var companyId) ? companyId : null;
     }
 }

@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { 
-  AlertTriangle, 
-  CreditCard, 
-  Trash2, 
+import {
+  AlertTriangle,
+  CreditCard,
+  Trash2,
   LogOut,
-  Loader2
+  Loader2,
+  RotateCcw
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -28,7 +29,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useAuth } from '@/context'
-import { companyService } from '@/services'
+import { stripeService, companyService } from '@/services'
 
 interface SubscriptionExpiredModalProps {
   isOpen: boolean
@@ -37,28 +38,39 @@ interface SubscriptionExpiredModalProps {
 export function SubscriptionExpiredModal({ isOpen }: SubscriptionExpiredModalProps) {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const { user, logout, refreshUser } = useAuth()
   const [isRenewing, setIsRenewing] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isReturningToFree, setIsReturningToFree] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
+  const canReturnToFree =
+    user?.subscription_status === 'Expired' ||
+    user?.subscription_status === 'Cancelled'
+
   const handleRenewSubscription = async () => {
-    if (!user?.company_id) {
-      toast.error(t('subscription.no_company', 'No company associated with your account'))
-      return
-    }
-    
     setIsRenewing(true)
     try {
-      await companyService.renewSubscription(user.company_id)
-      toast.success(t('subscription.renewed_success', 'Subscription renewed successfully!'))
-      // Refresh the page to update user data
-      window.location.reload()
+      await stripeService.redirectToCheckout()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t('common.unknown_error')
+      toast.error(message)
+      setIsRenewing(false)
+    }
+  }
+
+  const handleReturnToFreePlan = async () => {
+    setIsReturningToFree(true)
+    try {
+      await stripeService.returnToFreePlan()
+      toast.success(t('subscription.returned_to_free', 'Returned to Free plan. All employees have been deactivated.'))
+      await refreshUser()
+      navigate('/employees')
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
     } finally {
-      setIsRenewing(false)
+      setIsReturningToFree(false)
     }
   }
 
@@ -134,29 +146,56 @@ export function SubscriptionExpiredModal({ isOpen }: SubscriptionExpiredModalPro
               </div>
             </div>
 
-            {/* Delete Account */}
-            <div className="glass-card p-4 rounded-lg">
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-destructive/10 rounded-lg">
-                  <Trash2 className="w-6 h-6 text-destructive" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground">
-                    {t('subscription.delete_option', 'Delete Account')}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {t('subscription.delete_description', 'Permanently delete your account and all associated data.')}
-                  </p>
-                  <Button 
-                    variant="destructive"
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="mt-3"
-                  >
-                    {t('subscription.delete_button', 'Delete Account')}
-                  </Button>
+            {/* Return to Free Plan OR Delete Account */}
+            {canReturnToFree ? (
+              <div className="glass-card p-4 rounded-lg">
+                <div className="flex items-start gap-4">
+                  <div className="p-2 bg-blue-500/10 rounded-lg">
+                    <RotateCcw className="w-6 h-6 text-blue-500" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-foreground">
+                      {t('subscription.return_to_free_option', 'Return to Free Plan')}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {t('subscription.return_to_free_description', 'Return to Free plan with 2 active employees. All current employees will be deactivated.')}
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={handleReturnToFreePlan}
+                      disabled={isReturningToFree}
+                      className="mt-3 border-blue-500 text-blue-500 hover:bg-blue-500/10"
+                    >
+                      {isReturningToFree && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                      {t('subscription.return_to_free_button', 'Return to Free')}
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="glass-card p-4 rounded-lg">
+                <div className="flex items-start gap-4">
+                  <div className="p-2 bg-destructive/10 rounded-lg">
+                    <Trash2 className="w-6 h-6 text-destructive" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-foreground">
+                      {t('subscription.delete_option', 'Delete Account')}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {t('subscription.delete_description', 'Permanently delete your account and all associated data.')}
+                    </p>
+                    <Button
+                      variant="destructive"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="mt-3"
+                    >
+                      {t('subscription.delete_button', 'Delete Account')}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Logout */}
             <div className="glass-card p-4 rounded-lg">

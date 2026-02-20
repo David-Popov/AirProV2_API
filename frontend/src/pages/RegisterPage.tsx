@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { 
   Snowflake, 
@@ -18,17 +19,19 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuth } from '@/context'
+import { validatePasswordRules, isValidEmail } from '@/lib/validators'
 import { COMPANY_TYPE_OPTIONS } from '@/types'
 import { ModeToggle } from '@/components/mode-toggle'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const { register, isAuthenticated } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [step, setStep] = useState(1)
   const [formData, setFormData] = useState({
-    // User info
     email: '',
     password: '',
     confirmPassword: '',
@@ -37,7 +40,6 @@ export default function RegisterPage() {
     lastName: '',
     phoneNumber: '',
     address: '',
-    // Company info
     companyName: '',
     companyType: 'LLC',
     bulstat: '',
@@ -51,58 +53,42 @@ export default function RegisterPage() {
     warrantyDefaultMonths: 12,
   })
 
-  // Redirect if already authenticated
   if (isAuthenticated) {
     navigate('/dashboard', { replace: true })
   }
 
   const validateStep1 = (): boolean => {
     const errors: string[] = []
-    
+
     if (!formData.firstName.trim()) {
-      errors.push('First name is required')
+      errors.push(t('validation.first_name_required'))
     }
     if (!formData.lastName.trim()) {
-      errors.push('Last name is required')
+      errors.push(t('validation.last_name_required'))
     }
     if (!formData.email.trim()) {
-      errors.push('Email is required')
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.push('Please enter a valid email address')
+      errors.push(t('validation.email_required'))
+    } else if (!isValidEmail(formData.email)) {
+      errors.push(t('validation.email_invalid'))
     }
-    
+
     if (!formData.password) {
-      errors.push('Password is required')
+      errors.push(t('validation.password_required'))
     } else {
-      // Password strength validation
-      if (formData.password.length < 8) {
-        errors.push('Password must be at least 8 characters')
-      }
-      if (!/[A-Z]/.test(formData.password)) {
-        errors.push('Password must contain at least one uppercase letter')
-      }
-      if (!/[a-z]/.test(formData.password)) {
-        errors.push('Password must contain at least one lowercase letter')
-      }
-      if (!/[0-9]/.test(formData.password)) {
-        errors.push('Password must contain at least one number')
-      }
-      if (!/[^a-zA-Z0-9]/.test(formData.password)) {
-        errors.push('Password must contain at least one special character (!@#$%^&*)')
-      }
+      errors.push(...validatePasswordRules(formData.password).map(key => t(key)))
     }
-    
+
     if (!formData.confirmPassword) {
-      errors.push('Please confirm your password')
+      errors.push(t('validation.confirm_password_required'))
     } else if (formData.password !== formData.confirmPassword) {
-      errors.push('Passwords do not match')
+      errors.push(t('validation.passwords_not_match'))
     }
-    
+
     if (errors.length > 0) {
       toast.error(errors.join('. '))
       return false
     }
-    
+
     return true
   }
 
@@ -117,7 +103,7 @@ export default function RegisterPage() {
     }
     
     if (!formData.companyName || !formData.companyType) {
-      toast.error('Please fill in company name and type')
+      toast.error(t('auth.company_name_required'))
       return
     }
     
@@ -146,22 +132,22 @@ export default function RegisterPage() {
         warranty_default_months: formData.warrantyDefaultMonths,
       })
       
-      toast.success('Registration successful! Welcome to AirPro!')
+      toast.success(t('auth.registration_success'))
       navigate('/dashboard', { replace: true })
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Registration failed')
+      toast.error(error instanceof Error ? error.message : t('auth.registration_failed'))
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-blue-50/30 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 flex items-center justify-center p-4 py-8">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 py-8">
       {/* Decorative background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 -left-40 w-80 h-80 bg-blue-400/10 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 right-0 w-64 h-64 bg-cyan-400/10 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/8 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 -left-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 right-0 w-64 h-64 bg-violet-400/5 rounded-full blur-3xl" />
       </div>
       
       {/* Theme toggle */}
@@ -172,7 +158,7 @@ export default function RegisterPage() {
       <div className="relative w-full max-w-md">
         {/* Logo */}
         <Link to="/" className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-12 h-12 bg-gradient-to-br from-primary to-blue-600 dark:from-primary dark:to-blue-400 rounded-xl flex items-center justify-center shadow-lg shadow-primary/25">
+          <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/25">
             <Snowflake className="w-6 h-6 text-white" />
           </div>
           <span className="font-bold text-2xl text-foreground">AirPro</span>
@@ -180,15 +166,15 @@ export default function RegisterPage() {
 
         <Card className="bg-card/80 backdrop-blur-xl border-border/50 shadow-2xl shadow-primary/5">
           <CardHeader className="text-center pb-2">
-            <CardTitle className="text-2xl font-bold text-foreground">Create Account</CardTitle>
+            <CardTitle className="text-2xl font-bold text-foreground">{t('auth.create_account_title')}</CardTitle>
             <CardDescription className="text-muted-foreground">
-              {step === 1 ? 'Enter your personal information' : 'Enter your company information'}
+              {step === 1 ? t('auth.personal_info_desc') : t('auth.company_info_desc')}
             </CardDescription>
             {/* Progress indicator */}
             <div className="flex gap-3 justify-center mt-4">
               <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                step >= 1 
-                  ? 'bg-primary/10 dark:bg-primary/20 text-primary border border-primary/20' 
+                step >= 1
+                  ? 'bg-primary/10 dark:bg-primary/20 text-primary border border-primary/20'
                   : 'bg-muted text-muted-foreground'
               }`}>
                 {step > 1 ? (
@@ -196,15 +182,15 @@ export default function RegisterPage() {
                 ) : (
                   <User className="w-4 h-4" />
                 )}
-                Personal
+                {t('auth.step_personal')}
               </div>
               <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                step >= 2 
-                  ? 'bg-primary/10 dark:bg-primary/20 text-primary border border-primary/20' 
+                step >= 2
+                  ? 'bg-primary/10 dark:bg-primary/20 text-primary border border-primary/20'
                   : 'bg-muted text-muted-foreground'
               }`}>
                 <Building2 className="w-4 h-4" />
-                Company
+                {t('auth.step_company')}
               </div>
             </div>
           </CardHeader>
@@ -214,7 +200,7 @@ export default function RegisterPage() {
                 <>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="firstName" className="text-foreground font-medium">First Name *</Label>
+                      <Label htmlFor="firstName" className="text-foreground font-medium">{t('auth.first_name')} *</Label>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
@@ -228,7 +214,7 @@ export default function RegisterPage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="lastName" className="text-foreground font-medium">Last Name *</Label>
+                      <Label htmlFor="lastName" className="text-foreground font-medium">{t('auth.last_name')} *</Label>
                       <Input
                         id="lastName"
                         placeholder="Doe"
@@ -240,7 +226,7 @@ export default function RegisterPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="middleName" className="text-foreground font-medium">Middle Name</Label>
+                    <Label htmlFor="middleName" className="text-foreground font-medium">{t('auth.middle_name')}</Label>
                     <Input
                       id="middleName"
                       placeholder="Optional"
@@ -250,7 +236,7 @@ export default function RegisterPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-foreground font-medium">Email *</Label>
+                    <Label htmlFor="email" className="text-foreground font-medium">{t('auth.email')} *</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
@@ -265,7 +251,7 @@ export default function RegisterPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phoneNumber" className="text-foreground font-medium">Phone Number</Label>
+                    <Label htmlFor="phoneNumber" className="text-foreground font-medium">{t('auth.phone')}</Label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
@@ -279,7 +265,7 @@ export default function RegisterPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password" className="text-foreground font-medium">Password *</Label>
+                    <Label htmlFor="password" className="text-foreground font-medium">{t('auth.password')} *</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
@@ -292,10 +278,10 @@ export default function RegisterPage() {
                         className="pl-10 h-11 bg-background border-border"
                       />
                     </div>
-                    <p className="text-xs text-muted-foreground">Min 8 chars, 1 uppercase, 1 lowercase, 1 digit, 1 special char</p>
+                    <p className="text-xs text-muted-foreground">{t('validation.password_requirements')}</p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword" className="text-foreground font-medium">Confirm Password *</Label>
+                    <Label htmlFor="confirmPassword" className="text-foreground font-medium">{t('auth.confirm_password')} *</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
@@ -313,7 +299,7 @@ export default function RegisterPage() {
               ) : (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="companyName" className="text-foreground font-medium">Company Name *</Label>
+                    <Label htmlFor="companyName" className="text-foreground font-medium">{t('auth.company_name')} *</Label>
                     <div className="relative">
                       <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
@@ -327,23 +313,26 @@ export default function RegisterPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="companyType" className="text-foreground font-medium">Company Type *</Label>
-                    <select
-                      id="companyType"
+                    <Label htmlFor="companyType" className="text-foreground font-medium">{t('auth.company_type')} *</Label>
+                    <Select
                       value={formData.companyType}
-                      onChange={(e) => setFormData({ ...formData, companyType: e.target.value })}
-                      className="w-full h-11 px-3 rounded-md bg-background border border-border text-foreground focus:ring-2 focus:ring-ring focus:border-input"
+                      onValueChange={(val) => setFormData({ ...formData, companyType: val })}
                     >
-                      {COMPANY_TYPE_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger id="companyType" className="h-11 bg-background border-border">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover border-border text-popover-foreground">
+                        {COMPANY_TYPE_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="bulstat" className="text-foreground font-medium">Bulstat (EIK)</Label>
+                      <Label htmlFor="bulstat" className="text-foreground font-medium">{t('auth.bulstat')}</Label>
                       <Input
                         id="bulstat"
                         placeholder="123456789"
@@ -353,7 +342,7 @@ export default function RegisterPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="vatNumber" className="text-foreground font-medium">VAT Number</Label>
+                      <Label htmlFor="vatNumber" className="text-foreground font-medium">{t('auth.vat_number')}</Label>
                       <Input
                         id="vatNumber"
                         placeholder="BG123456789"
@@ -365,7 +354,7 @@ export default function RegisterPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="companyCity" className="text-foreground font-medium">City</Label>
+                      <Label htmlFor="companyCity" className="text-foreground font-medium">{t('auth.city')}</Label>
                       <div className="relative">
                         <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
@@ -378,7 +367,7 @@ export default function RegisterPage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="companyPostalCode" className="text-foreground font-medium">Postal Code</Label>
+                      <Label htmlFor="companyPostalCode" className="text-foreground font-medium">{t('auth.postal_code')}</Label>
                       <Input
                         id="companyPostalCode"
                         placeholder="1000"
@@ -389,7 +378,7 @@ export default function RegisterPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="companyAddress" className="text-foreground font-medium">Address</Label>
+                    <Label htmlFor="companyAddress" className="text-foreground font-medium">{t('auth.address')}</Label>
                     <Input
                       id="companyAddress"
                       placeholder="ul. Example 123"
@@ -403,34 +392,34 @@ export default function RegisterPage() {
 
               <div className="flex gap-3 pt-2">
                 {step === 2 && (
-                  <Button 
-                    type="button" 
+                  <Button
+                    type="button"
                     variant="outline"
                     className="flex-1 h-11"
                     onClick={() => setStep(1)}
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back
+                    {t('auth.back')}
                   </Button>
                 )}
-                <Button 
-                  type="submit" 
-                  className={`${step === 1 ? 'w-full' : 'flex-1'} h-11 bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 shadow-lg shadow-primary/25 font-medium`}
+                <Button
+                  type="submit"
+                  className={`${step === 1 ? 'w-full' : 'flex-1'} h-11 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25 font-medium`}
                   disabled={isLoading}
                 >
                   {isLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Creating account...
+                      {t('auth.creating_account')}
                     </>
                   ) : step === 1 ? (
                     <>
-                      Continue
+                      {t('auth.continue')}
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </>
                   ) : (
                     <>
-                      Create Account
+                      {t('auth.create_account_title')}
                       <Check className="w-4 h-4 ml-2" />
                     </>
                   )}
@@ -440,19 +429,19 @@ export default function RegisterPage() {
 
             <div className="mt-6 text-center">
               <p className="text-muted-foreground">
-                Already have an account?{' '}
+                {t('auth.already_have_account')}{' '}
                 <Link to="/login" className="text-primary hover:text-primary/80 font-medium transition-colors">
-                  Sign in
+                  {t('auth.sign_in_link')}
                 </Link>
               </p>
             </div>
           </CardContent>
         </Card>
-        
+
         {/* Back to home */}
         <div className="mt-6 text-center">
           <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            ← Back to home
+            {t('auth.back_to_home')}
           </Link>
         </div>
       </div>

@@ -1,4 +1,3 @@
-// API Client configuration
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5209/api';
 
@@ -30,7 +29,36 @@ class ApiClient {
     return headers;
   }
 
-  private async handleErrorResponse(response: Response): Promise<never> {
+  private async handleErrorResponse(response: Response, retryOriginalRequest: () => Promise<any>): Promise<any> {
+    if (response.status === 401) {
+      const token = localStorage.getItem('token');
+      const refreshToken = localStorage.getItem('refresh_token');
+
+      if (token && refreshToken) {
+         try {
+           if (response.url.includes('/auth/refresh-token')) {
+             throw new Error('Refresh token expired');
+           }
+
+           const authService = (await import('./auth')).authService;
+           await authService.refreshToken(token, refreshToken);
+           
+           return retryOriginalRequest();
+         } catch (error) {
+           const authService = (await import('./auth')).authService;
+           authService.logout();
+           window.location.href = '/login';
+           throw error;
+         }
+      } else {
+        const authService = (await import('./auth')).authService;
+        authService.logout();
+        if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+        }
+      }
+    }
+
     let errorData: unknown;
     try {
       const text = await response.text();
@@ -44,86 +72,106 @@ class ApiClient {
   }
 
   async get<T>(endpoint: string, includeAuth: boolean = true): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method: 'GET',
-      headers: this.getHeaders(includeAuth),
-    });
+    const makeRequest = async () => {
+        const response = await fetch(`${this.baseUrl}${endpoint}`, {
+          method: 'GET',
+          headers: this.getHeaders(includeAuth),
+        });
 
-    if (!response.ok) {
-      await this.handleErrorResponse(response);
-    }
+        if (!response.ok) {
+          return this.handleErrorResponse(response, makeRequest);
+        }
 
-    if (response.status === 204) {
-      return {} as T;
-    }
+        if (response.status === 204) {
+          return {} as T;
+        }
 
-    return response.json();
+        return response.json();
+    };
+
+    return makeRequest();
   }
 
   async post<T, D = unknown>(endpoint: string, data?: D, includeAuth: boolean = true): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method: 'POST',
-      headers: this.getHeaders(includeAuth),
-      body: data ? JSON.stringify(data) : undefined,
-    });
+    const makeRequest = async () => {
+        const response = await fetch(`${this.baseUrl}${endpoint}`, {
+          method: 'POST',
+          headers: this.getHeaders(includeAuth),
+          body: data ? JSON.stringify(data) : undefined,
+        });
 
-    if (!response.ok) {
-      await this.handleErrorResponse(response);
-    }
+        if (!response.ok) {
+           return this.handleErrorResponse(response, makeRequest);
+        }
 
-    if (response.status === 204) {
-      return {} as T;
-    }
+        if (response.status === 204) {
+          return {} as T;
+        }
 
-    return response.json();
+        return response.json();
+    };
+
+    return makeRequest();
   }
 
   async put<T, D = unknown>(endpoint: string, data?: D, includeAuth: boolean = true): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method: 'PUT',
-      headers: this.getHeaders(includeAuth),
-      body: data ? JSON.stringify(data) : undefined,
-    });
+    const makeRequest = async () => {
+        const response = await fetch(`${this.baseUrl}${endpoint}`, {
+          method: 'PUT',
+          headers: this.getHeaders(includeAuth),
+          body: data ? JSON.stringify(data) : undefined,
+        });
 
-    if (!response.ok) {
-      await this.handleErrorResponse(response);
-    }
+        if (!response.ok) {
+          return this.handleErrorResponse(response, makeRequest);
+        }
 
-    if (response.status === 204) {
-      return {} as T;
-    }
+        if (response.status === 204) {
+          return {} as T;
+        }
 
-    const text = await response.text();
-    return text ? JSON.parse(text) : ({} as T);
+        const text = await response.text();
+        return text ? JSON.parse(text) : ({} as T);
+    };
+
+    return makeRequest();
   }
 
   async patch<T, D = unknown>(endpoint: string, data?: D, includeAuth: boolean = true): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method: 'PATCH',
-      headers: this.getHeaders(includeAuth),
-      body: data ? JSON.stringify(data) : undefined,
-    });
+    const makeRequest = async () => {
+        const response = await fetch(`${this.baseUrl}${endpoint}`, {
+          method: 'PATCH',
+          headers: this.getHeaders(includeAuth),
+          body: data ? JSON.stringify(data) : undefined,
+        });
 
-    if (!response.ok) {
-      await this.handleErrorResponse(response);
-    }
+        if (!response.ok) {
+          return this.handleErrorResponse(response, makeRequest);
+        }
 
-    if (response.status === 204) {
-      return {} as T;
-    }
+        if (response.status === 204) {
+          return {} as T;
+        }
 
-    return response.json();
+        return response.json();
+    };
+
+    return makeRequest();
   }
 
   async delete(endpoint: string, includeAuth: boolean = true): Promise<void> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method: 'DELETE',
-      headers: this.getHeaders(includeAuth),
-    });
+    const makeRequest = async () => {
+        const response = await fetch(`${this.baseUrl}${endpoint}`, {
+          method: 'DELETE',
+          headers: this.getHeaders(includeAuth),
+        });
 
-    if (!response.ok) {
-      await this.handleErrorResponse(response);
-    }
+        if (!response.ok) {
+          return this.handleErrorResponse(response, makeRequest);
+        }
+    };
+
+    return makeRequest();
   }
 
   async uploadFile<T>(
@@ -149,17 +197,21 @@ class ApiClient {
       }
     }
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    });
+    const makeRequest = async () => {
+        const response = await fetch(`${this.baseUrl}${endpoint}`, {
+          method: 'POST',
+          headers,
+          body: formData,
+        });
 
-    if (!response.ok) {
-      await this.handleErrorResponse(response);
-    }
+        if (!response.ok) {
+          return this.handleErrorResponse(response, makeRequest);
+        }
 
-    return response.json();
+        return response.json();
+    };
+
+    return makeRequest();
   }
 
   async uploadFiles<T>(
@@ -187,17 +239,21 @@ class ApiClient {
       }
     }
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    });
+    const makeRequest = async () => {
+        const response = await fetch(`${this.baseUrl}${endpoint}`, {
+          method: 'POST',
+          headers,
+          body: formData,
+        });
 
-    if (!response.ok) {
-      await this.handleErrorResponse(response);
-    }
+        if (!response.ok) {
+          return this.handleErrorResponse(response, makeRequest);
+        }
 
-    return response.json();
+        return response.json();
+    };
+
+    return makeRequest();
   }
 
   getBaseUrl(): string {

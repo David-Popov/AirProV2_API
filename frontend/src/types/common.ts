@@ -1,4 +1,3 @@
-// Common/Shared Types
 
 // Company Types
 export type CompanyType = 

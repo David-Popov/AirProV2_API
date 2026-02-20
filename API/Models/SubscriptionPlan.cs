@@ -2,10 +2,9 @@ namespace API.Models;
 
 public enum SubscriptionPlan
 {
-    FreeTrial,
-    Basic,
-    Premium,
-    Enterprise
+    FreeTrial = 0,    // 6-month trial - unlimited employees
+    Premium = 2,      // Paid plan - unlimited employees
+    Free = 10         // Free plan - 2 employees limit, no time limit
 }
 
 public enum SubscriptionStatus
