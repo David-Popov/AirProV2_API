@@ -5,11 +5,9 @@ import {
   Package,
   Users,
   ArrowRight,
-  Zap,
   Shield,
   BarChart3,
   CheckCircle2,
-  TrendingUp,
   Bell
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -56,20 +54,12 @@ export default function HomePage() {
       {/* ── Hero ── */}
       <section className="container mx-auto px-4 sm:px-6 pt-20 pb-24 lg:pt-28 lg:pb-32">
         <div className="max-w-4xl mx-auto text-center">
-          {/* Trial badge */}
-          <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-8">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-primary font-medium text-sm">6-month free trial included</span>
-          </div>
-
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6 tracking-tight">
-            The ERP built for{' '}
-            <span className="text-primary">AC companies</span>
+            <span className="text-primary">AirPro</span>
           </h1>
 
           <p className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
-            Manage installations, inventory, and your team in one place.
-            Built specifically for air conditioning businesses — no bloat, no complexity.
+            Welcome — manage your installations, inventory, and team in one place.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -126,13 +116,16 @@ export default function HomePage() {
             {/* Mock stat cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: 'Active Jobs', val: '12', color: 'text-primary', bg: 'bg-primary/10' },
-                { label: 'Completed', val: '84', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10' },
-                { label: 'Inventory', val: '247', color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-500/10' },
-                { label: 'Team', val: '6', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10' },
+                { label: 'Active Jobs', val: '12', trend: '+5%', color: 'text-primary', bg: 'bg-primary/10', trendColor: 'text-green-500' },
+                { label: 'Completed', val: '84', trend: '+12%', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10', trendColor: 'text-green-500' },
+                { label: 'Inventory', val: '247', trend: '+2%', color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-500/10', trendColor: 'text-amber-500' },
+                { label: 'Team', val: '6', trend: 'Active', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10', trendColor: 'text-green-500' },
               ].map((s) => (
                 <div key={s.label} className={`${s.bg} rounded-xl p-3 border border-border/50`}>
-                  <p className="text-xs text-muted-foreground mb-1">{s.label}</p>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs text-muted-foreground">{s.label}</p>
+                    <span className={`text-[10px] font-medium ${s.trendColor}`}>{s.trend}</span>
+                  </div>
                   <p className={`text-2xl font-bold ${s.color}`}>{s.val}</p>
                 </div>
               ))}
@@ -219,18 +212,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Stats ── */}
-      <section className="container mx-auto px-4 sm:px-6 py-12 lg:py-16">
-        <div className="bg-primary/5 border border-primary/10 rounded-3xl p-8 sm:p-12">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
-            <StatItem value="500+" label="Active Companies" icon={<TrendingUp className="w-5 h-5 text-primary" />} />
-            <StatItem value="10K+" label="Montages Tracked" icon={<ClipboardList className="w-5 h-5 text-primary" />} />
-            <StatItem value="99.9%" label="Uptime" icon={<Zap className="w-5 h-5 text-primary" />} />
-            <StatItem value="6 mo" label="Free Trial" icon={<Snowflake className="w-5 h-5 text-primary" />} />
-          </div>
-        </div>
-      </section>
-
       {/* ── CTA ── */}
       <section className="container mx-auto px-4 sm:px-6 py-20 lg:py-28">
         <div className="bg-primary rounded-3xl p-10 sm:p-16 text-center relative overflow-hidden">
@@ -293,18 +274,6 @@ function FeatureCard({ icon: Icon, title, description, iconBg, iconColor }: Feat
       </div>
       <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
       <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
-    </div>
-  )
-}
-
-function StatItem({ value, label, icon }: { value: string; label: string; icon: React.ReactNode }) {
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="p-2 bg-primary/10 rounded-lg">
-        {icon}
-      </div>
-      <p className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">{value}</p>
-      <p className="text-sm text-muted-foreground">{label}</p>
     </div>
   )
 }

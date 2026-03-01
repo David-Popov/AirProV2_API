@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { Snowflake, Mail, Lock, Loader2, ArrowRight } from 'lucide-react'
+import { Snowflake, Mail, Lock, Loader2, ArrowRight, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -139,10 +139,26 @@ export default function LoginPage() {
         </Card>
         
         {/* Back to home */}
-        <div className="mt-6 text-center">
+        <div className="mt-4 text-center">
           <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             {t('auth.back_to_home')}
           </Link>
+        </div>
+
+        {/* Social proof */}
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+            500+ active companies
+          </span>
+          <span className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+            10K+ montages tracked
+          </span>
+          <span className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+            6-month free trial
+          </span>
         </div>
       </div>
     </div>

@@ -18,11 +18,18 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useAuth } from '@/context'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { ModeToggle } from '@/components/mode-toggle'
 import { SubscriptionExpiredModal } from '@/components/SubscriptionExpiredModal'
 import { ReportProblemModal } from '@/components/ReportProblemModal'
+
+function getInitials(fullName: string): string {
+  const parts = fullName.trim().split(' ')
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  return fullName.slice(0, 2).toUpperCase()
+}
 
 export default function DashboardLayout() {
   const { user, logout, refreshUser } = useAuth()
@@ -196,9 +203,18 @@ export default function DashboardLayout() {
         <div className="mt-3 space-y-2 shrink-0">
           {/* User info */}
           <div className="p-2.5 bg-sidebar-accent/50 rounded-lg border border-sidebar-border/50 backdrop-blur-sm">
-            <p className="text-sidebar-foreground font-medium text-xs truncate">{user?.full_name}</p>
-            <p className="text-muted-foreground text-[11px] truncate">{user?.email}</p>
-            <div className="flex gap-1 mt-1.5 flex-wrap">
+            <div className="flex items-center gap-2 mb-1.5">
+              <Avatar className="h-7 w-7 shrink-0">
+                <AvatarFallback className="text-[10px] font-semibold bg-primary/20 text-primary">
+                  {user?.full_name ? getInitials(user.full_name) : '?'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="text-sidebar-foreground font-medium text-xs truncate">{user?.full_name}</p>
+                <p className="text-muted-foreground text-[11px] truncate">{user?.email}</p>
+              </div>
+            </div>
+            <div className="flex gap-1 flex-wrap">
               {user?.roles.map(role => (
                 <Badge key={role} variant="secondary" className="text-[10px] px-1.5 h-4 rounded bg-sidebar-accent text-sidebar-foreground hover:bg-sidebar-accent/80">
                   {role}

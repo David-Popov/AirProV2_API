@@ -6,7 +6,8 @@ import {
   Image as ImageIcon,
   User,
   Tag,
-  Check
+  Check,
+  MoreVertical
 } from 'lucide-react'
 import { LoadingState, EmptyState, ConfirmDialog } from '@/components/shared'
 import {
@@ -28,6 +29,13 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { problemReportsService } from '@/services/problem-reports'
 import type { ReportedProblem } from '@/types'
 import { ProblemCategory, PROBLEM_CATEGORY_OPTIONS } from '@/types'
@@ -145,7 +153,7 @@ export default function ReportedProblemsPage() {
   }
 
   return (
-    <main className="lg:pl-64 min-h-screen bg-gradient-to-br from-background to-muted/30">
+    <main className="lg:pl-64 min-h-screen bg-linear-to-br from-background to-muted/30">
       <div className="container mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -210,25 +218,27 @@ export default function ReportedProblemsPage() {
                           {formatDate(problem.createdAt)}
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleViewDetails(problem)}
-                              title={t('problem_reports.view_details')}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteClick(problem)}
-                              className="text-destructive hover:text-destructive"
-                              title={t('problem_reports.mark_reviewed')}
-                            >
-                              <Check className="w-4 h-4" />
-                            </Button>
-                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuItem onClick={() => handleViewDetails(problem)} className="cursor-pointer">
+                                <Eye className="w-4 h-4 mr-2" />
+                                {t('problem_reports.view_details')}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteClick(problem)}
+                                className="text-destructive focus:text-destructive cursor-pointer"
+                              >
+                                <Check className="w-4 h-4 mr-2" />
+                                {t('problem_reports.mark_reviewed')}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -241,7 +251,7 @@ export default function ReportedProblemsPage() {
 
         {/* Detail Dialog */}
         <Dialog open={isDetailOpen} onOpenChange={handleDetailClose}>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="sm:max-w-150">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <MessageSquareWarning className="w-5 h-5" />
