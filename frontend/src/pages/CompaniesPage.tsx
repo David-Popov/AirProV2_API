@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { 
-  Building2, 
-  Plus, 
-  Search, 
-  Edit2, 
-  Trash2, 
-  Users, 
+import {
+  Building2,
+  Plus,
+  Search,
+  Edit2,
+  Trash2,
+  Users,
   CreditCard,
   CheckCircle,
   XCircle,
   RefreshCw,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  MoreVertical
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -33,6 +34,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { companyService } from '@/services'
 import type { Company, CreateCompanyRequest, UpdateCompanyRequest, CompanyUser } from '@/types'
 import { COMPANY_TYPE_OPTIONS, SUBSCRIPTION_PLANS, SUBSCRIPTION_STATUSES } from '@/types'
@@ -410,49 +418,39 @@ export default function CompaniesPage() {
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleViewUsers(company)}
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                            title={t('companies.view_users', 'View Users')}
-                          >
-                            <Users className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openSubscriptionDialog(company)}
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                            title={t('companies.manage_subscription', 'Manage Subscription')}
-                          >
-                            <CreditCard className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleRenewSubscription(company)}
-                            className="h-8 w-8 text-muted-foreground hover:text-green-500"
-                            title={t('companies.renew', 'Renew Subscription')}
-                          >
-                            <RefreshCw className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openEditDialog(company)}
-                            className="h-8 w-8 text-muted-foreground hover:text-primary"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => { setSelectedCompany(company); setIsDeleteDialogOpen(true) }}
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem onClick={() => handleViewUsers(company)}>
+                                <Users className="w-4 h-4 mr-2" />
+                                {t('companies.view_users', 'View Users')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openSubscriptionDialog(company)}>
+                                <CreditCard className="w-4 h-4 mr-2" />
+                                {t('companies.manage_subscription', 'Manage Subscription')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleRenewSubscription(company)} className="text-green-500 focus:text-green-500 focus:bg-green-500/10">
+                                <RefreshCw className="w-4 h-4 mr-2" />
+                                {t('companies.renew', 'Renew Subscription')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openEditDialog(company)}>
+                                <Edit2 className="w-4 h-4 mr-2" />
+                                {t('common.edit', 'Edit')}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => { setSelectedCompany(company); setIsDeleteDialogOpen(true) }}
+                                className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                {t('common.delete', 'Delete')}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </td>
                     </tr>

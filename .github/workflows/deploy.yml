@@ -1,0 +1,45 @@
+name: CD – Deploy to Production
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy to DigitalOcean
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DO_SSH_HOST }}
+          username: ${{ secrets.DO_SSH_USER }}
+          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+
+            cd ~/AirProV2_API
+
+            echo "Pulling latest code..."
+            git pull origin main
+
+            echo "Backing up database..."
+            mkdir -p ~/backups
+            BACKUP_FILE=~/backups/airpro_$(date +%Y%m%d_%H%M%S).sql
+            docker exec prod_postgres pg_dump -U airpro_prod_user AirProV2 > "$BACKUP_FILE"
+            echo "Backup saved to $BACKUP_FILE"
+
+            echo "Pruning backups older than 7 days..."
+            find ~/backups -name "airpro_*.sql" -mtime +7 -delete
+
+            echo "Building new images..."
+            docker compose -f docker-compose.prod.yml build
+
+            echo "Restarting containers (migrations run on backend startup)..."
+            docker compose -f docker-compose.prod.yml up -d
+
+            echo "Cleaning up unused images..."
+            docker image prune -f
+
+            echo "Deploy complete."

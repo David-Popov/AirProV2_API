@@ -398,8 +398,8 @@ export default function MontageDetailsPage() {
                 <p className="text-muted-foreground text-sm mb-1">{t('montages.paid_amount')}</p>
                 <p className="text-xl font-bold text-green-500">${montage.paid_amount || 0}</p>
               </div>
-              <div className="col-span-2">
-                <p className="text-muted-foreground text-sm mb-1">{t('montages.payment_status')}</p>
+              <div className="col-span-2 flex items-center gap-4">
+                <p className="text-muted-foreground text-sm shrink-0">{t('montages.payment_status')}</p>
                 <PaymentStatusNavigator
                   currentStatus={montage.payment_status || 'NotPaid'}
                   totalPrice={montage.total_price || 0}

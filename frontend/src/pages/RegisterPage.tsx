@@ -171,26 +171,30 @@ export default function RegisterPage() {
               {step === 1 ? t('auth.personal_info_desc') : t('auth.company_info_desc')}
             </CardDescription>
             {/* Progress indicator */}
-            <div className="flex gap-3 justify-center mt-4">
-              <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                step >= 1
-                  ? 'bg-primary/10 dark:bg-primary/20 text-primary border border-primary/20'
-                  : 'bg-muted text-muted-foreground'
-              }`}>
-                {step > 1 ? (
-                  <Check className="w-4 h-4" />
-                ) : (
-                  <User className="w-4 h-4" />
-                )}
-                {t('auth.step_personal')}
+            <div className="flex items-center gap-3 justify-center mt-5">
+              {/* Step 1 */}
+              <div className="flex items-center gap-2">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                  step > 1 ? 'bg-green-500 text-white' : step === 1 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                }`}>
+                  {step > 1 ? <Check className="w-4 h-4" /> : '1'}
+                </div>
+                <span className={`text-sm font-medium transition-colors ${step >= 1 ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  {t('auth.step_personal')}
+                </span>
               </div>
-              <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                step >= 2
-                  ? 'bg-primary/10 dark:bg-primary/20 text-primary border border-primary/20'
-                  : 'bg-muted text-muted-foreground'
-              }`}>
-                <Building2 className="w-4 h-4" />
-                {t('auth.step_company')}
+              {/* Connector line */}
+              <div className={`h-px w-8 transition-colors ${step >= 2 ? 'bg-primary' : 'bg-border'}`} />
+              {/* Step 2 */}
+              <div className="flex items-center gap-2">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                  step === 2 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                }`}>
+                  2
+                </div>
+                <span className={`text-sm font-medium transition-colors ${step >= 2 ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  {t('auth.step_company')}
+                </span>
               </div>
             </div>
           </CardHeader>

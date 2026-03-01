@@ -1,12 +1,19 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { Search, FileText, Trash2, Edit, Plus, ChevronLeft, ChevronRight, Filter, X, Eye } from 'lucide-react'
+import { Search, FileText, Trash2, Edit, Plus, ChevronLeft, ChevronRight, Filter, X, Eye, MoreVertical } from 'lucide-react'
 import { adminService } from '@/services/admin'
 import type { AdminMontage, AdminMontageFilter, AdminCreateMontage } from '@/types/admin'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -217,11 +224,31 @@ export default function AdminMontagesPage() {
                     <TableCell>{getStatusBadge(montage.status)}</TableCell>
                     <TableCell><Badge variant={montage.paymentStatus === 'Paid' ? 'success' : 'secondary'}>{montage.paymentStatus}</Badge></TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => openView(montage)}><Eye className="w-4 h-4" /></Button>
-                        <Button size="sm" variant="ghost" onClick={() => openEdit(montage)}><Edit className="w-4 h-4" /></Button>
-                        <Button size="sm" variant="ghost" onClick={() => { setSelectedMontage(montage); setIsDeleteOpen(true) }}><Trash2 className="w-4 h-4 text-destructive" /></Button>
-                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40">
+                          <DropdownMenuItem onClick={() => openView(montage)} className="cursor-pointer">
+                            <Eye className="w-4 h-4 mr-2" />
+                            {t('common.view')}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openEdit(montage)} className="cursor-pointer">
+                            <Edit className="w-4 h-4 mr-2" />
+                            {t('common.edit')}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => { setSelectedMontage(montage); setIsDeleteOpen(true) }}
+                            className="text-destructive focus:text-destructive cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            {t('common.delete')}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}

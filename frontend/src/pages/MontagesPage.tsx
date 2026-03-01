@@ -18,7 +18,8 @@ import {
   Filter,
   Info,
   Check,
-  ChevronsUpDown
+  ChevronsUpDown,
+  MoreVertical
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -49,6 +50,13 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { PageHeader, SearchBar, Pagination, EmptyState, ConfirmDialog } from '@/components/shared'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { SkeletonTableRows, SkeletonMobileCards } from '@/components/skeletons'
 import { montageService, type MontageFilters } from '@/services/montages'
 import { airConditionerService } from '@/services/air-conditioner'
@@ -84,6 +92,7 @@ export default function MontagesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
   const [maintenanceReminders, setMaintenanceReminders] = useState<{
     montage: Montage
     maintenanceDate: Date
@@ -190,6 +199,7 @@ export default function MontagesPage() {
       })
       setItems(response.items)
       setTotalPages(response.totalPages)
+      setTotalCount(response.totalCount)
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
@@ -480,6 +490,15 @@ export default function MontagesPage() {
         </CardContent>
       </Card>
 
+      {/* Count indicator */}
+      {totalCount > 0 && (
+        <div className="flex justify-end mb-2">
+          <span className="text-xs text-muted-foreground">
+            Showing {(page - 1) * 10 + 1}–{Math.min(page * 10, totalCount)} of {totalCount} montages
+          </span>
+        </div>
+      )}
+
       {/* Table - Desktop */}
       <div className="hidden md:block glass-card rounded-xl overflow-hidden">
         <Table>
@@ -612,24 +631,27 @@ export default function MontagesPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-2">
-                       <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
-                        onClick={(e) => handleEditClick(e, item)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="h-8 w-8 text-red-500 hover:text-red-400 hover:bg-red-500/10"
-                        onClick={(e) => handleDeleteClick(e, item)}
-                      >
-                        <Trash className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40">
+                        <DropdownMenuItem onClick={(e) => handleEditClick(e, item)}>
+                          <Edit className="w-4 h-4 mr-2" />
+                          {t('common.edit')}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={(e) => handleDeleteClick(e, item)}
+                          className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
+                        >
+                          <Trash className="w-4 h-4 mr-2" />
+                          {t('common.delete')}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
