@@ -26,6 +26,7 @@ import { SubscriptionPage, SubscriptionSuccessPage } from '@/pages/subscription'
 import { ProtectedRoute, DashboardLayout } from '@/components/layout'
 import { ThemeProvider } from '@/components/theme-provider'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { PwaUpdateNotifier } from '@/components/PwaUpdateNotifier'
 
 function App() {
   return (
@@ -75,6 +76,7 @@ function App() {
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
           <Toaster richColors position="bottom-right" />
+          <PwaUpdateNotifier />
         </BrowserRouter>
       </AuthProvider>
     </ThemeProvider>
