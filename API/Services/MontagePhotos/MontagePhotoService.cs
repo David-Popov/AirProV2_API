@@ -85,6 +85,7 @@ public class MontagePhotoService : IMontagePhotoService
     public async Task<List<MontagePhotoDto>> GetPhotosByMontageIdAsync(Guid montageId)
     {
         var photos = await _context.MontagePhotos
+            .AsNoTracking()
             .Where(p => p.MontageId == montageId)
             .OrderBy(p => p.DisplayOrder)
             .ThenBy(p => p.CreatedAt)

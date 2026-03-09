@@ -532,16 +532,17 @@ public class InventoryService : IInventoryService
         {
             var item = await _context.InventoryItems
                 .AsNoTracking()
-                .Include(i => i.MontageUsages)
-                .FirstOrDefaultAsync(i => i.Id == itemId);
+                .Where(i => i.Id == itemId)
+                .Select(i => new { i.CreatedAt })
+                .FirstOrDefaultAsync();
 
             if (item == null)
             {
                 return false;
             }
 
-            // Check 1: Has it been used in any montages?
-            if (item.MontageUsages.Any())
+            // Check 1: Has it been used in any montages? (EXISTS — no collection load)
+            if (await _context.MontageInventoryItems.AnyAsync(m => m.InventoryItemId == itemId))
             {
                 return false;
             }

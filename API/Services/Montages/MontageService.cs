@@ -551,12 +551,16 @@ public class MontageService : IMontageService
     {
         try
         {
+            // Parse enum before query — guarantees SQL-translatable WHERE clause
+            if (!Enum.TryParse<MontageStatus>(status, ignoreCase: true, out var statusEnum))
+                return PagedList<MontageDto>.Empty();
+
             var query = _context.Montages
                 .AsNoTracking()
                 .Include(m => m.AirConditioner)
                 .Include(m => m.UsedMaterials)
                     .ThenInclude(um => um.InventoryItem)
-                .Where(m => m.Status.ToString().ToLower() == status.ToLower())
+                .Where(m => m.Status == statusEnum)
                 .OrderByDescending(m => m.InstallationDate)
                 .Select(m => new MontageDto
                 {

@@ -379,24 +379,18 @@ public class CompanyService : ICompanyService
     {
         try
         {
-            var companies = await _context.Companies
-                .Where(c => c.SubscriptionPlan == SubscriptionPlan.FreeTrial && c.IsSubscriptionActive == true)
-                .ToListAsync();
-
             var sixMonthsAgo = DateTime.UtcNow.AddMonths(-6);
 
-            foreach (var company in companies)
-            {
-                if (company.CreatedAt <= sixMonthsAgo)
-                {
-                    company.IsSubscriptionActive = false;
-                    _context.Companies.Update(company);
-                    
-                    _logger.LogInformation($"Expired trial subscription for company {company.Id} - {company.CompanyName}");
-                }
-            }
+            var updatedCount = await _context.Companies
+                .Where(c => c.SubscriptionPlan == SubscriptionPlan.FreeTrial
+                         && c.IsSubscriptionActive == true
+                         && c.CreatedAt <= sixMonthsAgo)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(c => c.IsSubscriptionActive, false)
+                    .SetProperty(c => c.UpdatedAt, DateTime.UtcNow));
 
-            await _context.SaveChangesAsync();
+            if (updatedCount > 0)
+                _logger.LogInformation("Expired {Count} trial subscription(s)", updatedCount);
         }
         catch (Exception e)
         {

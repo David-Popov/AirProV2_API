@@ -66,11 +66,16 @@ public class MontageInventoryService : IMontageInventoryService
         await using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
+            // Batch-load all required inventory items upfront to avoid N+1 queries
+            var materialIds = request.Materials.Select(m => m.InventoryItemId).Distinct().ToList();
+            var inventoryItemsMap = await _context.InventoryItems
+                .Where(i => materialIds.Contains(i.Id))
+                .ToDictionaryAsync(i => i.Id);
+
             foreach (var material in request.Materials)
             {
                 // Get inventory item and check stock
-                var inventoryItem = await _context.InventoryItems.FindAsync(material.InventoryItemId);
-                if (inventoryItem == null)
+                if (!inventoryItemsMap.TryGetValue(material.InventoryItemId, out var inventoryItem))
                 {
                     throw new InvalidOperationException($"Inventory item {material.InventoryItemId} not found");
                 }
@@ -231,8 +236,8 @@ public class MontageInventoryService : IMontageInventoryService
     public async Task<List<MontageInventoryItemDto>> GetMaterialsByMontageIdAsync(Guid montageId)
     {
         return await _context.MontageInventoryItems
+            .AsNoTracking()
             .Where(x => x.MontageId == montageId)
-            .Include(x => x.InventoryItem)
             .Select(x => new MontageInventoryItemDto
             {
                 Id = x.Id,
@@ -252,8 +257,8 @@ public class MontageInventoryService : IMontageInventoryService
     public async Task<PagedList<MontageInventoryItemDto>> GetUsageHistoryByItemIdAsync(Guid inventoryItemId, PageParameters pageParameters)
     {
         var query = _context.MontageInventoryItems
+            .AsNoTracking()
             .Where(x => x.InventoryItemId == inventoryItemId)
-            .Include(x => x.Montage)
             .OrderByDescending(x => x.CreatedAt)
             .Select(x => new MontageInventoryItemDto
             {

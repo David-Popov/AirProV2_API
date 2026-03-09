@@ -623,26 +623,28 @@ public class AuthService : IAuthService
                 .ThenBy(u => u.LastName)
                 .ToListAsync();
 
-            var employeeDtos = new List<EmployeeDto>();
+            // Batch-load all user roles in a single query to avoid N+1
+            var userIds = users.Select(u => u.Id).ToList();
+            var roleMap = await _context.UserRoles
+                .Where(ur => userIds.Contains(ur.UserId))
+                .Join(_context.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, r.Name })
+                .GroupBy(x => x.UserId)
+                .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.Name).ToList());
 
-            foreach (var user in users)
+            var employeeDtos = users.Select(user => new EmployeeDto
             {
-                var roles = await _userManager.GetRolesAsync(user);
-                employeeDtos.Add(new EmployeeDto
-                {
-                    Id = user.Id,
-                    Email = user.Email!,
-                    FirstName = user.FirstName,
-                    MiddleName = user.MiddleName,
-                    LastName = user.LastName,
-                    FullName = $"{user.FirstName} {user.LastName}".Trim(),
-                    PhoneNumber = user.PhoneNumber,
-                    Address = user.Address,
-                    Roles = roles.ToList(),
-                    IsActive = user.IsActive,
-                    CreatedAt = null // Identity doesn't track creation date by default
-                });
-            }
+                Id = user.Id,
+                Email = user.Email!,
+                FirstName = user.FirstName,
+                MiddleName = user.MiddleName,
+                LastName = user.LastName,
+                FullName = $"{user.FirstName} {user.LastName}".Trim(),
+                PhoneNumber = user.PhoneNumber,
+                Address = user.Address,
+                Roles = roleMap.TryGetValue(user.Id, out var roles) ? roles : [],
+                IsActive = user.IsActive,
+                CreatedAt = null // Identity doesn't track creation date by default
+            }).ToList();
 
             return employeeDtos;
         }

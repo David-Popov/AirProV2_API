@@ -257,11 +257,19 @@ public class AdminService : IAdminService
             .Take(filter.PageSize)
             .ToListAsync();
 
+        // Batch-load all user roles in a single query to avoid N+1
+        var userIds = users.Select(u => u.Id).ToList();
+        var roleMap = await _context.UserRoles
+            .Where(ur => userIds.Contains(ur.UserId))
+            .Join(_context.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, r.Name })
+            .GroupBy(x => x.UserId)
+            .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.Name).ToList());
+
         var items = new List<AdminUserDto>();
         foreach (var user in users)
         {
-            var roles = await _userManager.GetRolesAsync(user);
-            
+            var roles = roleMap.TryGetValue(user.Id, out var userRoles) ? userRoles : [];
+
             // Filter by role if specified
             if (!string.IsNullOrWhiteSpace(filter.Role) && !roles.Contains(filter.Role))
             {
@@ -282,7 +290,7 @@ public class AdminService : IAdminService
                 DeletedAt = user.DeletedAt,
                 CompanyId = user.CompanyId,
                 CompanyName = user.Company?.CompanyName,
-                Roles = roles.ToList()
+                Roles = roles
             });
         }
 
