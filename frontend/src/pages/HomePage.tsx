@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import {
   Snowflake,
   ClipboardList,
@@ -13,8 +13,15 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ModeToggle } from '@/components/mode-toggle'
+import { useAuth } from '@/context'
 
 export default function HomePage() {
+  const { isAuthenticated, isLoading } = useAuth()
+
+  if (!isLoading && isAuthenticated) {
+    return <Navigate to="/dashboard" replace />
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Ambient background */}

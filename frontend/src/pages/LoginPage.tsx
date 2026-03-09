@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -14,16 +14,26 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { t } = useTranslation()
-  const { login, isAuthenticated } = useAuth()
+  const { login, isAuthenticated, isLoading: isAuthLoading } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   })
 
-  if (isAuthenticated) {
-    const from = (location.state as { from?: Location })?.from?.pathname || '/dashboard'
-    navigate(from, { replace: true })
+  useEffect(() => {
+    if (!isAuthLoading && isAuthenticated) {
+      const from = (location.state as { from?: Location })?.from?.pathname || '/dashboard'
+      navigate(from, { replace: true })
+    }
+  }, [isAuthenticated, isAuthLoading, navigate, location.state])
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500" />
+      </div>
+    )
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
