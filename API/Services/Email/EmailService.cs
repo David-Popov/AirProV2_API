@@ -112,39 +112,45 @@ public class EmailService : IEmailService
             htmlBody);
     }
 
-    private async Task SendEmailAsync(string toEmail, string toName, string subject, string htmlBody)
+    private Task SendEmailAsync(string toEmail, string toName, string subject, string htmlBody)
     {
-        var message = new MimeMessage();
-        message.From.Add(new MailboxAddress(_emailSettings.SenderName, _emailSettings.SenderEmail));
-        message.To.Add(new MailboxAddress(toName, toEmail));
-        message.Subject = subject;
-
-        var bodyBuilder = new BodyBuilder
-        {
-            HtmlBody = htmlBody
-        };
-        message.Body = bodyBuilder.ToMessageBody();
-
-        using var client = new SmtpClient();
-
-        var secureSocketOptions = _emailSettings.UseSsl
-            ? SecureSocketOptions.StartTls
-            : SecureSocketOptions.None;
-
-        await client.ConnectAsync(
-            _emailSettings.SmtpHost,
-            _emailSettings.SmtpPort,
-            secureSocketOptions);
-
-        await client.AuthenticateAsync(
-            _emailSettings.SmtpUsername,
-            _emailSettings.SmtpPassword);
-
-        await client.SendAsync(message);
-        await client.DisconnectAsync(true);
-
-        _logger.LogInformation("Email sent successfully to {Email} with subject: {Subject}",
+        // TODO: Re-enable when support email is configured
+        _logger.LogInformation("Email sending disabled. Would have sent to {Email} with subject: {Subject}",
             toEmail, subject);
+        return Task.CompletedTask;
+
+        // var message = new MimeMessage();
+        // message.From.Add(new MailboxAddress(_emailSettings.SenderName, _emailSettings.SenderEmail));
+        // message.To.Add(new MailboxAddress(toName, toEmail));
+        // message.Subject = subject;
+        //
+        // var bodyBuilder = new BodyBuilder
+        // {
+        //     HtmlBody = htmlBody
+        // };
+        // message.Body = bodyBuilder.ToMessageBody();
+        //
+        // using var client = new SmtpClient();
+        // client.Timeout = 30000; // 30 second timeout to prevent indefinite hangs
+        //
+        // var secureSocketOptions = _emailSettings.UseSsl
+        //     ? SecureSocketOptions.StartTls
+        //     : SecureSocketOptions.None;
+        //
+        // await client.ConnectAsync(
+        //     _emailSettings.SmtpHost,
+        //     _emailSettings.SmtpPort,
+        //     secureSocketOptions);
+        //
+        // await client.AuthenticateAsync(
+        //     _emailSettings.SmtpUsername,
+        //     _emailSettings.SmtpPassword);
+        //
+        // await client.SendAsync(message);
+        // await client.DisconnectAsync(true);
+        //
+        // _logger.LogInformation("Email sent successfully to {Email} with subject: {Subject}",
+        //     toEmail, subject);
     }
 
     private string WrapInBaseTemplate(string title, string content)

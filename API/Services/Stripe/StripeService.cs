@@ -14,18 +14,18 @@ public class StripeService : IStripeService
     private readonly ApplicationDbContext _context;
     private readonly StripeSettings _stripeSettings;
     private readonly ILogger<StripeService> _logger;
-    private readonly IEmailService _emailService;
+    private readonly IBackgroundEmailQueue _backgroundEmailQueue;
 
     public StripeService(
         ApplicationDbContext context,
         IOptions<StripeSettings> stripeSettings,
         ILogger<StripeService> logger,
-        IEmailService emailService)
+        IBackgroundEmailQueue backgroundEmailQueue)
     {
         _context = context;
         _stripeSettings = stripeSettings.Value;
         _logger = logger;
-        _emailService = emailService;
+        _backgroundEmailQueue = backgroundEmailQueue;
 
         StripeConfiguration.ApiKey = _stripeSettings.SecretKey;
     }
@@ -214,15 +214,13 @@ public class StripeService : IStripeService
 
         await _context.SaveChangesAsync();
 
-        // Send subscription purchased email
-        try
+        // Queue subscription purchased email (non-blocking)
+        var purchasedCompany = company;
+        _backgroundEmailQueue.QueueEmail(async sp =>
         {
-            await _emailService.SendSubscriptionPurchasedEmailAsync(company, "Premium");
-        }
-        catch (Exception emailEx)
-        {
-            _logger.LogWarning(emailEx, "Failed to send subscription email for company {CompanyId}", companyId);
-        }
+            var emailService = sp.GetRequiredService<IEmailService>();
+            await emailService.SendSubscriptionPurchasedEmailAsync(purchasedCompany, "Premium");
+        });
 
         _logger.LogInformation("Checkout completed for company {CompanyId}, subscription {SubscriptionId}",
             companyId, session.SubscriptionId);
@@ -284,14 +282,14 @@ public class StripeService : IStripeService
         var newStatus = targetCompany.SubscriptionStatus.ToString();
         if (previousStatus != newStatus)
         {
-            try
+            var statusCompany = targetCompany;
+            var prevStatus = previousStatus;
+            var curStatus = newStatus;
+            _backgroundEmailQueue.QueueEmail(async sp =>
             {
-                await _emailService.SendSubscriptionStatusChangedEmailAsync(targetCompany, previousStatus, newStatus);
-            }
-            catch (Exception emailEx)
-            {
-                _logger.LogWarning(emailEx, "Failed to send status change email for company {CompanyId}", companyId);
-            }
+                var emailService = sp.GetRequiredService<IEmailService>();
+                await emailService.SendSubscriptionStatusChangedEmailAsync(statusCompany, prevStatus, curStatus);
+            });
         }
 
         _logger.LogInformation("Subscription updated for company {CompanyId}: Status={Status}",
@@ -320,15 +318,14 @@ public class StripeService : IStripeService
 
         await _context.SaveChangesAsync();
 
-        // Send cancellation email
-        try
+        // Queue cancellation email (non-blocking)
+        var cancelCompany = company;
+        var cancelPrevStatus = previousStatus;
+        _backgroundEmailQueue.QueueEmail(async sp =>
         {
-            await _emailService.SendSubscriptionStatusChangedEmailAsync(company, previousStatus, "Cancelled");
-        }
-        catch (Exception emailEx)
-        {
-            _logger.LogWarning(emailEx, "Failed to send cancellation email for company {CompanyId}", company.Id);
-        }
+            var emailService = sp.GetRequiredService<IEmailService>();
+            await emailService.SendSubscriptionStatusChangedEmailAsync(cancelCompany, cancelPrevStatus, "Cancelled");
+        });
 
         _logger.LogInformation("Subscription cancelled for company {CompanyId}", company.Id);
     }

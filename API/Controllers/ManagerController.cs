@@ -23,20 +23,20 @@ public class ManagerController : ControllerBase
     private readonly ApplicationDbContext _context;
     private readonly ILogger<ManagerController> _logger;
     private readonly IValidator<CreateEmployeeDto> _createEmployeeValidator;
-    private readonly IEmailService _emailService;
+    private readonly IBackgroundEmailQueue _backgroundEmailQueue;
 
     public ManagerController(
         IAuthService authService,
         ApplicationDbContext context,
         ILogger<ManagerController> logger,
         IValidator<CreateEmployeeDto> createEmployeeValidator,
-        IEmailService emailService)
+        IBackgroundEmailQueue backgroundEmailQueue)
     {
         _authService = authService;
         _context = context;
         _logger = logger;
         _createEmployeeValidator = createEmployeeValidator;
-        _emailService = emailService;
+        _backgroundEmailQueue = backgroundEmailQueue;
     }
 
     /// <summary>
@@ -395,15 +395,14 @@ public class ManagerController : ControllerBase
 
             await _context.SaveChangesAsync();
 
-            // Send trial activation email
-            try
+            // Queue trial activation email (non-blocking)
+            var trialCompany = company;
+            var trialEndDate = company.TrialEndDate!.Value;
+            _backgroundEmailQueue.QueueEmail(async sp =>
             {
-                await _emailService.SendTrialActivatedEmailAsync(company, company.TrialEndDate!.Value);
-            }
-            catch (Exception emailEx)
-            {
-                _logger.LogWarning(emailEx, "Failed to send trial activation email for company {CompanyId}", company.Id);
-            }
+                var emailService = sp.GetRequiredService<IEmailService>();
+                await emailService.SendTrialActivatedEmailAsync(trialCompany, trialEndDate);
+            });
 
             return Ok(new
             {

@@ -20,7 +20,7 @@ public class AuthService : IAuthService
     private readonly ApplicationDbContext _context;
     private readonly IConfiguration _configuration;
     private readonly ILogger<AuthService> _logger;
-    private readonly IEmailService _emailService;
+    private readonly IBackgroundEmailQueue _backgroundEmailQueue;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
@@ -28,14 +28,14 @@ public class AuthService : IAuthService
         ApplicationDbContext context,
         IConfiguration configuration,
         ILogger<AuthService> logger,
-        IEmailService emailService)
+        IBackgroundEmailQueue backgroundEmailQueue)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _context = context;
         _configuration = configuration;
         _logger = logger;
-        _emailService = emailService;
+        _backgroundEmailQueue = backgroundEmailQueue;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
@@ -108,15 +108,14 @@ public class AuthService : IAuthService
 
             await transaction.CommitAsync();
 
-            // Send welcome email
-            try
+            // Queue welcome email (non-blocking)
+            var welcomeUser = user;
+            var welcomeCompany = company;
+            _backgroundEmailQueue.QueueEmail(async sp =>
             {
-                await _emailService.SendWelcomeEmailAsync(user, company);
-            }
-            catch (Exception emailEx)
-            {
-                _logger.LogWarning(emailEx, "Failed to send welcome email to {Email}", user.Email);
-            }
+                var emailService = sp.GetRequiredService<IEmailService>();
+                await emailService.SendWelcomeEmailAsync(welcomeUser, welcomeCompany);
+            });
 
             // Generate JWT token
             var token = await GenerateJwtTokenAsync(user);
@@ -541,15 +540,15 @@ public class AuthService : IAuthService
 
             if (currentEmployeeCount >= maxEmployees)
             {
-                // Send employee limit notification
-                try
+                // Queue employee limit notification (non-blocking)
+                var limitCompany = company;
+                var limitCount = currentEmployeeCount;
+                var limitMax = maxEmployees;
+                _backgroundEmailQueue.QueueEmail(async sp =>
                 {
-                    await _emailService.SendEmployeeLimitReachedEmailAsync(company, currentEmployeeCount, maxEmployees);
-                }
-                catch (Exception emailEx)
-                {
-                    _logger.LogWarning(emailEx, "Failed to send employee limit email for company {CompanyId}", companyId);
-                }
+                    var emailService = sp.GetRequiredService<IEmailService>();
+                    await emailService.SendEmployeeLimitReachedEmailAsync(limitCompany, limitCount, limitMax);
+                });
 
                 throw new InvalidOperationException(
                     $"Employee limit reached. Your current plan allows {maxEmployees} employees. " +
@@ -579,15 +578,15 @@ public class AuthService : IAuthService
 
             await _userManager.AddToRoleAsync(user, "User");
 
-            // Send welcome email to new employee
-            try
+            // Queue welcome email to new employee (non-blocking)
+            var empUser = user;
+            var empCompany = company;
+            var empPassword = dto.Password;
+            _backgroundEmailQueue.QueueEmail(async sp =>
             {
-                await _emailService.SendNewEmployeeWelcomeEmailAsync(user, company, dto.Password);
-            }
-            catch (Exception emailEx)
-            {
-                _logger.LogWarning(emailEx, "Failed to send welcome email to new employee {Email}", user.Email);
-            }
+                var emailService = sp.GetRequiredService<IEmailService>();
+                await emailService.SendNewEmployeeWelcomeEmailAsync(empUser, empCompany, empPassword);
+            });
 
             var roles = await _userManager.GetRolesAsync(user);
 

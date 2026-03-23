@@ -13,18 +13,18 @@ public class AdminService : IAdminService
 {
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly IEmailService _emailService;
+    private readonly IBackgroundEmailQueue _backgroundEmailQueue;
     private readonly ILogger<AdminService> _logger;
 
     public AdminService(
         ApplicationDbContext context,
         UserManager<ApplicationUser> userManager,
-        IEmailService emailService,
+        IBackgroundEmailQueue backgroundEmailQueue,
         ILogger<AdminService> logger)
     {
         _context = context;
         _userManager = userManager;
-        _emailService = emailService;
+        _backgroundEmailQueue = backgroundEmailQueue;
         _logger = logger;
     }
 
@@ -178,8 +178,15 @@ public class AdminService : IAdminService
         company.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        // Send email notification
-        await _emailService.SendSubscriptionStatusChangedEmailAsync(company, previousStatus, company.SubscriptionStatus.ToString());
+        // Queue email notification (non-blocking)
+        var notifyCompany = company;
+        var notifyPrevStatus = previousStatus;
+        var notifyNewStatus = company.SubscriptionStatus.ToString();
+        _backgroundEmailQueue.QueueEmail(async sp =>
+        {
+            var emailService = sp.GetRequiredService<IEmailService>();
+            await emailService.SendSubscriptionStatusChangedEmailAsync(notifyCompany, notifyPrevStatus, notifyNewStatus);
+        });
 
         return await GetCompanyByIdAsync(companyId);
     }
@@ -364,10 +371,17 @@ public class AdminService : IAdminService
             return false;
         }
 
-        // Send email notification with new password
+        // Queue email notification with new password (non-blocking)
         if (dto.SendEmailNotification && user.Company != null)
         {
-            await _emailService.SendNewEmployeeWelcomeEmailAsync(user, user.Company, dto.NewPassword);
+            var pwUser = user;
+            var pwCompany = user.Company;
+            var pwPassword = dto.NewPassword;
+            _backgroundEmailQueue.QueueEmail(async sp =>
+            {
+                var emailService = sp.GetRequiredService<IEmailService>();
+                await emailService.SendNewEmployeeWelcomeEmailAsync(pwUser, pwCompany, pwPassword);
+            });
         }
 
         return true;
