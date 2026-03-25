@@ -1,0 +1,80 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: staging_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - ./Data/postgres-staging:/var/lib/postgresql/data
+    networks:
+      - airpro-staging-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: staging_minio
+    restart: always
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - ./Data/minio-staging:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - airpro-staging-network
+
+  backend:
+    build:
+      context: ./API
+      dockerfile: Dockerfile
+    container_name: staging_backend
+    restart: always
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}"
+      JwtSettings__SecretKey: ${JWT_SECRET}
+      MinioSettings__Endpoint: "minio:9000"
+      MinioSettings__AccessKey: ${MINIO_ACCESS_KEY}
+      MinioSettings__SecretKey: ${MINIO_SECRET_KEY}
+      MinioSettings__BucketName: "montage-photos"
+      MinioSettings__UseSSL: "false"
+      StripeSettings__SecretKey: ${STRIPE_SECRET_KEY}
+      StripeSettings__PublishableKey: ${STRIPE_PUBLISHABLE_KEY}
+      StripeSettings__WebhookSecret: ${STRIPE_WEBHOOK_SECRET}
+      StripeSettings__PremiumPriceId: ${STRIPE_PREMIUM_PRICE_ID}
+      EncryptionSettings__Key: ${ENCRYPTION_KEY}
+      EmailSettings__SmtpHost: ${SMTP_HOST}
+      EmailSettings__SmtpPort: ${SMTP_PORT}
+      EmailSettings__SmtpUsername: ${SMTP_USERNAME}
+      EmailSettings__SmtpPassword: ${SMTP_PASSWORD}
+      EmailSettings__SenderEmail: ${SMTP_SENDER_EMAIL}
+      EmailSettings__SenderName: ${SMTP_SENDER_NAME:-AirPro Support}
+      EmailSettings__SupportEmail: ${SMTP_SUPPORT_EMAIL:-support@airprobg.com}
+      EmailSettings__WebsiteUrl: ${WEBSITE_URL}
+    depends_on:
+      - postgres
+      - minio
+    networks:
+      - airpro-staging-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NGINX_CONF: nginx.staging.conf
+    container_name: staging_frontend
+    restart: always
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend
+    networks:
+      - airpro-staging-network
+
+networks:
+  airpro-staging-network:
+    driver: bridge

@@ -1,0 +1,38 @@
+name: CD – Deploy to Staging
+
+on:
+  push:
+    branches: [dev]
+
+jobs:
+  deploy:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DO_SSH_HOST }}
+          username: ${{ secrets.DO_SSH_USER }}
+          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+
+            cd ~/AirProV2_API
+
+            echo "Pulling latest dev branch..."
+            git fetch origin dev
+            git checkout dev
+            git pull origin dev
+
+            echo "Building staging images..."
+            docker compose -f docker-compose.staging.yml --env-file .env.staging build
+
+            echo "Restarting staging containers..."
+            docker compose -f docker-compose.staging.yml --env-file .env.staging up -d
+
+            echo "Cleaning up unused images..."
+            docker image prune -f
+
+            echo "Staging deploy complete."
