@@ -579,7 +579,7 @@ export default function MontagesPage() {
                               loadItems()
                             } catch (error) {
                               console.error('Status update error:', error)
-                              toast.error(t('common.unknown_error'))
+                              toast.error(error instanceof Error ? error.message : t('common.unknown_error'))
                             }
                           }
                         }}
@@ -609,7 +609,7 @@ export default function MontagesPage() {
                               loadItems()
                             } catch (error) {
                               console.error('Status update error:', error)
-                              toast.error(t('common.unknown_error'))
+                              toast.error(error instanceof Error ? error.message : t('common.unknown_error'))
                             }
                           }
                         }}
@@ -623,7 +623,7 @@ export default function MontagesPage() {
                      <div className="flex flex-col">
                       <div className="flex items-center gap-1 text-foreground font-medium">
                         <CreditCard className="w-3 h-3 text-green-500" />
-                        ${item.total_price || 0}
+                        €{item.total_price || 0}
                       </div>
                         <span className={`text-xs ${item.payment_status === 'Paid' ? 'text-green-500' : 'text-yellow-500'}`}>
                         {getPaymentStatusLabel(item.payment_status)}
@@ -701,7 +701,7 @@ export default function MontagesPage() {
                   )}
                   <div className="flex items-center gap-2 text-foreground font-medium">
                     <CreditCard className="w-3 h-3 shrink-0 text-green-500" />
-                    <span>${item.total_price || 0}</span>
+                    <span>€{item.total_price || 0}</span>
                     <span className={`text-xs ml-auto ${item.payment_status === 'Paid' ? 'text-green-500' : 'text-yellow-500'}`}>
                       {getPaymentStatusLabel(item.payment_status)}
                     </span>

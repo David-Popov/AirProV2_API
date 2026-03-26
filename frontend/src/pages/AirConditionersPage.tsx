@@ -421,7 +421,7 @@ export default function AirConditionersPage() {
                     {item.kilowatts || '-'} kW
                   </div>
                   <span className="text-green-500 font-bold">
-                    ${item.price}
+                    €{item.price}
                   </span>
                 </div>
               </CardContent>

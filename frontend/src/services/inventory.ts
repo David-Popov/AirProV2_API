@@ -43,14 +43,6 @@ export const inventoryService = {
     return apiClient.patch<void>(`/Inventory/${id}/status`, { isActive });
   },
 
-  async archive(id: string): Promise<void> {
-    return apiClient.post<void>(`/Inventory/${id}/archive`, {});
-  },
-
-  async restore(id: string): Promise<void> {
-    return apiClient.post<void>(`/Inventory/${id}/restore`, {});
-  },
-
   async canDelete(id: string): Promise<{ canDelete: boolean }> {
     return apiClient.get<{ canDelete: boolean }>(`/Inventory/${id}/can-delete`);
   },

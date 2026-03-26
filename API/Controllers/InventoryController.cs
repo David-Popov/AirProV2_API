@@ -392,82 +392,6 @@ public class InventoryController : ControllerBase
     }
 
     /// <summary>
-    /// Archive an inventory item
-    /// </summary>
-    [HttpPost("{id}/archive")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult> Archive(Guid id)
-    {
-        try
-        {
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
-
-            var existing = await _service.GetByIdAsync(id);
-            if (existing == null || existing.CompanyId != companyId)
-            {
-                return NotFound(new { message = "Inventory item not found" });
-            }
-
-            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            await _service.ArchiveAsync(id, userId);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
-    }
-
-    /// <summary>
-    /// Restore an archived inventory item
-    /// </summary>
-    [HttpPost("{id}/restore")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult> Restore(Guid id)
-    {
-        try
-        {
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
-
-            var existing = await _service.GetByIdAsync(id);
-            if (existing == null || existing.CompanyId != companyId)
-            {
-                return NotFound(new { message = "Inventory item not found" });
-            }
-
-            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            await _service.RestoreAsync(id, userId);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
-    }
-
-    /// <summary>
     /// Check if an inventory item can be deleted
     /// </summary>
     [HttpGet("{id}/can-delete")]
@@ -512,7 +436,7 @@ public class InventoryController : ControllerBase
             var canDelete = await _service.CanDeleteAsync(id);
             if (!canDelete)
             {
-                return BadRequest(new { message = "Cannot delete this item. It has been used in montages or is older than 30 days. Please archive it instead." });
+                return BadRequest(new { message = "Cannot delete this item. It has been used in montages or is older than 30 days. You can deactivate it instead." });
             }
 
             await _service.DeleteAsync(id);

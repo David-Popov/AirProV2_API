@@ -123,10 +123,6 @@ export default function InventoryPage() {
   const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
-  const [itemToArchive, setItemToArchive] = useState<InventoryItem | null>(null)
-  const [isArchiving, setIsArchiving] = useState(false)
-
   const PAGE_SIZE = 10
 
   const loadItems = async () => {
@@ -247,21 +243,6 @@ export default function InventoryPage() {
       toast.error(error instanceof Error ? error.message : t('common.unknown_error'))
     } finally {
       setIsDeleting(false); setDeleteDialogOpen(false); setItemToDelete(null)
-    }
-  }
-
-  const handleArchiveClick = (item: InventoryItem) => { setItemToArchive(item); setArchiveDialogOpen(true) }
-  const handleArchiveConfirm = async () => {
-    if (!itemToArchive) return
-    setIsArchiving(true)
-    try {
-      await inventoryService.archive(itemToArchive.id)
-      toast.success(t('inventory.item_archived'))
-      loadItems()
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('common.unknown_error'))
-    } finally {
-      setIsArchiving(false); setArchiveDialogOpen(false); setItemToArchive(null)
     }
   }
 
@@ -439,10 +420,6 @@ export default function InventoryPage() {
                               <span className="text-green-500">Activate</span>
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuItem onClick={() => handleArchiveClick(item)}>
-                            <Archive className="w-4 h-4 mr-2 text-orange-500" />
-                            <span className="text-orange-500">{t('common.archive', 'Archive')}</span>
-                          </DropdownMenuItem>
                           {user?.roles.includes('Manager') && (
                             <>
                               <DropdownMenuSeparator />
@@ -524,10 +501,17 @@ export default function InventoryPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-44">
-                        <DropdownMenuItem onClick={() => handleArchiveClick(item)}>
-                          <Archive className="w-4 h-4 mr-2 text-orange-500" />
-                          <span className="text-orange-500">{t('common.archive', 'Archive')}</span>
-                        </DropdownMenuItem>
+                        {item.is_active ? (
+                          <DropdownMenuItem onClick={() => handleStatusChange(item, false)}>
+                            <Archive className="w-4 h-4 mr-2 text-orange-500" />
+                            <span className="text-orange-500">Deactivate</span>
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem onClick={() => handleStatusChange(item, true)}>
+                            <Archive className="w-4 h-4 mr-2 text-green-500" />
+                            <span className="text-green-500">Activate</span>
+                          </DropdownMenuItem>
+                        )}
                         {user?.roles.includes('Manager') && (
                           <>
                             <DropdownMenuSeparator />
@@ -634,19 +618,6 @@ export default function InventoryPage() {
         icon={Trash}
       />
 
-      <ConfirmDialog
-        open={archiveDialogOpen}
-        onOpenChange={setArchiveDialogOpen}
-        onConfirm={handleArchiveConfirm}
-        title={t('inventory.archive_item', 'Archive Item')}
-        description={t('inventory.archive_confirmation', 'Are you sure you want to archive this item? It will be hidden from the main list but preserved in history.')}
-        itemName={itemToArchive?.name}
-        confirmLabel={t('common.archive', 'Archive')}
-        cancelLabel={t('common.cancel', 'Cancel')}
-        isLoading={isArchiving}
-        variant="warning"
-        icon={Archive}
-      />
     </div>
   )
 }

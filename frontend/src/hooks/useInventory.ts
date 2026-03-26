@@ -95,22 +95,3 @@ export function useUpdateInventoryStatus() {
   })
 }
 
-export function useArchiveInventoryItem() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (id: string) => inventoryService.archive(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all })
-    },
-  })
-}
-
-export function useRestoreInventoryItem() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (id: string) => inventoryService.restore(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all })
-    },
-  })
-}

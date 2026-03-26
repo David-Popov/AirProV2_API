@@ -109,7 +109,7 @@ export default function AirConditionerDetailsPage() {
                     {t("air_conditioners.price")}
                   </p>
                   <p className="text-green-500 font-bold text-lg">
-                    ${ac.price}
+                    €{ac.price}
                   </p>
                 </div>
                 <div>

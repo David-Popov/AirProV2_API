@@ -326,15 +326,15 @@ export default function EmployeesPage() {
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={(e) => { e.stopPropagation(); handleDeleteClick(emp) }}
+                                className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
+                              >
+                                <Trash className="w-4 h-4 mr-2" />
+                                {t('common.delete')}
+                              </DropdownMenuItem>
                             </>
                           )}
-                          <DropdownMenuItem
-                            onClick={(e) => { e.stopPropagation(); handleDeleteClick(emp) }}
-                            className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
-                          >
-                            <Trash className="w-4 h-4 mr-2" />
-                            {t('common.delete')}
-                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -415,37 +415,39 @@ export default function EmployeesPage() {
                   </div>
 
                   <div className="flex gap-2 pt-3 border-t border-border">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 text-red-500 border-red-500/20 hover:bg-red-500/10 hover:text-red-400"
-                      onClick={(e) => { e.stopPropagation(); handleDeleteClick(emp) }}
-                    >
-                      <Trash className="w-3 h-3 mr-1" />
-                      {t('common.delete')}
-                    </Button>
                     {!emp.roles.includes('Manager') && (
-                      emp.is_active ? (
+                      <>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="flex-1 text-orange-500 border-orange-500/20 hover:bg-orange-500/10"
-                          onClick={(e) => handleDeactivateEmployee(e, emp)}
+                          className="flex-1 text-red-500 border-red-500/20 hover:bg-red-500/10 hover:text-red-400"
+                          onClick={(e) => { e.stopPropagation(); handleDeleteClick(emp) }}
                         >
-                          <XCircle className="w-3 h-3 mr-1" />
-                          {t('employees.deactivate', 'Deactivate')}
+                          <Trash className="w-3 h-3 mr-1" />
+                          {t('common.delete')}
                         </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1 text-green-500 border-green-500/20 hover:bg-green-500/10"
-                          onClick={(e) => handleActivateEmployee(e, emp)}
-                        >
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          {t('employees.activate', 'Activate')}
-                        </Button>
-                      )
+                        {emp.is_active ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-orange-500 border-orange-500/20 hover:bg-orange-500/10"
+                            onClick={(e) => handleDeactivateEmployee(e, emp)}
+                          >
+                            <XCircle className="w-3 h-3 mr-1" />
+                            {t('employees.deactivate', 'Deactivate')}
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-green-500 border-green-500/20 hover:bg-green-500/10"
+                            onClick={(e) => handleActivateEmployee(e, emp)}
+                          >
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            {t('employees.activate', 'Activate')}
+                          </Button>
+                        )}
+                      </>
                     )}
                   </div>
                 </CardContent>

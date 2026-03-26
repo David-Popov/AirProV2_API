@@ -29,9 +29,5 @@ public interface IInventoryService
     
     Task UpdateStatusAsync(Guid itemId, bool isActive);
 
-    Task ArchiveAsync(Guid itemId, string? userId);
-
-    Task RestoreAsync(Guid itemId, string? userId);
-
     Task<bool> CanDeleteAsync(Guid itemId);
 }

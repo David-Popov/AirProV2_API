@@ -392,11 +392,11 @@ export default function MontageDetailsPage() {
              <div className="grid grid-cols-2 gap-4">
                <div>
                 <p className="text-muted-foreground text-sm mb-1">{t('montages.total_price')}</p>
-                <p className="text-foreground text-xl font-bold">${montage.total_price || 0}</p>
+                <p className="text-foreground text-xl font-bold">€{montage.total_price || 0}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-sm mb-1">{t('montages.paid_amount')}</p>
-                <p className="text-xl font-bold text-green-500">${montage.paid_amount || 0}</p>
+                <p className="text-xl font-bold text-green-500">€{montage.paid_amount || 0}</p>
               </div>
               <div className="col-span-2 flex items-center gap-4">
                 <p className="text-muted-foreground text-sm shrink-0">{t('montages.payment_status')}</p>
