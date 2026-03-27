@@ -202,8 +202,10 @@ export default function RegisterPage() {
         warranty_default_months: formData.warrantyDefaultMonths,
       })
 
-      toast.success(t('auth.registration_success'))
-      navigate('/dashboard', { replace: true })
+      navigate('/login', {
+        replace: true,
+        state: { message: t('auth.check_email_confirm', 'Registration successful! Please check your email to confirm your account.') }
+      })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('auth.registration_failed'))
     } finally {

@@ -1,4 +1,8 @@
 
+export interface MessageResponse {
+  message: string;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;

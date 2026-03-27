@@ -377,6 +377,84 @@ public class EmailService : IEmailService
         return WrapInBaseTemplate("Welcome to AirPro", content);
     }
 
+    public async Task SendEmailConfirmationAsync(string toEmail, string userName, string confirmLink)
+    {
+        var subject = "Confirm Your Email - AirPro";
+        var content = $@"
+            <h1 style='color: #333; margin: 0 0 20px 0;'>Confirm Your Email Address</h1>
+            <p style='color: #666; line-height: 1.6;'>
+                Hi <strong>{userName}</strong>,
+            </p>
+            <p style='color: #666; line-height: 1.6;'>
+                Thank you for registering with AirPro. Please confirm your email address by clicking the button below.
+            </p>
+            <div style='margin: 30px 0; text-align: center;'>
+                <a href='{confirmLink}'
+                   style='background-color: #6b21a8; color: #ffffff; padding: 12px 30px;
+                          text-decoration: none; border-radius: 5px; display: inline-block;'>
+                    Confirm Email
+                </a>
+            </div>
+            <p style='color: #666; line-height: 1.6;'>
+                If you did not create an account, you can safely ignore this email.
+            </p>";
+
+        var htmlBody = WrapInBaseTemplate("Confirm Your Email", content);
+        await SendEmailAsync(toEmail, userName, subject, htmlBody);
+    }
+
+    public async Task SendPasswordResetEmailAsync(string toEmail, string userName, string resetLink)
+    {
+        var subject = "Reset Your Password - AirPro";
+        var content = $@"
+            <h1 style='color: #333; margin: 0 0 20px 0;'>Reset Your Password</h1>
+            <p style='color: #666; line-height: 1.6;'>
+                Hi <strong>{userName}</strong>,
+            </p>
+            <p style='color: #666; line-height: 1.6;'>
+                We received a request to reset your password. Click the button below to set a new password.
+            </p>
+            <div style='margin: 30px 0; text-align: center;'>
+                <a href='{resetLink}'
+                   style='background-color: #6b21a8; color: #ffffff; padding: 12px 30px;
+                          text-decoration: none; border-radius: 5px; display: inline-block;'>
+                    Reset Password
+                </a>
+            </div>
+            <p style='color: #666; line-height: 1.6;'>
+                This link will expire in 24 hours. If you did not request a password reset, you can safely ignore this email.
+            </p>";
+
+        var htmlBody = WrapInBaseTemplate("Reset Your Password", content);
+        await SendEmailAsync(toEmail, userName, subject, htmlBody);
+    }
+
+    public async Task SendEmailChangeConfirmationAsync(string toEmail, string userName, string newEmail, string confirmLink)
+    {
+        var subject = "Confirm Email Change - AirPro";
+        var content = $@"
+            <h1 style='color: #333; margin: 0 0 20px 0;'>Confirm Your New Email Address</h1>
+            <p style='color: #666; line-height: 1.6;'>
+                Hi <strong>{userName}</strong>,
+            </p>
+            <p style='color: #666; line-height: 1.6;'>
+                You requested to change your email address to <strong>{newEmail}</strong>. Please confirm this change by clicking the button below.
+            </p>
+            <div style='margin: 30px 0; text-align: center;'>
+                <a href='{confirmLink}'
+                   style='background-color: #6b21a8; color: #ffffff; padding: 12px 30px;
+                          text-decoration: none; border-radius: 5px; display: inline-block;'>
+                    Confirm Email Change
+                </a>
+            </div>
+            <p style='color: #666; line-height: 1.6;'>
+                If you did not request this change, you can safely ignore this email.
+            </p>";
+
+        var htmlBody = WrapInBaseTemplate("Confirm Email Change", content);
+        await SendEmailAsync(toEmail, userName, subject, htmlBody);
+    }
+
     private string BuildTrialActivatedEmailTemplate(Company company, DateTime trialEndDate)
     {
         var content = $@"

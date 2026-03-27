@@ -8,6 +8,8 @@ using API.DTOs.Auth;
 using API.Models;
 using API.Services.Email;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -21,6 +23,7 @@ public class AuthService : IAuthService
     private readonly IConfiguration _configuration;
     private readonly ILogger<AuthService> _logger;
     private readonly IBackgroundEmailQueue _backgroundEmailQueue;
+    private readonly EmailSettings _emailSettings;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
@@ -28,7 +31,8 @@ public class AuthService : IAuthService
         ApplicationDbContext context,
         IConfiguration configuration,
         ILogger<AuthService> logger,
-        IBackgroundEmailQueue backgroundEmailQueue)
+        IBackgroundEmailQueue backgroundEmailQueue,
+        IOptions<EmailSettings> emailSettings)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -36,12 +40,13 @@ public class AuthService : IAuthService
         _configuration = configuration;
         _logger = logger;
         _backgroundEmailQueue = backgroundEmailQueue;
+        _emailSettings = emailSettings.Value;
     }
 
-    public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
+    public async Task RegisterAsync(RegisterDto dto)
     {
         await using var transaction = await _context.Database.BeginTransactionAsync();
-        
+
         try
         {
             // Check if user already exists
@@ -55,8 +60,8 @@ public class AuthService : IAuthService
             var company = new Company
             {
                 CompanyName = dto.CompanyName,
-                CompanyType = Enum.TryParse(dto.CompanyType, true, out CompanyType companyType) 
-                    ? companyType 
+                CompanyType = Enum.TryParse(dto.CompanyType, true, out CompanyType companyType)
+                    ? companyType
                     : CompanyType.SoleProprietorship,
                 Bulstat = dto.Bulstat,
                 VatNumber = dto.VatNumber,
@@ -80,7 +85,7 @@ public class AuthService : IAuthService
             await _context.Companies.AddAsync(company);
             await _context.SaveChangesAsync();
 
-            // Create user
+            // Create user — email must be confirmed before login
             var user = new ApplicationUser
             {
                 UserName = dto.Email,
@@ -91,11 +96,11 @@ public class AuthService : IAuthService
                 PhoneNumber = dto.PhoneNumber,
                 Address = dto.Address ?? string.Empty,
                 CompanyId = company.Id,
-                EmailConfirmed = true // For simplicity, auto-confirm email
+                EmailConfirmed = false
             };
 
             var result = await _userManager.CreateAsync(user, dto.Password);
-            
+
             if (!result.Succeeded)
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
@@ -108,47 +113,20 @@ public class AuthService : IAuthService
 
             await transaction.CommitAsync();
 
-            // Queue welcome email (non-blocking)
-            var welcomeUser = user;
-            var welcomeCompany = company;
+            // Queue email confirmation email (non-blocking)
+            var confirmToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(confirmToken));
+            var confirmLink = $"{_emailSettings.WebsiteUrl}/confirm-email?userId={user.Id}&token={encodedToken}";
+
+            var confirmUser = user;
             _backgroundEmailQueue.QueueEmail(async sp =>
             {
                 var emailService = sp.GetRequiredService<IEmailService>();
-                await emailService.SendWelcomeEmailAsync(welcomeUser, welcomeCompany);
+                await emailService.SendEmailConfirmationAsync(
+                    confirmUser.Email!,
+                    $"{confirmUser.FirstName} {confirmUser.LastName}",
+                    confirmLink);
             });
-
-            // Generate JWT token
-            var token = await GenerateJwtTokenAsync(user);
-            var tokenExpiration = DateTime.UtcNow.AddMinutes(GetTokenExpirationMinutes());
-
-            // Generate Refresh Token
-            var refreshToken = await GenerateRefreshTokenAsync(user, token.Id);
-            
-            // Get roles
-            var roles = await _userManager.GetRolesAsync(user);
-
-            return new AuthResponseDto
-            {
-                Token = token.Token,
-                RefreshToken = refreshToken.Token,
-                TokenExpiration = tokenExpiration,
-                User = new AuthUserDto
-                {
-                    Id = user.Id,
-                    Email = user.Email!,
-                    FirstName = user.FirstName,
-                    MiddleName = user.MiddleName,
-                    LastName = user.LastName,
-                    FullName = $"{user.FirstName} {user.LastName}".Trim(),
-                    PhoneNumber = user.PhoneNumber,
-                    CompanyId = company.Id,
-                    CompanyName = company.CompanyName,
-                    SubscriptionPlan = company.SubscriptionPlan.ToString(),
-                    SubscriptionStatus = company.SubscriptionStatus.ToString(),
-                    TrialEndDate = company.TrialEndDate,
-                    Roles = roles.ToList()
-                }
-            };
         }
         catch (Exception e)
         {
@@ -172,6 +150,11 @@ public class AuthService : IAuthService
             if (!result.Succeeded)
             {
                 throw new InvalidOperationException("Invalid email or password");
+            }
+
+            if (!user.EmailConfirmed)
+            {
+                throw new InvalidOperationException("Please confirm your email address before logging in.");
             }
 
             if (!user.IsActive)
@@ -276,18 +259,7 @@ public class AuthService : IAuthService
                 throw new InvalidOperationException("User not found");
             }
 
-            if (user.Email != dto.Email)
-            {
-                var existingUser = await _userManager.FindByEmailAsync(dto.Email);
-                if (existingUser != null)
-                {
-                    throw new InvalidOperationException("A user with this email already exists");
-                }
-                user.Email = dto.Email;
-                user.UserName = dto.Email;
-                user.NormalizedEmail = dto.Email.ToUpperInvariant();
-                user.NormalizedUserName = dto.Email.ToUpperInvariant();
-            }
+            // Email changes are handled through the dedicated change-email flow
 
             user.FirstName = dto.FirstName;
             user.MiddleName = dto.MiddleName ?? string.Empty;
@@ -848,5 +820,135 @@ public class AuthService : IAuthService
             _logger.LogError(e, e.Message);
             throw;
         }
+    }
+
+    // Email confirmation & password management
+
+    public async Task<IdentityResult> ConfirmEmailAsync(string userId, string token)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return IdentityResult.Failed(new IdentityError { Description = "Invalid confirmation link." });
+        }
+
+        var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
+        return await _userManager.ConfirmEmailAsync(user, decodedToken);
+    }
+
+    public async Task ResendConfirmationEmailAsync(string email)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null || user.EmailConfirmed)
+        {
+            return; // Silent — no user enumeration
+        }
+
+        var confirmToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(confirmToken));
+        var confirmLink = $"{_emailSettings.WebsiteUrl}/confirm-email?userId={user.Id}&token={encodedToken}";
+
+        var userName = $"{user.FirstName} {user.LastName}";
+        var userEmail = user.Email!;
+        _backgroundEmailQueue.QueueEmail(async sp =>
+        {
+            var emailService = sp.GetRequiredService<IEmailService>();
+            await emailService.SendEmailConfirmationAsync(userEmail, userName, confirmLink);
+        });
+    }
+
+    public async Task ForgotPasswordAsync(string email)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null || !user.EmailConfirmed)
+        {
+            return; // Silent — no user enumeration
+        }
+
+        var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(resetToken));
+        var encodedEmail = Uri.EscapeDataString(email);
+        var resetLink = $"{_emailSettings.WebsiteUrl}/reset-password?email={encodedEmail}&token={encodedToken}";
+
+        var userName = $"{user.FirstName} {user.LastName}";
+        var userEmail = user.Email!;
+        _backgroundEmailQueue.QueueEmail(async sp =>
+        {
+            var emailService = sp.GetRequiredService<IEmailService>();
+            await emailService.SendPasswordResetEmailAsync(userEmail, userName, resetLink);
+        });
+    }
+
+    public async Task<IdentityResult> ResetPasswordAsync(string email, string token, string newPassword)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
+        {
+            return IdentityResult.Failed(new IdentityError { Description = "Invalid password reset link." });
+        }
+
+        var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
+        return await _userManager.ResetPasswordAsync(user, decodedToken, newPassword);
+    }
+
+    public async Task<IdentityResult> ChangePasswordAsync(string userId, string newPassword)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return IdentityResult.Failed(new IdentityError { Description = "User not found." });
+        }
+
+        // Generate a reset token and use it to set the new password (ensures password validation)
+        var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+        return await _userManager.ResetPasswordAsync(user, resetToken, newPassword);
+    }
+
+    public async Task RequestEmailChangeAsync(string userId, string newEmail)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            throw new InvalidOperationException("User not found.");
+        }
+
+        var existingUser = await _userManager.FindByEmailAsync(newEmail);
+        if (existingUser != null)
+        {
+            throw new InvalidOperationException("A user with this email already exists.");
+        }
+
+        var changeToken = await _userManager.GenerateChangeEmailTokenAsync(user, newEmail);
+        var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(changeToken));
+        var encodedEmail = Uri.EscapeDataString(newEmail);
+        var confirmLink = $"{_emailSettings.WebsiteUrl}/confirm-email-change?userId={user.Id}&newEmail={encodedEmail}&token={encodedToken}";
+
+        var userName = $"{user.FirstName} {user.LastName}";
+        _backgroundEmailQueue.QueueEmail(async sp =>
+        {
+            var emailService = sp.GetRequiredService<IEmailService>();
+            await emailService.SendEmailChangeConfirmationAsync(newEmail, userName, newEmail, confirmLink);
+        });
+    }
+
+    public async Task<IdentityResult> ConfirmEmailChangeAsync(string userId, string newEmail, string token)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return IdentityResult.Failed(new IdentityError { Description = "Invalid email change link." });
+        }
+
+        var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
+        var result = await _userManager.ChangeEmailAsync(user, newEmail, decodedToken);
+
+        if (result.Succeeded)
+        {
+            // Keep UserName in sync with Email
+            user.UserName = newEmail;
+            await _userManager.UpdateNormalizedUserNameAsync(user);
+        }
+
+        return result;
     }
 }

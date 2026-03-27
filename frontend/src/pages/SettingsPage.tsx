@@ -18,7 +18,9 @@ import {
   X,
   AlertTriangle,
   Trash,
-  Loader2
+  Loader2,
+  KeyRound,
+  Mail
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -35,7 +37,7 @@ import {
 } from '@/components/ui/select'
 import { useAuth } from '@/context'
 import { useTheme } from '@/components/theme-provider'
-import { companyService, employeeService } from '@/services'
+import { companyService, employeeService, authService } from '@/services'
 import type { Company } from '@/types'
 import { SubscriptionSection } from '@/components/subscription'
 import {
@@ -79,6 +81,13 @@ export default function SettingsPage() {
 
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [savingProfile, setSavingProfile] = useState(false)
+
+  // Security section state
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
+  const [isChangingEmail, setIsChangingEmail] = useState(false)
+  const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' })
+  const [newEmailValue, setNewEmailValue] = useState('')
+  const [savingSecurity, setSavingSecurity] = useState(false)
   const [profileForm, setProfileForm] = useState({
     first_name: '',
     middle_name: '',
@@ -389,12 +398,16 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <Label className="text-sm text-muted-foreground">{t('settings.email', 'Email')}</Label>
-                    <Input 
-                      value={isEditingProfile ? profileForm.email : (user?.email || '')} 
-                      onChange={(e) => setProfileForm({...profileForm, email: e.target.value})}
-                      disabled={!isEditingProfile} 
-                      className={`mt-1 ${!isEditingProfile ? 'bg-muted/20' : ''}`}
+                    <Input
+                      value={user?.email || ''}
+                      disabled
+                      className="mt-1 bg-muted/20"
                     />
+                    {isEditingProfile && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {t('settings.email_change_hint', 'Use Change Email in the Security section below to update your email.')}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm text-muted-foreground">{t('settings.phone', 'Phone')}</Label>
@@ -432,10 +445,155 @@ export default function SettingsPage() {
                     {t('settings.security_desc', 'Manage your security settings')}
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <Button variant="outline" onClick={() => toast.info(t('settings.coming_soon', 'Coming soon!'))}>
-                    {t('settings.change_password', 'Change Password')}
-                  </Button>
+                <CardContent className="space-y-6">
+                  {/* Change Password */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <KeyRound className="w-4 h-4 text-muted-foreground" />
+                        <span className="font-medium text-sm">{t('settings.change_password', 'Change Password')}</span>
+                      </div>
+                      {!isChangingPassword && (
+                        <Button variant="outline" size="sm" onClick={() => setIsChangingPassword(true)}>
+                          {t('common.change', 'Change')}
+                        </Button>
+                      )}
+                    </div>
+                    {isChangingPassword && (
+                      <div className="space-y-3 pl-6">
+                        <div>
+                          <Label className="text-sm">{t('auth.new_password', 'New Password')}</Label>
+                          <Input
+                            type="password"
+                            placeholder={t('auth.new_password_placeholder', 'Enter new password')}
+                            value={passwordForm.newPassword}
+                            onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm">{t('auth.confirm_password', 'Confirm Password')}</Label>
+                          <Input
+                            type="password"
+                            placeholder={t('auth.confirm_password_placeholder', 'Confirm new password')}
+                            value={passwordForm.confirmPassword}
+                            onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            disabled={savingSecurity}
+                            onClick={async () => {
+                              if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+                                toast.error(t('auth.passwords_dont_match', 'Passwords do not match.'))
+                                return
+                              }
+                              if (passwordForm.newPassword.length < 6) {
+                                toast.error(t('auth.password_too_short', 'Password must be at least 6 characters.'))
+                                return
+                              }
+                              setSavingSecurity(true)
+                              try {
+                                await authService.changePassword(passwordForm.newPassword, passwordForm.confirmPassword)
+                                toast.success(t('settings.password_changed', 'Password changed successfully!'))
+                                setIsChangingPassword(false)
+                                setPasswordForm({ newPassword: '', confirmPassword: '' })
+                              } catch (err) {
+                                toast.error(err instanceof Error ? err.message : t('settings.password_change_failed', 'Failed to change password.'))
+                              } finally {
+                                setSavingSecurity(false)
+                              }
+                            }}
+                          >
+                            <Save className="w-4 h-4 mr-1" />
+                            {t('common.save', 'Save')}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setIsChangingPassword(false)
+                              setPasswordForm({ newPassword: '', confirmPassword: '' })
+                            }}
+                          >
+                            {t('common.cancel', 'Cancel')}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border-t border-border" />
+
+                  {/* Change Email */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-muted-foreground" />
+                        <div>
+                          <span className="font-medium text-sm">{t('settings.change_email', 'Change Email')}</span>
+                          <p className="text-xs text-muted-foreground">{user?.email}</p>
+                        </div>
+                      </div>
+                      {!isChangingEmail && (
+                        <Button variant="outline" size="sm" onClick={() => setIsChangingEmail(true)}>
+                          {t('common.change', 'Change')}
+                        </Button>
+                      )}
+                    </div>
+                    {isChangingEmail && (
+                      <div className="space-y-3 pl-6">
+                        <div>
+                          <Label className="text-sm">{t('settings.new_email', 'New Email')}</Label>
+                          <Input
+                            type="email"
+                            placeholder={t('settings.new_email_placeholder', 'Enter new email')}
+                            value={newEmailValue}
+                            onChange={(e) => setNewEmailValue(e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            disabled={savingSecurity}
+                            onClick={async () => {
+                              if (!newEmailValue) {
+                                toast.error(t('settings.email_required', 'Email is required.'))
+                                return
+                              }
+                              setSavingSecurity(true)
+                              try {
+                                await authService.requestEmailChange(newEmailValue)
+                                toast.success(t('settings.email_change_sent', 'Confirmation link sent to your new email. Check your inbox.'))
+                                setIsChangingEmail(false)
+                                setNewEmailValue('')
+                              } catch (err) {
+                                toast.error(err instanceof Error ? err.message : t('settings.email_change_failed', 'Failed to request email change.'))
+                              } finally {
+                                setSavingSecurity(false)
+                              }
+                            }}
+                          >
+                            <Save className="w-4 h-4 mr-1" />
+                            {t('settings.send_confirmation', 'Send Confirmation')}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setIsChangingEmail(false)
+                              setNewEmailValue('')
+                            }}
+                          >
+                            {t('common.cancel', 'Cancel')}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </div>
