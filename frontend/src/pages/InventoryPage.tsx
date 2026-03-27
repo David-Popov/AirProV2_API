@@ -415,7 +415,7 @@ export default function InventoryPage() {
                       <div className="flex items-center gap-2 min-w-[100px]">
                         <Progress value={stockPct} indicatorClassName={indicatorCls} className="h-1.5 w-20" />
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {item.quantity} {item.unit_of_measure}
+                          {item.quantity} {t(`inventory.units.${item.unit_of_measure.toLowerCase()}`, item.unit_of_measure)}
                         </span>
                       </div>
                     </TableCell>
@@ -498,7 +498,7 @@ export default function InventoryPage() {
                   <div className="mb-3">
                     <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                       <span>Stock Level</span>
-                      <span>{item.quantity} {item.unit_of_measure}</span>
+                      <span>{item.quantity} {t(`inventory.units.${item.unit_of_measure.toLowerCase()}`, item.unit_of_measure)}</span>
                     </div>
                     <Progress value={stockPct} indicatorClassName={indicatorCls} className="h-1.5" />
                   </div>
@@ -605,7 +605,7 @@ export default function InventoryPage() {
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-border text-popover-foreground">
                     {UNIT_OF_MEASURE_OPTIONS.map((u) => (
-                      <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>
+                      <SelectItem key={u.value} value={u.value}>{t(`inventory.units.${u.value.toLowerCase()}`, u.label)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
