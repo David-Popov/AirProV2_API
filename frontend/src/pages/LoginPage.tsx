@@ -27,6 +27,16 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, isAuthLoading, navigate, location.state])
 
+  // Show post-registration or password-reset message
+  useEffect(() => {
+    const stateMessage = (location.state as { message?: string })?.message
+    if (stateMessage) {
+      toast.info(stateMessage)
+      // Clear the state so it doesn't show again on refresh
+      window.history.replaceState({}, document.title)
+    }
+  }, [location.state])
+
   if (isAuthLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -82,7 +92,12 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="password" className="text-foreground font-medium text-sm">{t('auth.password')}</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password" className="text-foreground font-medium text-sm">{t('auth.password')}</Label>
+              <Link to="/forgot-password" className="text-xs text-primary hover:text-primary/80 transition-colors">
+                {t('auth.forgot_password', 'Forgot password?')}
+              </Link>
+            </div>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input

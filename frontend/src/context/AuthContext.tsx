@@ -1,13 +1,13 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { authService } from '@/services';
-import type { AuthUser, LoginRequest, RegisterRequest, AuthResponse } from '@/types';
+import type { AuthUser, LoginRequest, RegisterRequest, AuthResponse, MessageResponse } from '@/types';
 
 interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (data: LoginRequest) => Promise<AuthResponse>;
-  register: (data: RegisterRequest) => Promise<AuthResponse>;
+  register: (data: RegisterRequest) => Promise<MessageResponse>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -52,10 +52,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return response;
   }, []);
 
-  const register = useCallback(async (data: RegisterRequest): Promise<AuthResponse> => {
-    const response = await authService.register(data);
-    setUser(response.user);
-    return response;
+  const register = useCallback(async (data: RegisterRequest): Promise<MessageResponse> => {
+    return authService.register(data);
   }, []);
 
   const logout = useCallback(() => {

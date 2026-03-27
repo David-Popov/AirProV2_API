@@ -1,11 +1,13 @@
 using API.DTOs;
 using API.DTOs.Auth;
 using API.Models;
+using Microsoft.AspNetCore.Identity;
+
 namespace API.Services.Auth;
 
 public interface IAuthService
 {
-    Task<AuthResponseDto> RegisterAsync(RegisterDto dto);
+    Task RegisterAsync(RegisterDto dto);
     
     Task<AuthResponseDto> LoginAsync(LoginDto dto);
     
@@ -33,4 +35,13 @@ public interface IAuthService
     Task<int> GetActiveEmployeeCountAsync(Guid companyId);
 
     Task<bool> IsManagerAsync(string userId);
+
+    // Email confirmation & password management
+    Task<IdentityResult> ConfirmEmailAsync(string userId, string token);
+    Task ResendConfirmationEmailAsync(string email);
+    Task ForgotPasswordAsync(string email);
+    Task<IdentityResult> ResetPasswordAsync(string email, string token, string newPassword);
+    Task<IdentityResult> ChangePasswordAsync(string userId, string newPassword);
+    Task RequestEmailChangeAsync(string userId, string newEmail);
+    Task<IdentityResult> ConfirmEmailChangeAsync(string userId, string newEmail, string token);
 }

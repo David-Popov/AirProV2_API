@@ -1,4 +1,5 @@
 using API.DTOs;
+using API.DTOs.Auth;
 using API.Validators.AirConditioners;
 using API.Validators.Auth;
 using API.Validators.Companies;
@@ -29,6 +30,8 @@ public static class ValidatorExtensions
         services.AddScoped<IValidator<RegisterDto>, RegisterDtoValidator>();
         services.AddScoped<IValidator<LoginDto>, LoginDtoValidator>();
         services.AddScoped<IValidator<CreateEmployeeDto>, CreateEmployeeDtoValidator>();
+        services.AddScoped<IValidator<ChangePasswordDto>, ChangePasswordDtoValidator>();
+        services.AddScoped<IValidator<ResetPasswordDto>, ResetPasswordDtoValidator>();
 
         services.AddValidatorsFromAssemblyContaining<CreateCompanyDtoValidator>();
 
