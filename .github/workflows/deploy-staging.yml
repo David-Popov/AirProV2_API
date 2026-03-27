@@ -25,7 +25,7 @@ jobs:
             echo "Pulling latest dev branch..."
             git fetch origin dev
             git checkout dev
-            git pull origin dev
+            git reset --hard origin/dev
 
             echo "Building staging images..."
             docker compose -p airpro-staging -f docker-compose.staging.yml --env-file .env.staging build
