@@ -80,23 +80,28 @@ export default function DashboardLayout() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="fixed top-4 right-4 z-50 lg:hidden p-2 rounded-lg bg-card border border-border shadow-lg hover:bg-accent transition-colors"
-        aria-label="Toggle menu"
-      >
-        {isSidebarOpen ? (
-          <X className="w-5 h-5 text-foreground" />
-        ) : (
+      {/* Mobile Top Bar */}
+      <header className="fixed top-0 inset-x-0 z-40 h-14 flex items-center justify-between px-4 bg-background/90 backdrop-blur-md border-b border-border lg:hidden">
+        <button
+          onClick={() => setIsSidebarOpen(true)}
+          className="p-2 rounded-lg hover:bg-accent transition-colors touch-target-sm"
+          aria-label="Open menu"
+        >
           <Menu className="w-5 h-5 text-foreground" />
-        )}
-      </button>
+        </button>
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-primary rounded-md flex items-center justify-center shadow-sm shadow-primary/30">
+            <Snowflake className="w-3.5 h-3.5 text-primary-foreground" />
+          </div>
+          <span className="font-semibold text-sm text-foreground">{t('app_name')}</span>
+        </div>
+        <div className="w-9" />
+      </header>
 
       {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
@@ -105,15 +110,36 @@ export default function DashboardLayout() {
       <aside className={`fixed left-0 top-0 h-full w-60 glass-sidebar px-3 py-4 z-50 flex flex-col transition-transform duration-300 ${
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}>
+        {/* Close button — mobile only */}
+        <button
+          onClick={() => setIsSidebarOpen(false)}
+          className="absolute top-3 right-3 lg:hidden p-1.5 rounded-lg hover:bg-sidebar-accent/80 transition-colors"
+          aria-label="Close menu"
+        >
+          <X className="w-4 h-4 text-muted-foreground" />
+        </button>
+
         {/* Logo */}
-        <div className="flex items-center gap-2 mb-4 px-1 cursor-pointer shrink-0" onClick={() => navigate('/dashboard')}>
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-md shadow-primary/25 ring-1 ring-white/10 shrink-0">
-            <Snowflake className="w-4 h-4 text-primary-foreground" />
+        <div
+          className="flex items-center gap-3 mb-6 px-1 cursor-pointer shrink-0 group"
+          onClick={() => navigate('/dashboard')}
+        >
+          <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shrink-0
+                          shadow-md shadow-primary/30 ring-1 ring-primary/20
+                          group-hover:shadow-lg group-hover:shadow-primary/40 transition-all duration-200">
+            <Snowflake className="w-5 h-5 text-primary-foreground" />
           </div>
-          <span className="text-sidebar-foreground font-semibold text-base tracking-tight">{t('app_name')}</span>
+          <div className="min-w-0">
+            <span className="text-sidebar-foreground font-semibold text-base tracking-tight leading-tight block truncate">
+              {t('app_name')}
+            </span>
+            <span className="text-muted-foreground text-[10px] tracking-wider uppercase">
+              AC Management
+            </span>
+          </div>
         </div>
 
-        {/* Nav — scrollable so items never push bottom section off-screen */}
+        {/* Nav — scrollable */}
         <nav className="flex-1 overflow-y-auto space-y-0.5 min-h-0 [&::-webkit-scrollbar]:w-0 [&::-webkit-scrollbar]:hidden">
           {isManager && !isAdmin && (
             <NavItem
@@ -149,8 +175,8 @@ export default function DashboardLayout() {
           )}
 
           {/* Database section */}
-          <div className="pt-2 mt-2 border-t border-sidebar-border/50">
-            <p className="px-3 text-[10px] text-muted-foreground uppercase tracking-wider mb-1">
+          <div className="pt-3 mt-2 border-t border-sidebar-border/50">
+            <p className="px-3 text-[11px] text-muted-foreground/60 font-semibold uppercase tracking-widest mb-2">
               {t('nav.database', 'Database')}
             </p>
             <NavItem
@@ -169,8 +195,8 @@ export default function DashboardLayout() {
 
           {/* Admin section */}
           {isAdmin && (
-            <div className="pt-2 mt-2 border-t border-sidebar-border/50">
-              <p className="px-3 text-[10px] text-muted-foreground uppercase tracking-wider mb-1">
+            <div className="pt-3 mt-2 border-t border-sidebar-border/50">
+              <p className="px-3 text-[11px] text-muted-foreground/60 font-semibold uppercase tracking-widest mb-2">
                 {t('nav.admin', 'Admin')}
               </p>
               <NavItem
@@ -189,7 +215,7 @@ export default function DashboardLayout() {
           )}
 
           {/* Settings */}
-          <div className="pt-2 mt-2 border-t border-sidebar-border/50">
+          <div className="pt-3 mt-2 border-t border-sidebar-border/50">
             <NavItem
               icon={Settings}
               label={t('common.settings')}
@@ -202,21 +228,22 @@ export default function DashboardLayout() {
         {/* Bottom section — always visible */}
         <div className="mt-3 space-y-2 shrink-0">
           {/* User info */}
-          <div className="p-2.5 bg-sidebar-accent/50 rounded-lg border border-sidebar-border/50 backdrop-blur-sm">
-            <div className="flex items-center gap-2 mb-1.5">
-              <Avatar className="h-7 w-7 shrink-0">
-                <AvatarFallback className="text-[10px] font-semibold bg-primary/20 text-primary">
+          <div className="p-3 rounded-xl border border-sidebar-border/50 bg-sidebar-accent/30
+                          backdrop-blur-sm transition-colors hover:bg-sidebar-accent/50">
+            <div className="flex items-center gap-2.5 mb-2">
+              <Avatar className="h-8 w-8 shrink-0">
+                <AvatarFallback className="text-[11px] font-semibold bg-primary/20 text-primary">
                   {user?.full_name ? getInitials(user.full_name) : '?'}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <p className="text-sidebar-foreground font-medium text-xs truncate">{user?.full_name}</p>
+                <p className="text-sidebar-foreground font-medium text-sm truncate">{user?.full_name}</p>
                 <p className="text-muted-foreground text-[11px] truncate">{user?.email}</p>
               </div>
             </div>
             <div className="flex gap-1 flex-wrap">
               {user?.roles.map(role => (
-                <Badge key={role} variant="secondary" className="text-[10px] px-1.5 h-4 rounded bg-sidebar-accent text-sidebar-foreground hover:bg-sidebar-accent/80">
+                <Badge key={role} variant="secondary" className="text-[10px] px-1.5 h-4 rounded font-medium bg-sidebar-accent text-sidebar-foreground hover:bg-sidebar-accent/80">
                   {role}
                 </Badge>
               ))}
@@ -277,14 +304,15 @@ function NavItem({ icon: Icon, label, active = false, onClick }: NavItemProps) {
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-200 group text-sm ${
+      className={`w-full flex items-center gap-2.5 py-2 rounded-lg transition-all duration-200 group text-sm
+        border-l-2 pl-[10px] pr-3 ${
         active
-          ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-[1.01]'
-          : 'text-muted-foreground hover:bg-sidebar-accent/80 hover:text-sidebar-foreground'
+          ? 'bg-primary/10 text-primary font-semibold border-primary'
+          : 'text-muted-foreground hover:bg-sidebar-accent/80 hover:text-sidebar-foreground border-transparent'
       }`}
     >
       <Icon className={`w-4 h-4 shrink-0 transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
-      <span className="font-medium truncate">{label}</span>
+      <span className="truncate">{label}</span>
     </button>
   )
 }
