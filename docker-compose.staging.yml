@@ -1,4 +1,5 @@
 version: "3.8"
+name: airpro-staging
 services:
   postgres:
     image: postgres:16-alpine
@@ -68,8 +69,6 @@ services:
         NGINX_CONF: nginx.staging.conf
     container_name: staging_frontend
     restart: always
-    ports:
-      - "8081:80"
     depends_on:
       - backend
     networks:

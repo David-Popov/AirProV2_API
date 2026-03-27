@@ -3,6 +3,7 @@ name: CD – Deploy to Staging
 on:
   push:
     branches: [dev]
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -27,10 +28,10 @@ jobs:
             git pull origin dev
 
             echo "Building staging images..."
-            docker compose -f docker-compose.staging.yml --env-file .env.staging build
+            docker compose -p airpro-staging -f docker-compose.staging.yml --env-file .env.staging build
 
             echo "Restarting staging containers..."
-            docker compose -f docker-compose.staging.yml --env-file .env.staging up -d
+            docker compose -p airpro-staging -f docker-compose.staging.yml --env-file .env.staging up -d
 
             echo "Cleaning up unused images..."
             docker image prune -f
