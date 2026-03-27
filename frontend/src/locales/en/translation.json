@@ -58,6 +58,7 @@
     "date": "Date",
     "location": "Location",
     "upload": "Upload",
+    "change": "Change",
     "download": "Download",
     "description": "Description",
     "filters": "Filters",

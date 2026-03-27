@@ -268,7 +268,7 @@ export default function AirConditionersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300">
+    <div className="min-h-screen bg-background pt-14 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300 animate-fade-in">
       <PageHeader
         title={t('air_conditioners.title')}
         subtitle={t('air_conditioners.subtitle')}
@@ -388,11 +388,11 @@ export default function AirConditionersPage() {
       ) : items.length === 0 ? (
         <EmptyState message={t('air_conditioners.no_acs')} />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in">
-          {items.map((item) => (
-            <Card 
-              key={item.id} 
-              className="glass-card overflow-hidden hover:border-primary/50 transition-colors cursor-pointer group"
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {items.map((item, index) => (
+            <Card
+              key={item.id}
+              className={`glass-card overflow-hidden hover:border-primary/50 hover:scale-[1.02] hover:-translate-y-1 cursor-pointer group animate-slide-up stagger-${Math.min(index + 1, 8)}`}
               onClick={() => navigate(`/air-conditioners/${item.id}`)}
             >
               {/* Image Placeholder */}
@@ -426,7 +426,7 @@ export default function AirConditionersPage() {
               <CardContent className="p-4">
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <p className="text-xs text-primary font-medium mb-1">{item.brand}</p>
+                    <p className="text-[10px] text-primary font-semibold uppercase tracking-wider mb-1">{item.brand}</p>
                     <h3 className="text-foreground font-semibold truncate pr-2" title={item.name}>{item.name}</h3>
                   </div>
                 </div>

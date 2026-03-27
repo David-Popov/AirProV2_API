@@ -18,16 +18,16 @@ export function LanguageSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
-          <Globe className="h-[1.2rem] w-[1.2rem]" />
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+          <Globe className="h-[1.1rem] w-[1.1rem]" />
           <span className="sr-only">Toggle language</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-gray-300">
-        <DropdownMenuItem onClick={() => changeLanguage('en')} className="hover:bg-slate-800 cursor-pointer">
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => changeLanguage('en')} className="cursor-pointer">
           English
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => changeLanguage('bg')} className="hover:bg-slate-800 cursor-pointer">
+        <DropdownMenuItem onClick={() => changeLanguage('bg')} className="cursor-pointer">
           Български
         </DropdownMenuItem>
       </DropdownMenuContent>

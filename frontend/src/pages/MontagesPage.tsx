@@ -185,11 +185,11 @@ export default function MontagesPage() {
   const [isDeleting, setIsDeleting] = useState(false)
 
   const statusColors: Record<string, string> = {
-    'Planned': 'bg-primary/10 text-primary border-primary/20',
-    'InProgress': 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
-    'Completed': 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-    'Canceled': 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
-    'Overdue': 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
+    'Planned':    'bg-primary/10 text-primary border-primary/20 border-l-2 border-l-primary/50',
+    'InProgress': 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 border-l-2 border-l-amber-500/60',
+    'Completed':  'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 border-l-2 border-l-emerald-500/60',
+    'Canceled':   'bg-muted text-muted-foreground border-border border-l-2 border-l-muted-foreground/30',
+    'Overdue':    'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20 border-l-2 border-l-orange-500/60',
   }
 
   const loadMaintenanceReminders = async () => {
@@ -422,7 +422,7 @@ export default function MontagesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300">
+    <div className="min-h-screen bg-background pt-14 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300 animate-fade-in">
       <PageHeader
         title={t('montages.title')}
         subtitle={t('montages.subtitle')}
@@ -566,7 +566,7 @@ export default function MontagesPage() {
               items.map((item) => (
                 <TableRow
                   key={item.id}
-                  className="border-border hover:bg-muted/30 cursor-pointer transition-colors animate-fade-in"
+                  className="border-border table-row-interactive animate-fade-in"
                   onClick={() => navigate(`/montages/${item.id}`)}
                 >
                   <TableCell>
@@ -707,10 +707,10 @@ export default function MontagesPage() {
         ) : items.length === 0 ? (
           <EmptyState icon={ClipboardList} message={t('montages.no_montages')} />
         ) : (
-          items.map((item) => (
+          items.map((item, index) => (
             <Card
               key={item.id}
-              className="glass-card cursor-pointer hover:border-primary/50 transition-all animate-fade-in"
+              className={`glass-card cursor-pointer hover:border-primary/50 transition-all animate-slide-up stagger-${Math.min(index + 1, 8)}`}
               onClick={() => navigate(`/montages/${item.id}`)}
             >
               <CardContent className="p-4">
