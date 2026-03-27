@@ -581,8 +581,8 @@ export default function MontagesPage() {
                        {new Date(item.installation_date).toLocaleDateString()}
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground w-[220px]">
-                    <div className="flex items-center gap-2 max-w-[200px]">
+                  <TableCell className="text-muted-foreground w-55">
+                    <div className="flex items-center gap-2 max-w-50">
                       <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
                       <span className="truncate" title={`${item.client_city}, ${item.client_address}`}>
                         {item.client_city}, {item.client_address}
@@ -785,7 +785,7 @@ export default function MontagesPage() {
 
       {/* Filter Dialog */}
       <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-        <DialogContent className="bg-card border-border text-card-foreground sm:max-w-[425px]">
+        <DialogContent className="bg-card border-border text-card-foreground sm:max-w-106.25">
           <DialogHeader>
             <DialogTitle>{t('common.filter', 'Filter Montages')}</DialogTitle>
           </DialogHeader>
@@ -876,7 +876,7 @@ export default function MontagesPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-card border-border text-card-foreground max-w-[95vw] sm:max-w-[900px] max-h-[90vh] overflow-y-auto shadow-2xl">
+        <DialogContent className="bg-card border-border text-card-foreground max-w-[95vw] sm:max-w-225 max-h-[90vh] overflow-y-auto shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">{isEditing ? t('montages.edit_details') : t('montages.new_montage')}</DialogTitle>
           </DialogHeader>
@@ -1102,11 +1102,11 @@ export default function MontagesPage() {
                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                    <div className="grid gap-2">
                     <Label htmlFor="price">{t('montages.total_price')}</Label>
-                    <Input id="price" type="number" min="0" value={formData.total_price || ''} onFocus={(e) => { if (formData.total_price === 0) setFormData({...formData, total_price: '' as unknown as number}) }} onChange={(e) => setFormData({...formData, total_price: e.target.value === '' ? 0 : Number(e.target.value)})} className="bg-background border-input" placeholder="0" />
+                    <Input id="price" type="number" min="0" value={formData.total_price || ''} onFocus={() => { if (formData.total_price === 0) setFormData({...formData, total_price: '' as unknown as number}) }} onChange={(e) => setFormData({...formData, total_price: e.target.value === '' ? 0 : Number(e.target.value)})} className="bg-background border-input" placeholder="0" />
                   </div>
                    <div className="grid gap-2">
                     <Label htmlFor="paid">{t('montages.paid_amount')}</Label>
-                    <Input id="paid" type="number" min="0" value={formData.paid_amount || ''} onFocus={(e) => { if (formData.paid_amount === 0) setFormData({...formData, paid_amount: '' as unknown as number}) }} onChange={(e) => setFormData({...formData, paid_amount: e.target.value === '' ? 0 : Number(e.target.value)})} className="bg-background border-input" placeholder="0" />
+                    <Input id="paid" type="number" min="0" value={formData.paid_amount || ''} onFocus={() => { if (formData.paid_amount === 0) setFormData({...formData, paid_amount: '' as unknown as number}) }} onChange={(e) => setFormData({...formData, paid_amount: e.target.value === '' ? 0 : Number(e.target.value)})} className="bg-background border-input" placeholder="0" />
                   </div>
                    <div className="grid gap-2">
                     <Label htmlFor="paymentStatus">{t('montages.payment_status')}</Label>

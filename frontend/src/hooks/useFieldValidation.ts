@@ -34,7 +34,7 @@ export function useFieldValidation<T extends Record<string, unknown>>(rules: Rul
     return true
   }, [rules])
 
-  const validateAll = useCallback((formData: T): boolean => {
+  const validateAll = useCallback((formData: Record<string, unknown>): boolean => {
     let allValid = true
     const newFields: Record<string, FieldState> = {}
 
