@@ -136,10 +136,9 @@ export default function InventoryItemHistoryPage() {
             </p>
           </div>
           
-          {item && item.is_archived && (
+          {item && !item.is_active && (
             <Badge variant="outline" className="text-orange-500 border-orange-500/50 bg-orange-500/10 px-3 py-1">
-              <Archive className="w-4 h-4 mr-2" />
-              {t('inventory.audit.actions.archived')}
+              {t('common.inactive')}
             </Badge>
           )}
         </div>

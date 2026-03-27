@@ -148,11 +148,13 @@ export function PaymentStatusNavigator({
               <Input
                 id="amount"
                 type="number"
-                value={tempAmount}
-                onChange={(e) => setTempAmount(Number(e.target.value))}
+                value={tempAmount || ''}
+                onFocus={() => { if (tempAmount === 0) setTempAmount('' as unknown as number) }}
+                onChange={(e) => setTempAmount(e.target.value === '' ? 0 : Number(e.target.value))}
                 max={totalPrice}
                 min={0}
                 step="0.01"
+                placeholder="0"
               />
             </div>
             <p className="text-sm text-muted-foreground">

@@ -30,6 +30,7 @@ public class InventoryAuditService : IInventoryAuditService
     public async Task<PagedList<InventoryAuditLogDto>> GetAuditLogsAsync(Guid inventoryItemId, int pageNumber, int pageSize)
     {
         var query = _context.InventoryAuditLogs
+            .AsNoTracking()
             .Include(a => a.User)
             .Include(a => a.RelatedMontage)
             .Include(a => a.InventoryItem)
@@ -52,6 +53,7 @@ public class InventoryAuditService : IInventoryAuditService
         _logger.LogInformation("GetRecentActivity: Querying for CompanyId {CompanyId}", companyId);
 
         var query = _context.InventoryAuditLogs
+            .AsNoTracking()
             .Include(a => a.User)
             .Include(a => a.InventoryItem)
             .Include(a => a.RelatedMontage)
@@ -68,6 +70,7 @@ public class InventoryAuditService : IInventoryAuditService
     public async Task<PagedList<InventoryAuditLogDto>> GetAuditLogsByUserAsync(string userId, int pageNumber, int pageSize)
     {
         var query = _context.InventoryAuditLogs
+            .AsNoTracking()
             .Include(a => a.User)
             .Include(a => a.InventoryItem)
             .Include(a => a.RelatedMontage)

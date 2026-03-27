@@ -278,14 +278,41 @@ public class MontageService : IMontageService
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(parameters.ClientName))
-            {
-                query = query.Where(m => m.ClientName.ToLower().Contains(parameters.ClientName.ToLower()));
-            }
+            // ClientName and ClientPhone are encrypted columns ([EncryptColumn]),
+            // so they cannot be filtered at the SQL level. We need to:
+            // 1. Load entities (EF Core decrypts on materialization)
+            // 2. Filter encrypted fields in memory
+            // 3. Paginate the filtered results
+            var needsInMemoryFilter = !string.IsNullOrWhiteSpace(parameters.ClientName)
+                                   || !string.IsNullOrWhiteSpace(parameters.ClientPhone);
 
-            if (!string.IsNullOrWhiteSpace(parameters.ClientPhone))
+            if (needsInMemoryFilter)
             {
-                query = query.Where(m => m.ClientPhone.Contains(parameters.ClientPhone));
+                var allItems = await query
+                    .OrderByDescending(m => m.InstallationDate)
+                    .ToListAsync();
+
+                IEnumerable<Montage> filtered = allItems;
+
+                if (!string.IsNullOrWhiteSpace(parameters.ClientName))
+                {
+                    filtered = filtered.Where(m => m.ClientName.Contains(parameters.ClientName, StringComparison.OrdinalIgnoreCase));
+                }
+
+                if (!string.IsNullOrWhiteSpace(parameters.ClientPhone))
+                {
+                    filtered = filtered.Where(m => m.ClientPhone != null && m.ClientPhone.Contains(parameters.ClientPhone, StringComparison.OrdinalIgnoreCase));
+                }
+
+                var filteredList = filtered.ToList();
+                var totalCount = filteredList.Count;
+                var pagedItems = filteredList
+                    .Skip((parameters.PageNumber - 1) * parameters.PageSize)
+                    .Take(parameters.PageSize)
+                    .Select(m => ToDto(m))
+                    .ToList();
+
+                return new PagedList<MontageDto>(pagedItems, parameters.PageNumber, parameters.PageSize, totalCount);
             }
 
             var dtoQuery = query
@@ -372,14 +399,41 @@ public class MontageService : IMontageService
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(parameters.ClientName))
-            {
-                query = query.Where(m => m.ClientName.ToLower().Contains(parameters.ClientName.ToLower()));
-            }
+            // ClientName and ClientPhone are encrypted columns ([EncryptColumn]),
+            // so they cannot be filtered at the SQL level. We need to:
+            // 1. Load entities (EF Core decrypts on materialization)
+            // 2. Filter encrypted fields in memory
+            // 3. Paginate the filtered results
+            var needsInMemoryFilter = !string.IsNullOrWhiteSpace(parameters.ClientName)
+                                   || !string.IsNullOrWhiteSpace(parameters.ClientPhone);
 
-            if (!string.IsNullOrWhiteSpace(parameters.ClientPhone))
+            if (needsInMemoryFilter)
             {
-                query = query.Where(m => m.ClientPhone.Contains(parameters.ClientPhone));
+                var allItems = await query
+                    .OrderByDescending(m => m.InstallationDate)
+                    .ToListAsync();
+
+                IEnumerable<Montage> filtered = allItems;
+
+                if (!string.IsNullOrWhiteSpace(parameters.ClientName))
+                {
+                    filtered = filtered.Where(m => m.ClientName.Contains(parameters.ClientName, StringComparison.OrdinalIgnoreCase));
+                }
+
+                if (!string.IsNullOrWhiteSpace(parameters.ClientPhone))
+                {
+                    filtered = filtered.Where(m => m.ClientPhone != null && m.ClientPhone.Contains(parameters.ClientPhone, StringComparison.OrdinalIgnoreCase));
+                }
+
+                var filteredList = filtered.ToList();
+                var totalCount = filteredList.Count;
+                var pagedItems = filteredList
+                    .Skip((parameters.PageNumber - 1) * parameters.PageSize)
+                    .Take(parameters.PageSize)
+                    .Select(m => ToDto(m))
+                    .ToList();
+
+                return new PagedList<MontageDto>(pagedItems, parameters.PageNumber, parameters.PageSize, totalCount);
             }
 
             var dtoQuery = query
@@ -551,12 +605,16 @@ public class MontageService : IMontageService
     {
         try
         {
+            // Parse enum before query — guarantees SQL-translatable WHERE clause
+            if (!Enum.TryParse<MontageStatus>(status, ignoreCase: true, out var statusEnum))
+                return PagedList<MontageDto>.Empty();
+
             var query = _context.Montages
                 .AsNoTracking()
                 .Include(m => m.AirConditioner)
                 .Include(m => m.UsedMaterials)
                     .ThenInclude(um => um.InventoryItem)
-                .Where(m => m.Status.ToString().ToLower() == status.ToLower())
+                .Where(m => m.Status == statusEnum)
                 .OrderByDescending(m => m.InstallationDate)
                 .Select(m => new MontageDto
                 {

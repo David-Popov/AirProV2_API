@@ -83,6 +83,7 @@ public class ReportedProblemService : IReportedProblemService
     public async Task<List<ReportedProblemDto>> GetAllAsync()
     {
         var problems = await _context.ReportedProblems
+            .AsNoTracking()
             .Include(p => p.User)
             .OrderByDescending(p => p.CreatedAt)
             .ToListAsync();
@@ -93,6 +94,7 @@ public class ReportedProblemService : IReportedProblemService
     public async Task<ReportedProblemDto?> GetByIdAsync(Guid id)
     {
         var problem = await _context.ReportedProblems
+            .AsNoTracking()
             .Include(p => p.User)
             .FirstOrDefaultAsync(p => p.Id == id);
 

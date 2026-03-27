@@ -38,9 +38,6 @@ export interface InventoryItem {
   location?: string | null;
   notes?: string | null;
   is_active: boolean;
-  is_archived: boolean;
-  archived_at?: string | null;
-  archived_by?: string | null;
   is_low_stock: boolean;
   created_at: string;
   updated_at?: string | null;

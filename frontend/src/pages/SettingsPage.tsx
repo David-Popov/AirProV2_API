@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { 
-  Settings, 
-  User, 
-  Building2, 
-  CreditCard, 
+import {
+  Settings,
+  User,
+  Building2,
+  CreditCard,
   Bell,
   Shield,
   Palette,
@@ -15,7 +15,10 @@ import {
   Sun,
   Pencil,
   Save,
-  X
+  X,
+  AlertTriangle,
+  Trash,
+  Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -32,9 +35,17 @@ import {
 } from '@/components/ui/select'
 import { useAuth } from '@/context'
 import { useTheme } from '@/components/theme-provider'
-import { companyService } from '@/services'
+import { companyService, employeeService } from '@/services'
 import type { Company } from '@/types'
 import { SubscriptionSection } from '@/components/subscription'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 
 export default function SettingsPage() {
   const { user, refreshUser } = useAuth()
@@ -75,6 +86,26 @@ export default function SettingsPage() {
     email: '',
     phone_number: ''
   })
+
+  const [deleteAccountDialogOpen, setDeleteAccountDialogOpen] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false)
+
+  const handleDeleteAccountAndCompany = async () => {
+    setIsDeletingAccount(true)
+    try {
+      await employeeService.deleteAccountAndCompany()
+      toast.success(t('settings.account_deleted', 'Account and company deleted successfully'))
+      // Log out and redirect
+      const { authService } = await import('@/services/auth')
+      authService.logout()
+      window.location.href = '/login'
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('common.unknown_error'))
+    } finally {
+      setIsDeletingAccount(false)
+    }
+  }
 
   useEffect(() => {
     const tab = searchParams.get('tab')
@@ -412,6 +443,7 @@ export default function SettingsPage() {
           
           {/* Company Tab */}
           {activeTab === 'company' && (
+            <div className="space-y-4 sm:space-y-6">
             <Card className="glass-card">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -550,8 +582,81 @@ export default function SettingsPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Danger Zone — only for Managers */}
+            {isManager && company && (
+              <Card className="glass-card border-red-500/30">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg sm:text-xl text-red-500">
+                    <AlertTriangle className="w-5 h-5" />
+                    {t('settings.danger_zone', 'Danger Zone')}
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    {t('settings.danger_zone_desc', 'Irreversible actions that affect your entire account')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-red-500/20 bg-red-500/5">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-foreground">{t('settings.delete_account_title', 'Delete account and company')}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">
+                        {t('settings.delete_account_desc', 'Permanently delete your account, company, all employees, montages, inventory, and associated data. This action cannot be undone.')}
+                      </p>
+                    </div>
+                    <Button
+                      variant="destructive"
+                      className="shrink-0"
+                      onClick={() => { setDeleteConfirmText(''); setDeleteAccountDialogOpen(true) }}
+                    >
+                      <Trash className="w-4 h-4 mr-2" />
+                      {t('settings.delete_account', 'Delete Account')}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Delete Account Confirmation Dialog */}
+            <Dialog open={deleteAccountDialogOpen} onOpenChange={setDeleteAccountDialogOpen}>
+              <DialogContent className="bg-card border-border text-card-foreground sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-red-500">
+                    <AlertTriangle className="w-5 h-5" />
+                    {t('settings.delete_account_confirm_title', 'Are you absolutely sure?')}
+                  </DialogTitle>
+                  <DialogDescription className="text-sm text-muted-foreground pt-2">
+                    {t('settings.delete_account_confirm_desc', 'This will permanently delete your account, the company "{companyName}", all employees, montages, inventory items, and all associated data. This action is irreversible.', { companyName: company?.company_name })}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-3">
+                  <Label className="text-sm text-muted-foreground">
+                    {t('settings.delete_account_type_confirm', 'Type "{companyName}" to confirm:', { companyName: company?.company_name })}
+                  </Label>
+                  <Input
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    placeholder={company?.company_name || ''}
+                    className="bg-background border-input"
+                  />
+                </div>
+                <DialogFooter className="gap-2">
+                  <Button variant="outline" onClick={() => setDeleteAccountDialogOpen(false)} disabled={isDeletingAccount}>
+                    {t('common.cancel', 'Cancel')}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleDeleteAccountAndCompany}
+                    disabled={deleteConfirmText !== company?.company_name || isDeletingAccount}
+                  >
+                    {isDeletingAccount && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    {t('settings.delete_everything', 'Delete Everything')}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            </div>
           )}
-          
+
           {/* Subscription Tab */}
           {activeTab === 'subscription' && (
             <SubscriptionSection />
@@ -611,8 +716,8 @@ export default function SettingsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="en">English</SelectItem>
                       <SelectItem value="bg">Български</SelectItem>
+                      <SelectItem value="en">English</SelectItem>
                     </SelectContent>
                   </Select>
                 </CardContent>

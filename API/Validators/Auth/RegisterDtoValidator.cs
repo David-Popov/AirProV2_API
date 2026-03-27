@@ -28,6 +28,7 @@ public class RegisterDtoValidator : AbstractValidator<RegisterDto>
 
         RuleFor(x => x.FirstName)
             .NotEmpty().WithMessage("First name is required")
+            .MinimumLength(2).WithMessage("First name must be at least 2 characters")
             .MaximumLength(60).WithMessage("First name cannot exceed 60 characters");
 
         RuleFor(x => x.MiddleName)
@@ -36,11 +37,12 @@ public class RegisterDtoValidator : AbstractValidator<RegisterDto>
 
         RuleFor(x => x.LastName)
             .NotEmpty().WithMessage("Last name is required")
+            .MinimumLength(2).WithMessage("Last name must be at least 2 characters")
             .MaximumLength(60).WithMessage("Last name cannot exceed 60 characters");
 
         RuleFor(x => x.PhoneNumber)
-            .MaximumLength(20).When(x => !string.IsNullOrEmpty(x.PhoneNumber))
-            .WithMessage("Phone number cannot exceed 20 characters");
+            .Matches(@"^(\+359|0)\d{8,9}$").When(x => !string.IsNullOrEmpty(x.PhoneNumber))
+            .WithMessage("Invalid Bulgarian phone number format (e.g. +359888123456 or 0888123456)");
 
         RuleFor(x => x.Address)
             .MaximumLength(80).When(x => !string.IsNullOrEmpty(x.Address))
@@ -49,6 +51,7 @@ public class RegisterDtoValidator : AbstractValidator<RegisterDto>
         // Company validation
         RuleFor(x => x.CompanyName)
             .NotEmpty().WithMessage("Company name is required")
+            .MinimumLength(3).WithMessage("Company name must be at least 3 characters")
             .MaximumLength(60).WithMessage("Company name cannot exceed 60 characters");
 
         RuleFor(x => x.CompanyType)
@@ -56,12 +59,12 @@ public class RegisterDtoValidator : AbstractValidator<RegisterDto>
             .Must(BeValidCompanyType).WithMessage("Invalid company type. Valid values are: SoleProprietorship, LLC, LTD, JSC, Partnership, LimitedPartnership, Cooperative, Other");
 
         RuleFor(x => x.Bulstat)
-            .MaximumLength(50).When(x => !string.IsNullOrEmpty(x.Bulstat))
-            .WithMessage("Bulstat cannot exceed 50 characters");
+            .Matches(@"^\d{9}(\d{4})?$").When(x => !string.IsNullOrEmpty(x.Bulstat))
+            .WithMessage("Bulstat must be 9 or 13 digits");
 
         RuleFor(x => x.VatNumber)
-            .MaximumLength(50).When(x => !string.IsNullOrEmpty(x.VatNumber))
-            .WithMessage("VAT number cannot exceed 50 characters");
+            .Matches(@"^BG\d{9,10}$").When(x => !string.IsNullOrEmpty(x.VatNumber))
+            .WithMessage("VAT number must start with BG followed by 9-10 digits");
 
         RuleFor(x => x.CompanyAddress)
             .MaximumLength(80).When(x => !string.IsNullOrEmpty(x.CompanyAddress))
@@ -72,12 +75,12 @@ public class RegisterDtoValidator : AbstractValidator<RegisterDto>
             .WithMessage("Company city cannot exceed 30 characters");
 
         RuleFor(x => x.CompanyPostalCode)
-            .MaximumLength(15).When(x => !string.IsNullOrEmpty(x.CompanyPostalCode))
-            .WithMessage("Company postal code cannot exceed 15 characters");
+            .Matches(@"^\d{4}$").When(x => !string.IsNullOrEmpty(x.CompanyPostalCode))
+            .WithMessage("Postal code must be exactly 4 digits");
 
         RuleFor(x => x.CompanyPhone)
-            .MaximumLength(20).When(x => !string.IsNullOrEmpty(x.CompanyPhone))
-            .WithMessage("Company phone cannot exceed 20 characters");
+            .Matches(@"^(\+359|0)\d{8,9}$").When(x => !string.IsNullOrEmpty(x.CompanyPhone))
+            .WithMessage("Invalid Bulgarian phone number format (e.g. +359888123456 or 0888123456)");
 
         RuleFor(x => x.CompanyEmail)
             .EmailAddress().When(x => !string.IsNullOrEmpty(x.CompanyEmail))

@@ -186,8 +186,6 @@ public class InventoryService : IInventoryService
                     IsLowStock = i.MinQuantity.HasValue && i.Quantity <= i.MinQuantity.Value,
                     CreatedAt = i.CreatedAt,
                     UpdatedAt = i.UpdatedAt,
-                    IsArchived = i.IsArchived,
-                    ArchivedAt = i.ArchivedAt
                 });
 
             return await PagedList<InventoryItemDto>.CreateAsync(query, pageParameters);
@@ -225,8 +223,6 @@ public class InventoryService : IInventoryService
                     IsLowStock = i.MinQuantity.HasValue && i.Quantity <= i.MinQuantity.Value,
                     CreatedAt = i.CreatedAt,
                     UpdatedAt = i.UpdatedAt,
-                    IsArchived = i.IsArchived,
-                    ArchivedAt = i.ArchivedAt
                 });
 
             return await PagedList<InventoryItemDto>.CreateAsync(query, pageParameters);
@@ -267,8 +263,6 @@ public class InventoryService : IInventoryService
                     IsLowStock = true,
                     CreatedAt = i.CreatedAt,
                     UpdatedAt = i.UpdatedAt,
-                    IsArchived = i.IsArchived,
-                    ArchivedAt = i.ArchivedAt
                 });
 
             return await PagedList<InventoryItemDto>.CreateAsync(query, pageParameters);
@@ -458,90 +452,23 @@ public class InventoryService : IInventoryService
         }
     }
 
-    public async Task ArchiveAsync(Guid itemId, string? userId)
-    {
-        try
-        {
-            var item = await _repository.GetByIdAsync(itemId);
-            if (item == null)
-            {
-                throw new InvalidOperationException("Inventory item not found");
-            }
-
-            item.IsArchived = true;
-            item.ArchivedAt = DateTime.UtcNow;
-            item.ArchivedBy = userId;
-            item.IsActive = false;
-
-            await _repository.UpdateAsync(item);
-
-            // Log the archiving
-            await _auditService.LogActionAsync(new InventoryAuditLog
-            {
-                CompanyId = item.CompanyId,
-                InventoryItemId = item.Id,
-                Action = "Archived",
-                UserId = userId,
-                Reason = "Item archived"
-            });
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, e.Message);
-            throw;
-        }
-    }
-
-    public async Task RestoreAsync(Guid itemId, string? userId)
-    {
-        try
-        {
-            var item = await _repository.GetByIdAsync(itemId);
-            if (item == null)
-            {
-                throw new InvalidOperationException("Inventory item not found");
-            }
-
-            item.IsArchived = false;
-            item.ArchivedAt = null;
-            item.ArchivedBy = null;
-            item.IsActive = true;
-
-            await _repository.UpdateAsync(item);
-
-            // Log the restoration
-            await _auditService.LogActionAsync(new InventoryAuditLog
-            {
-                CompanyId = item.CompanyId,
-                InventoryItemId = item.Id,
-                Action = "Restored",
-                UserId = userId,
-                Reason = "Item restored from archive"
-            });
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, e.Message);
-            throw;
-        }
-    }
-
     public async Task<bool> CanDeleteAsync(Guid itemId)
     {
         try
         {
             var item = await _context.InventoryItems
                 .AsNoTracking()
-                .Include(i => i.MontageUsages)
-                .FirstOrDefaultAsync(i => i.Id == itemId);
+                .Where(i => i.Id == itemId)
+                .Select(i => new { i.CreatedAt })
+                .FirstOrDefaultAsync();
 
             if (item == null)
             {
                 return false;
             }
 
-            // Check 1: Has it been used in any montages?
-            if (item.MontageUsages.Any())
+            // Check 1: Has it been used in any montages? (EXISTS — no collection load)
+            if (await _context.MontageInventoryItems.AnyAsync(m => m.InventoryItemId == itemId))
             {
                 return false;
             }
@@ -580,9 +507,7 @@ public class InventoryService : IInventoryService
             IsActive = item.IsActive,
             IsLowStock = item.MinQuantity.HasValue && item.Quantity <= item.MinQuantity.Value,
             CreatedAt = item.CreatedAt,
-            UpdatedAt = item.UpdatedAt,
-            IsArchived = item.IsArchived,
-            ArchivedAt = item.ArchivedAt
+            UpdatedAt = item.UpdatedAt
         };
     }
 }

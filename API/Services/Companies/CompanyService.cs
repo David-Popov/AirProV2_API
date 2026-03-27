@@ -17,20 +17,20 @@ public class CompanyService : ICompanyService
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ILogger<CompanyService> _logger;
-    private readonly IEmailService _emailService;
+    private readonly IBackgroundEmailQueue _backgroundEmailQueue;
 
     public CompanyService(
         ICompanyRepository repository,
         ApplicationDbContext context,
         UserManager<ApplicationUser> userManager,
         ILogger<CompanyService> logger,
-        IEmailService emailService)
+        IBackgroundEmailQueue backgroundEmailQueue)
     {
         _repository = repository;
         _context = context;
         _userManager = userManager;
         _logger = logger;
-        _emailService = emailService;
+        _backgroundEmailQueue = backgroundEmailQueue;
     }
 
     public async Task<CompanyDto> AddCompanyAsync(CreateCompanyDto dto)
@@ -136,17 +136,16 @@ public class CompanyService : ICompanyService
 
                 await _repository.DeleteCompanyAsync(company);
 
-                // Send deletion confirmation email
+                // Queue deletion confirmation email (non-blocking)
                 if (!string.IsNullOrEmpty(companyEmail))
                 {
-                    try
+                    var delEmail = companyEmail;
+                    var delName = companyName;
+                    _backgroundEmailQueue.QueueEmail(async sp =>
                     {
-                        await _emailService.SendAccountDeletionConfirmationEmailAsync(companyEmail, companyName);
-                    }
-                    catch (Exception emailEx)
-                    {
-                        _logger.LogWarning(emailEx, "Failed to send deletion confirmation email for company {CompanyName}", companyName);
-                    }
+                        var emailService = sp.GetRequiredService<IEmailService>();
+                        await emailService.SendAccountDeletionConfirmationEmailAsync(delEmail, delName);
+                    });
                 }
             }
         }
@@ -379,24 +378,18 @@ public class CompanyService : ICompanyService
     {
         try
         {
-            var companies = await _context.Companies
-                .Where(c => c.SubscriptionPlan == SubscriptionPlan.FreeTrial && c.IsSubscriptionActive == true)
-                .ToListAsync();
-
             var sixMonthsAgo = DateTime.UtcNow.AddMonths(-6);
 
-            foreach (var company in companies)
-            {
-                if (company.CreatedAt <= sixMonthsAgo)
-                {
-                    company.IsSubscriptionActive = false;
-                    _context.Companies.Update(company);
-                    
-                    _logger.LogInformation($"Expired trial subscription for company {company.Id} - {company.CompanyName}");
-                }
-            }
+            var updatedCount = await _context.Companies
+                .Where(c => c.SubscriptionPlan == SubscriptionPlan.FreeTrial
+                         && c.IsSubscriptionActive == true
+                         && c.CreatedAt <= sixMonthsAgo)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(c => c.IsSubscriptionActive, false)
+                    .SetProperty(c => c.UpdatedAt, DateTime.UtcNow));
 
-            await _context.SaveChangesAsync();
+            if (updatedCount > 0)
+                _logger.LogInformation("Expired {Count} trial subscription(s)", updatedCount);
         }
         catch (Exception e)
         {

@@ -8,7 +8,7 @@ public static class DatabaseExtensions
 {
     public static IServiceCollection AddDatabaseServices(this IServiceCollection services, IConfiguration config)
     {
-        services.AddSingleton<SoftDeleteInterceptor>();
+        services.AddScoped<SoftDeleteInterceptor>();
         
         services.AddDbContext<ApplicationDbContext>((serviceProvider, opt) => 
             opt.UseNpgsql(config.GetConnectionString("DefaultConnection"))

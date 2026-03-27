@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -49,7 +49,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { PageHeader, SearchBar, Pagination, EmptyState, ConfirmDialog } from '@/components/shared'
+import { PageHeader, SearchBar, Pagination, EmptyState, ConfirmDialog, FieldMessage } from '@/components/shared'
+import { useFieldValidation } from '@/hooks'
+import { required, minLength } from '@/lib/validation-rules'
 import { SkeletonTableRows, SkeletonMobileCards } from '@/components/skeletons'
 import { useAuth } from '@/context'
 import { inventoryService } from '@/services'
@@ -123,9 +125,27 @@ export default function InventoryPage() {
   const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
-  const [itemToArchive, setItemToArchive] = useState<InventoryItem | null>(null)
-  const [isArchiving, setIsArchiving] = useState(false)
+  // Inventory form validation rules
+  const inventoryValidationRules = useMemo(() => ({
+    name: [
+      required('validation.inventory_name_required'),
+      minLength(3, 'validation.inventory_name_min_length'),
+    ],
+  }), [])
+
+  const inventoryValidation = useFieldValidation(inventoryValidationRules)
+
+  const handleInventoryFieldChange = useCallback((fieldName: string, value: string) => {
+    setCurrentItem(prev => ({ ...prev, [fieldName]: value }))
+    const fieldState = inventoryValidation.getFieldProps(fieldName)
+    if (fieldState.status !== 'idle') {
+      inventoryValidation.validateField(fieldName, value)
+    }
+  }, [inventoryValidation])
+
+  const handleInventoryFieldBlur = useCallback((fieldName: string, value: string) => {
+    inventoryValidation.validateField(fieldName, value)
+  }, [inventoryValidation])
 
   const PAGE_SIZE = 10
 
@@ -164,6 +184,7 @@ export default function InventoryPage() {
   const handleCreate = () => {
     setIsEditing(false)
     setCurrentItem({ name: '', quantity: 0, min_quantity: 5, unit_of_measure: 'Pieces', sku: '', location: '', unit_price: 0 })
+    inventoryValidation.resetAll()
     setIsDialogOpen(true)
   }
 
@@ -179,17 +200,25 @@ export default function InventoryPage() {
       location: item.location || '',
       unit_price: item.unit_price || 0
     })
+    inventoryValidation.resetAll()
     setIsDialogOpen(true)
   }
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    const validationErrors: string[] = []
-    if (!currentItem.name?.trim()) validationErrors.push(t('validation.name_required', 'Name is required'))
-    if (currentItem.quantity === undefined || currentItem.quantity < 0) validationErrors.push(t('validation.quantity_invalid', 'Quantity must be 0 or greater'))
-    if (currentItem.min_quantity != null && currentItem.min_quantity < 0) validationErrors.push(t('validation.min_quantity_invalid', 'Min quantity must be 0 or greater'))
-    if (currentItem.unit_price != null && currentItem.unit_price < 0) validationErrors.push(t('validation.price_invalid', 'Price must be 0 or greater'))
-    if (validationErrors.length > 0) { toast.error(validationErrors.join('. ')); return }
+
+    const isValid = inventoryValidation.validateAll(currentItem as unknown as Record<string, unknown>)
+
+    // Additional checks not covered by the hook
+    const extraErrors: string[] = []
+    if (currentItem.quantity === undefined || currentItem.quantity < 0) extraErrors.push(t('validation.quantity_invalid', 'Quantity must be 0 or greater'))
+    if (currentItem.min_quantity != null && currentItem.min_quantity < 0) extraErrors.push(t('validation.min_quantity_invalid', 'Min quantity must be 0 or greater'))
+    if (currentItem.unit_price != null && currentItem.unit_price < 0) extraErrors.push(t('validation.price_invalid', 'Price must be 0 or greater'))
+
+    if (!isValid || extraErrors.length > 0) {
+      if (extraErrors.length > 0) toast.error(extraErrors.join('. '))
+      return
+    }
 
     setIsSaving(true)
     try {
@@ -247,21 +276,6 @@ export default function InventoryPage() {
       toast.error(error instanceof Error ? error.message : t('common.unknown_error'))
     } finally {
       setIsDeleting(false); setDeleteDialogOpen(false); setItemToDelete(null)
-    }
-  }
-
-  const handleArchiveClick = (item: InventoryItem) => { setItemToArchive(item); setArchiveDialogOpen(true) }
-  const handleArchiveConfirm = async () => {
-    if (!itemToArchive) return
-    setIsArchiving(true)
-    try {
-      await inventoryService.archive(itemToArchive.id)
-      toast.success(t('inventory.item_archived'))
-      loadItems()
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('common.unknown_error'))
-    } finally {
-      setIsArchiving(false); setArchiveDialogOpen(false); setItemToArchive(null)
     }
   }
 
@@ -439,10 +453,6 @@ export default function InventoryPage() {
                               <span className="text-green-500">Activate</span>
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuItem onClick={() => handleArchiveClick(item)}>
-                            <Archive className="w-4 h-4 mr-2 text-orange-500" />
-                            <span className="text-orange-500">{t('common.archive', 'Archive')}</span>
-                          </DropdownMenuItem>
                           {user?.roles.includes('Manager') && (
                             <>
                               <DropdownMenuSeparator />
@@ -524,10 +534,17 @@ export default function InventoryPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-44">
-                        <DropdownMenuItem onClick={() => handleArchiveClick(item)}>
-                          <Archive className="w-4 h-4 mr-2 text-orange-500" />
-                          <span className="text-orange-500">{t('common.archive', 'Archive')}</span>
-                        </DropdownMenuItem>
+                        {item.is_active ? (
+                          <DropdownMenuItem onClick={() => handleStatusChange(item, false)}>
+                            <Archive className="w-4 h-4 mr-2 text-orange-500" />
+                            <span className="text-orange-500">Deactivate</span>
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem onClick={() => handleStatusChange(item, true)}>
+                            <Archive className="w-4 h-4 mr-2 text-green-500" />
+                            <span className="text-green-500">Activate</span>
+                          </DropdownMenuItem>
+                        )}
                         {user?.roles.includes('Manager') && (
                           <>
                             <DropdownMenuSeparator />
@@ -563,14 +580,22 @@ export default function InventoryPage() {
             <DialogTitle>{isEditing ? t('inventory.edit_item') : t('inventory.new_item')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSave} className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">{t('inventory.name')}</Label>
-              <Input id="name" value={currentItem.name || ''} onChange={(e) => setCurrentItem({ ...currentItem, name: e.target.value })} className="bg-background border-input" required />
+            <div className="grid gap-1.5">
+              <Label htmlFor="name">{t('inventory.name')} *</Label>
+              <Input
+                id="name"
+                value={currentItem.name || ''}
+                onChange={(e) => handleInventoryFieldChange('name', e.target.value)}
+                onBlur={(e) => handleInventoryFieldBlur('name', e.target.value)}
+                aria-invalid={inventoryValidation.getFieldProps('name').status === 'invalid'}
+                className="bg-background border-input"
+              />
+              <FieldMessage {...inventoryValidation.getFieldProps('name')} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="quantity">{t('inventory.quantity')}</Label>
-                <Input id="quantity" type="number" value={currentItem.quantity || 0} onChange={(e) => setCurrentItem({ ...currentItem, quantity: Number(e.target.value) })} className="bg-background border-input" required />
+                <Input id="quantity" type="number" min="0" value={currentItem.quantity || ''} onFocus={() => { if (currentItem.quantity === 0) setCurrentItem({ ...currentItem, quantity: '' as unknown as number }) }} onChange={(e) => setCurrentItem({ ...currentItem, quantity: e.target.value === '' ? 0 : Number(e.target.value) })} className="bg-background border-input" placeholder="0" required />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="unit">{t('inventory.unit')}</Label>
@@ -589,7 +614,7 @@ export default function InventoryPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="min_quantity">{t('inventory.min_quantity')}</Label>
-                <Input id="min_quantity" type="number" value={currentItem.min_quantity || 0} onChange={(e) => setCurrentItem({ ...currentItem, min_quantity: Number(e.target.value) })} className="bg-background border-input" />
+                <Input id="min_quantity" type="number" min="0" value={currentItem.min_quantity || ''} onFocus={() => { if (currentItem.min_quantity === 0) setCurrentItem({ ...currentItem, min_quantity: '' as unknown as number }) }} onChange={(e) => setCurrentItem({ ...currentItem, min_quantity: e.target.value === '' ? 0 : Number(e.target.value) })} className="bg-background border-input" placeholder="0" />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="sku">{t('inventory.sku')}</Label>
@@ -604,7 +629,7 @@ export default function InventoryPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="price">{t('common.unit_price')}</Label>
-                <Input id="price" type="number" value={currentItem.unit_price || 0} onChange={(e) => setCurrentItem({ ...currentItem, unit_price: Number(e.target.value) })} className="bg-background border-input" />
+                <Input id="price" type="number" min="0" value={currentItem.unit_price || ''} onFocus={() => { if (currentItem.unit_price === 0) setCurrentItem({ ...currentItem, unit_price: '' as unknown as number }) }} onChange={(e) => setCurrentItem({ ...currentItem, unit_price: e.target.value === '' ? 0 : Number(e.target.value) })} className="bg-background border-input" placeholder="0" />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="location">{t('common.location')}</Label>
@@ -634,19 +659,6 @@ export default function InventoryPage() {
         icon={Trash}
       />
 
-      <ConfirmDialog
-        open={archiveDialogOpen}
-        onOpenChange={setArchiveDialogOpen}
-        onConfirm={handleArchiveConfirm}
-        title={t('inventory.archive_item', 'Archive Item')}
-        description={t('inventory.archive_confirmation', 'Are you sure you want to archive this item? It will be hidden from the main list but preserved in history.')}
-        itemName={itemToArchive?.name}
-        confirmLabel={t('common.archive', 'Archive')}
-        cancelLabel={t('common.cancel', 'Cancel')}
-        isLoading={isArchiving}
-        variant="warning"
-        icon={Archive}
-      />
     </div>
   )
 }

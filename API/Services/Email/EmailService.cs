@@ -115,8 +115,15 @@ public class EmailService : IEmailService
     private async Task SendEmailAsync(string toEmail, string toName, string subject, string htmlBody)
     {
         var message = new MimeMessage();
+        
+        // 1. Set the sender (Matches your Mailtrap verified domain)
         message.From.Add(new MailboxAddress(_emailSettings.SenderName, _emailSettings.SenderEmail));
+        
+        // 2. Set the recipient
         message.To.Add(new MailboxAddress(toName, toEmail));
+        
+        message.ReplyTo.Add(new MailboxAddress(_emailSettings.SenderName, _emailSettings.SupportEmail));
+        
         message.Subject = subject;
 
         var bodyBuilder = new BodyBuilder
@@ -126,25 +133,35 @@ public class EmailService : IEmailService
         message.Body = bodyBuilder.ToMessageBody();
 
         using var client = new SmtpClient();
+        
+        try
+        {
+            var secureSocketOptions = _emailSettings.UseSsl 
+                ? SecureSocketOptions.StartTls 
+                : SecureSocketOptions.None;
 
-        var secureSocketOptions = _emailSettings.UseSsl
-            ? SecureSocketOptions.StartTls
-            : SecureSocketOptions.None;
+            await client.ConnectAsync(
+                _emailSettings.SmtpHost, 
+                _emailSettings.SmtpPort, 
+                secureSocketOptions);
 
-        await client.ConnectAsync(
-            _emailSettings.SmtpHost,
-            _emailSettings.SmtpPort,
-            secureSocketOptions);
+            await client.AuthenticateAsync(
+                _emailSettings.SmtpUsername, 
+                _emailSettings.SmtpPassword);
 
-        await client.AuthenticateAsync(
-            _emailSettings.SmtpUsername,
-            _emailSettings.SmtpPassword);
-
-        await client.SendAsync(message);
-        await client.DisconnectAsync(true);
-
-        _logger.LogInformation("Email sent successfully to {Email} with subject: {Subject}",
-            toEmail, subject);
+            await client.SendAsync(message);
+            
+            _logger.LogInformation("Email sent successfully to {Email} via Mailtrap", toEmail);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send email to {Email} via Mailtrap", toEmail);
+            throw; // Re-throw so your calling method knows it failed
+        }
+        finally
+        {
+            await client.DisconnectAsync(true);
+        }
     }
 
     private string WrapInBaseTemplate(string title, string content)

@@ -1,9 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>97062562-722d-4c3e-b7fa-3c1a906ca5ab</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,7 +22,7 @@
     <PackageReference Include="Minio" Version="6.0.3" />
     <PackageReference Include="Stripe.net" Version="47.4.0" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.11.0" />
-    <PackageReference Include="MailKit" Version="4.9.0" />
+    <PackageReference Include="MailKit" Version="4.15.1" />
   </ItemGroup>
 
   <ItemGroup>

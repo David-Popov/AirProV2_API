@@ -67,5 +67,9 @@ export const employeeService = {
    */
   async activateTrial(): Promise<void> {
     return apiClient.post('/manager/activate-trial');
+  },
+
+  async deleteAccountAndCompany(): Promise<void> {
+    return apiClient.delete('/manager/account');
   }
 };

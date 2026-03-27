@@ -23,20 +23,20 @@ public class ManagerController : ControllerBase
     private readonly ApplicationDbContext _context;
     private readonly ILogger<ManagerController> _logger;
     private readonly IValidator<CreateEmployeeDto> _createEmployeeValidator;
-    private readonly IEmailService _emailService;
+    private readonly IBackgroundEmailQueue _backgroundEmailQueue;
 
     public ManagerController(
         IAuthService authService,
         ApplicationDbContext context,
         ILogger<ManagerController> logger,
         IValidator<CreateEmployeeDto> createEmployeeValidator,
-        IEmailService emailService)
+        IBackgroundEmailQueue backgroundEmailQueue)
     {
         _authService = authService;
         _context = context;
         _logger = logger;
         _createEmployeeValidator = createEmployeeValidator;
-        _emailService = emailService;
+        _backgroundEmailQueue = backgroundEmailQueue;
     }
 
     /// <summary>
@@ -395,15 +395,14 @@ public class ManagerController : ControllerBase
 
             await _context.SaveChangesAsync();
 
-            // Send trial activation email
-            try
+            // Queue trial activation email (non-blocking)
+            var trialCompany = company;
+            var trialEndDate = company.TrialEndDate!.Value;
+            _backgroundEmailQueue.QueueEmail(async sp =>
             {
-                await _emailService.SendTrialActivatedEmailAsync(company, company.TrialEndDate!.Value);
-            }
-            catch (Exception emailEx)
-            {
-                _logger.LogWarning(emailEx, "Failed to send trial activation email for company {CompanyId}", company.Id);
-            }
+                var emailService = sp.GetRequiredService<IEmailService>();
+                await emailService.SendTrialActivatedEmailAsync(trialCompany, trialEndDate);
+            });
 
             return Ok(new
             {
@@ -461,6 +460,123 @@ public class ManagerController : ControllerBase
         {
             _logger.LogError(ex, ex.Message);
             return StatusCode(500, new { message = "An error occurred while retrieving employee limits" });
+        }
+    }
+
+    /// <summary>
+    /// Delete the manager's own account, company, and all associated data permanently
+    /// </summary>
+    /// <remarks>
+    /// This is a destructive, irreversible operation. It deletes:
+    /// - All montages (and their photos, inventory usage records)
+    /// - All inventory items and audit logs
+    /// - All employee accounts
+    /// - The manager's own account
+    /// - The company itself
+    /// Only the company Manager can perform this action.
+    /// </remarks>
+    [HttpDelete("account")]
+    [Authorize(Roles = "Manager")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> DeleteAccountAndCompany()
+    {
+        try
+        {
+            var companyId = GetCurrentUserCompanyId();
+            if (companyId == null)
+            {
+                return BadRequest(new { message = "User is not associated with a company" });
+            }
+
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return BadRequest(new { message = "Unable to identify current user" });
+            }
+
+            var company = await _context.Companies.FindAsync(companyId.Value);
+            if (company == null)
+            {
+                return NotFound(new { message = "Company not found" });
+            }
+
+            var companyEmail = company.Email;
+            var companyName = company.CompanyName;
+
+            // Delete all montage photos (cascade from montages won't cover MinIO cleanup, but DB records will be removed)
+            var montageIds = await _context.Montages
+                .Where(m => m.CompanyId == companyId.Value)
+                .Select(m => m.Id)
+                .ToListAsync();
+
+            if (montageIds.Count > 0)
+            {
+                // Delete montage inventory items
+                await _context.MontageInventoryItems
+                    .Where(mi => montageIds.Contains(mi.MontageId))
+                    .ExecuteDeleteAsync();
+
+                // Delete montage photos
+                await _context.MontagePhotos
+                    .Where(mp => montageIds.Contains(mp.MontageId))
+                    .ExecuteDeleteAsync();
+
+                // Delete montages
+                await _context.Montages
+                    .Where(m => m.CompanyId == companyId.Value)
+                    .ExecuteDeleteAsync();
+            }
+
+            // Delete reported problems for all company users
+            var userIds = await _context.Users
+                .Where(u => u.CompanyId == companyId.Value)
+                .Select(u => u.Id)
+                .ToListAsync();
+
+            if (userIds.Count > 0)
+            {
+                await _context.ReportedProblems
+                    .Where(rp => userIds.Contains(rp.UserId))
+                    .ExecuteDeleteAsync();
+
+                // Delete refresh tokens
+                await _context.RefreshTokens
+                    .Where(rt => userIds.Contains(rt.UserId))
+                    .ExecuteDeleteAsync();
+
+                // Delete user roles
+                await _context.UserRoles
+                    .Where(ur => userIds.Contains(ur.UserId))
+                    .ExecuteDeleteAsync();
+
+                // Delete users (hard delete)
+                await _context.Users
+                    .Where(u => u.CompanyId == companyId.Value)
+                    .ExecuteDeleteAsync();
+            }
+
+            // Delete company (cascades to inventory items and audit logs)
+            _context.Companies.Remove(company);
+            await _context.SaveChangesAsync();
+
+            // Queue deletion confirmation email
+            if (!string.IsNullOrEmpty(companyEmail))
+            {
+                _backgroundEmailQueue.QueueEmail(async sp =>
+                {
+                    var emailService = sp.GetRequiredService<IEmailService>();
+                    await emailService.SendAccountDeletionConfirmationEmailAsync(companyEmail, companyName);
+                });
+            }
+
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, new { message = "An error occurred while deleting the account and company" });
         }
     }
 

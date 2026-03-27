@@ -51,6 +51,8 @@ services:
       EmailSettings__SmtpUsername: ${SMTP_USERNAME}
       EmailSettings__SmtpPassword: ${SMTP_PASSWORD}
       EmailSettings__SenderEmail: ${SMTP_SENDER_EMAIL}
+      EmailSettings__SenderName: ${SMTP_SENDER_NAME:-AirPro Support}
+      EmailSettings__SupportEmail: ${SMTP_SUPPORT_EMAIL:-support@airprobg.com}
       EmailSettings__WebsiteUrl: ${WEBSITE_URL}
     depends_on:
       - postgres

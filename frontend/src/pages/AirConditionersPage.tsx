@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -34,6 +34,22 @@ import {
 import { useAirConditioners, useCreateAirConditioner, useUpdateAirConditioner, useDeleteAirConditioner } from '@/hooks'
 import { useAuth } from '@/context'
 import type { AirConditioner, CreateAirConditionerRequest } from '@/types'
+
+function AcImage({ url, alt, size = 'sm' }: { url?: string | null; alt: string; size?: 'sm' | 'lg' }) {
+  const [failed, setFailed] = useState(false)
+  const handleError = useCallback(() => setFailed(true), [])
+
+  if (!url || failed) {
+    return (
+      <div className="flex flex-col items-center text-muted-foreground/50">
+        <Snowflake className={size === 'lg' ? 'w-24 h-24 mb-4 opacity-50' : 'w-12 h-12'} />
+        {size === 'lg' && <span className="text-sm">No Image Available</span>}
+      </div>
+    )
+  }
+
+  return <img src={url} alt={alt} className="w-full h-full object-cover" onError={handleError} />
+}
 
 export default function AirConditionersPage() {
   const { t } = useTranslation()
@@ -309,19 +325,21 @@ export default function AirConditionersPage() {
             <div className="space-y-2">
               <Label>{t('air_conditioners.price_range')}</Label>
               <div className="flex items-center gap-2">
-                  <Input 
+                  <Input
                     type="number"
                     placeholder="Min"
-                    value={tempFilters.minPrice}
-                    onChange={(e) => setTempFilters({...tempFilters, minPrice: Number(e.target.value)})}
+                    min="0"
+                    value={tempFilters.minPrice || ''}
+                    onChange={(e) => setTempFilters({...tempFilters, minPrice: e.target.value === '' ? 0 : Number(e.target.value)})}
                     className="bg-background border-input"
                   />
                   <span className="text-muted-foreground">-</span>
-                  <Input 
+                  <Input
                     type="number"
                     placeholder="Max"
-                    value={tempFilters.maxPrice}
-                    onChange={(e) => setTempFilters({...tempFilters, maxPrice: Number(e.target.value)})}
+                    min="0"
+                    value={tempFilters.maxPrice || ''}
+                    onChange={(e) => setTempFilters({...tempFilters, maxPrice: e.target.value === '' ? 0 : Number(e.target.value)})}
                     className="bg-background border-input"
                   />
               </div>
@@ -331,21 +349,23 @@ export default function AirConditionersPage() {
             <div className="space-y-2">
               <Label>{t('air_conditioners.power_range')} (kW)</Label>
                <div className="flex items-center gap-2">
-                  <Input 
+                  <Input
                     type="number"
                     placeholder="Min"
                     step="0.1"
-                    value={tempFilters.minKilowatts}
-                    onChange={(e) => setTempFilters({...tempFilters, minKilowatts: Number(e.target.value)})}
+                    min="0"
+                    value={tempFilters.minKilowatts || ''}
+                    onChange={(e) => setTempFilters({...tempFilters, minKilowatts: e.target.value === '' ? 0 : Number(e.target.value)})}
                     className="bg-background border-input"
                   />
                   <span className="text-muted-foreground">-</span>
-                  <Input 
+                  <Input
                     type="number"
                     placeholder="Max"
                     step="0.1"
-                    value={tempFilters.maxKilowatts}
-                    onChange={(e) => setTempFilters({...tempFilters, maxKilowatts: Number(e.target.value)})}
+                    min="0"
+                    value={tempFilters.maxKilowatts || ''}
+                    onChange={(e) => setTempFilters({...tempFilters, maxKilowatts: e.target.value === '' ? 0 : Number(e.target.value)})}
                     className="bg-background border-input"
                   />
               </div>
@@ -377,11 +397,7 @@ export default function AirConditionersPage() {
             >
               {/* Image Placeholder */}
               <div className="aspect-[4/3] bg-muted/30 relative flex items-center justify-center">
-                 {item.image_url ? (
-                   <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
-                 ) : (
-                   <Snowflake className="w-12 h-12 text-muted-foreground/50" />
-                 )}
+                 <AcImage url={item.image_url} alt={item.name} />
                  
                  {/* Actions Overlay - Admin Only */}
                  {isAdmin && (
@@ -421,7 +437,7 @@ export default function AirConditionersPage() {
                     {item.kilowatts || '-'} kW
                   </div>
                   <span className="text-green-500 font-bold">
-                    ${item.price}
+                    €{item.price}
                   </span>
                 </div>
               </CardContent>
@@ -491,9 +507,12 @@ export default function AirConditionersPage() {
                       id="kilowatts"
                       type="number"
                       step="0.1"
-                      value={currentItem.kilowatts || 0}
-                      onChange={(e) => setCurrentItem({ ...currentItem, kilowatts: Number(e.target.value) })}
+                      min="0"
+                      value={currentItem.kilowatts || ''}
+                      onFocus={() => { if (currentItem.kilowatts === 0) setCurrentItem({ ...currentItem, kilowatts: '' as unknown as number }) }}
+                      onChange={(e) => setCurrentItem({ ...currentItem, kilowatts: e.target.value === '' ? 0 : Number(e.target.value) })}
                       className="bg-background border-input"
+                      placeholder="0"
                     />
                   </div>
                   <div className="grid gap-2">
@@ -501,9 +520,12 @@ export default function AirConditionersPage() {
                     <Input
                       id="price"
                       type="number"
-                      value={currentItem.price || 0}
-                      onChange={(e) => setCurrentItem({ ...currentItem, price: Number(e.target.value) })}
+                      min="0"
+                      value={currentItem.price || ''}
+                      onFocus={() => { if (currentItem.price === 0) setCurrentItem({ ...currentItem, price: '' as unknown as number }) }}
+                      onChange={(e) => setCurrentItem({ ...currentItem, price: e.target.value === '' ? 0 : Number(e.target.value) })}
                       className="bg-background border-input"
+                      placeholder="0"
                     />
                   </div>
                 </div>
