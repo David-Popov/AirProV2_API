@@ -8,8 +8,12 @@ import {
   Shield,
   BarChart3,
   CheckCircle2,
-  Bell
+  Bell,
+  Check,
+  X,
+  Sparkles
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ModeToggle } from '@/components/mode-toggle'
@@ -17,6 +21,7 @@ import { useAuth } from '@/context'
 
 export default function HomePage() {
   const { isAuthenticated, isLoading } = useAuth()
+  const { t } = useTranslation()
 
   if (!isLoading && isAuthenticated) {
     return <Navigate to="/dashboard" replace />
@@ -219,6 +224,100 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── Pricing ── */}
+      <section id="pricing" className="container mx-auto px-4 sm:px-6 py-20 lg:py-28 border-t border-border/50">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4 tracking-tight">
+            {t('landing.pricing_title')}
+          </h2>
+          <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+            {t('landing.pricing_subtitle')}
+          </p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          {/* Free Plan */}
+          <div className="bg-card border border-border rounded-2xl p-7 flex flex-col">
+            <h3 className="text-xl font-bold text-foreground mb-1">{t('landing.plan_free')}</h3>
+            <p className="text-sm text-muted-foreground mb-6">{t('landing.plan_free_desc')}</p>
+            <div className="mb-6">
+              <span className="text-4xl font-bold text-foreground">€0</span>
+              <span className="text-muted-foreground ml-1">/ {t('landing.month')}</span>
+            </div>
+            <ul className="space-y-3 mb-8 flex-1">
+              <PricingFeature included>{t('landing.feature_2_employees')}</PricingFeature>
+              <PricingFeature included>{t('landing.feature_unlimited_montages')}</PricingFeature>
+              <PricingFeature included>{t('landing.feature_inventory')}</PricingFeature>
+              <PricingFeature included>{t('landing.feature_ac_database')}</PricingFeature>
+              <PricingFeature>{t('landing.feature_unlimited_employees')}</PricingFeature>
+              <PricingFeature>{t('landing.feature_priority_support')}</PricingFeature>
+            </ul>
+            <Link to="/register">
+              <Button variant="outline" className="w-full h-11 rounded-xl">
+                {t('landing.get_started_free')}
+              </Button>
+            </Link>
+          </div>
+
+          {/* Free Trial */}
+          <div className="bg-card border-2 border-primary rounded-2xl p-7 flex flex-col relative">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+              <Badge className="bg-primary text-primary-foreground px-3 py-0.5 text-xs font-semibold shadow-md shadow-primary/25">
+                <Sparkles className="w-3 h-3 mr-1" />
+                {t('landing.recommended')}
+              </Badge>
+            </div>
+            <h3 className="text-xl font-bold text-foreground mb-1">{t('landing.plan_trial')}</h3>
+            <p className="text-sm text-muted-foreground mb-6">{t('landing.plan_trial_desc')}</p>
+            <div className="mb-6">
+              <span className="text-4xl font-bold text-foreground">€0</span>
+              <span className="text-muted-foreground ml-1">/ {t('landing.six_months')}</span>
+            </div>
+            <ul className="space-y-3 mb-8 flex-1">
+              <PricingFeature included>{t('landing.feature_unlimited_employees')}</PricingFeature>
+              <PricingFeature included>{t('landing.feature_unlimited_montages')}</PricingFeature>
+              <PricingFeature included>{t('landing.feature_inventory')}</PricingFeature>
+              <PricingFeature included>{t('landing.feature_ac_database')}</PricingFeature>
+              <PricingFeature included>{t('landing.feature_analytics')}</PricingFeature>
+              <PricingFeature included>{t('landing.feature_no_card')}</PricingFeature>
+            </ul>
+            <Link to="/register">
+              <Button className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/25">
+                {t('landing.start_trial')}
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          </div>
+
+          {/* Premium Plan */}
+          <div className="bg-card border border-border rounded-2xl p-7 flex flex-col">
+            <h3 className="text-xl font-bold text-foreground mb-1">{t('landing.plan_premium')}</h3>
+            <p className="text-sm text-muted-foreground mb-6">{t('landing.plan_premium_desc')}</p>
+            <div className="mb-6">
+              <span className="text-4xl font-bold text-foreground">€4.99</span>
+              <span className="text-muted-foreground ml-1">/ {t('landing.month')}</span>
+            </div>
+            <ul className="space-y-3 mb-8 flex-1">
+              <PricingFeature included>{t('landing.feature_unlimited_employees')}</PricingFeature>
+              <PricingFeature included>{t('landing.feature_unlimited_montages')}</PricingFeature>
+              <PricingFeature included>{t('landing.feature_inventory')}</PricingFeature>
+              <PricingFeature included>{t('landing.feature_ac_database')}</PricingFeature>
+              <PricingFeature included>{t('landing.feature_analytics')}</PricingFeature>
+              <PricingFeature included>{t('landing.feature_priority_support')}</PricingFeature>
+            </ul>
+            <Link to="/register">
+              <Button variant="outline" className="w-full h-11 rounded-xl">
+                {t('landing.get_started_free')}
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        <p className="text-center text-sm text-muted-foreground mt-8">
+          {t('landing.pricing_note')}
+        </p>
+      </section>
+
       {/* ── CTA ── */}
       <section className="container mx-auto px-4 sm:px-6 py-20 lg:py-28">
         <div className="bg-primary rounded-3xl p-10 sm:p-16 text-center relative overflow-hidden">
@@ -282,5 +381,18 @@ function FeatureCard({ icon: Icon, title, description, iconBg, iconColor }: Feat
       <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
       <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
     </div>
+  )
+}
+
+function PricingFeature({ children, included }: { children: React.ReactNode; included?: boolean }) {
+  return (
+    <li className="flex items-center gap-2.5 text-sm">
+      {included ? (
+        <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+      ) : (
+        <X className="w-4 h-4 text-muted-foreground/40 shrink-0" />
+      )}
+      <span className={included ? 'text-foreground' : 'text-muted-foreground/60'}>{children}</span>
+    </li>
   )
 }

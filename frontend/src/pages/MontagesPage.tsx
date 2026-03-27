@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -49,7 +49,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { PageHeader, SearchBar, Pagination, EmptyState, ConfirmDialog } from '@/components/shared'
+import { PageHeader, SearchBar, Pagination, EmptyState, ConfirmDialog, FieldMessage } from '@/components/shared'
+import { useFieldValidation } from '@/hooks'
+import { required, minLength, optional, bulgarianPhone, email } from '@/lib/validation-rules'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -135,6 +137,41 @@ export default function MontagesPage() {
   const [isLoadingACs, setIsLoadingACs] = useState(false)
   const [isCustomAc, setIsCustomAc] = useState(false)
   const [acComboboxOpen, setAcComboboxOpen] = useState(false)
+
+  // Montage form validation rules
+  const montageValidationRules = useMemo(() => ({
+    client_name: [
+      required('validation.client_name_required'),
+      minLength(3, 'validation.client_name_min_length'),
+    ],
+    client_phone: [
+      optional(bulgarianPhone('validation.client_phone_invalid')),
+    ],
+    client_email: [
+      required('validation.client_email_required'),
+      email('validation.email_invalid'),
+    ],
+    client_city: [
+      required('validation.client_city_required'),
+    ],
+    client_address: [
+      required('validation.client_address_required'),
+    ],
+  }), [])
+
+  const montageValidation = useFieldValidation(montageValidationRules)
+
+  const handleMontageFieldChange = useCallback((fieldName: string, value: string) => {
+    setFormData(prev => ({ ...prev, [fieldName]: value }))
+    const fieldState = montageValidation.getFieldProps(fieldName)
+    if (fieldState.status !== 'idle') {
+      montageValidation.validateField(fieldName, value)
+    }
+  }, [montageValidation])
+
+  const handleMontageFieldBlur = useCallback((fieldName: string, value: string) => {
+    montageValidation.validateField(fieldName, value)
+  }, [montageValidation])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -233,6 +270,7 @@ export default function MontagesPage() {
     setIsEditing(false)
     setFormData(initialFormState)
     setIsCustomAc(false)
+    montageValidation.resetAll()
     loadAirConditioners()
     setIsDialogOpen(true)
   }
@@ -263,27 +301,29 @@ export default function MontagesPage() {
       custom_ac_model: item.custom_ac_model || null,
       custom_ac_kilowatts: item.custom_ac_kilowatts || null
     })
+    montageValidation.resetAll()
     loadAirConditioners()
     setIsDialogOpen(true)
   }
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    const validationErrors: string[] = []
-    
-    if (!formData.client_name?.trim()) {
-      validationErrors.push(t('validation.client_name_required', 'Client name is required'))
-    }
+
+    const isValid = montageValidation.validateAll(formData as unknown as Record<string, unknown>)
+
+    // Additional checks not covered by the hook
+    const extraErrors: string[] = []
     if (!formData.installation_date) {
-      validationErrors.push(t('validation.date_required', 'Installation date is required'))
+      extraErrors.push(t('validation.date_required', 'Installation date is required'))
     }
     if (formData.total_price != null && formData.total_price < 0) {
-      validationErrors.push(t('validation.price_invalid', 'Price must be 0 or greater'))
+      extraErrors.push(t('validation.price_invalid', 'Price must be 0 or greater'))
     }
-    
-    if (validationErrors.length > 0) {
-      toast.error(validationErrors.join('. '))
+
+    if (!isValid || extraErrors.length > 0) {
+      if (extraErrors.length > 0) {
+        toast.error(extraErrors.join('. '))
+      }
       return
     }
     
@@ -836,7 +876,7 @@ export default function MontagesPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-card border-border text-card-foreground max-w-[95vw] sm:max-w-[700px] max-h-[90vh] overflow-y-auto shadow-2xl">
+        <DialogContent className="bg-card border-border text-card-foreground max-w-[95vw] sm:max-w-[900px] max-h-[90vh] overflow-y-auto shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">{isEditing ? t('montages.edit_details') : t('montages.new_montage')}</DialogTitle>
           </DialogHeader>
@@ -846,25 +886,66 @@ export default function MontagesPage() {
             <div className="space-y-4">
                <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">{t('montages.client_info')}</h3>
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="clientName">{t('montages.client_name')}</Label>
-                    <Input id="clientName" value={formData.client_name} onChange={(e) => setFormData({...formData, client_name: e.target.value})} className="bg-background border-input" required />
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="clientName">{t('montages.client_name')} *</Label>
+                    <Input
+                      id="clientName"
+                      value={formData.client_name}
+                      onChange={(e) => handleMontageFieldChange('client_name', e.target.value)}
+                      onBlur={(e) => handleMontageFieldBlur('client_name', e.target.value)}
+                      aria-invalid={montageValidation.getFieldProps('client_name').status === 'invalid'}
+                      className="bg-background border-input"
+                    />
+                    <FieldMessage {...montageValidation.getFieldProps('client_name')} />
                   </div>
-                   <div className="grid gap-2">
+                   <div className="grid gap-1.5">
                     <Label htmlFor="clientPhone">{t('auth.phone')}</Label>
-                    <Input id="clientPhone" value={formData.client_phone || ''} onChange={(e) => setFormData({...formData, client_phone: e.target.value})} className="bg-background border-input" />
+                    <Input
+                      id="clientPhone"
+                      value={formData.client_phone || ''}
+                      onChange={(e) => handleMontageFieldChange('client_phone', e.target.value)}
+                      onBlur={(e) => handleMontageFieldBlur('client_phone', e.target.value)}
+                      aria-invalid={montageValidation.getFieldProps('client_phone').status === 'invalid'}
+                      className="bg-background border-input"
+                    />
+                    <FieldMessage {...montageValidation.getFieldProps('client_phone')} />
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="clientEmail">{t('auth.email')}</Label>
-                    <Input id="clientEmail" value={formData.client_email || ''} onChange={(e) => setFormData({...formData, client_email: e.target.value})} className="bg-background border-input" />
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="clientEmail">{t('auth.email')} *</Label>
+                    <Input
+                      id="clientEmail"
+                      type="email"
+                      value={formData.client_email || ''}
+                      onChange={(e) => handleMontageFieldChange('client_email', e.target.value)}
+                      onBlur={(e) => handleMontageFieldBlur('client_email', e.target.value)}
+                      aria-invalid={montageValidation.getFieldProps('client_email').status === 'invalid'}
+                      className="bg-background border-input"
+                    />
+                    <FieldMessage {...montageValidation.getFieldProps('client_email')} />
                   </div>
-                   <div className="grid gap-2">
-                    <Label htmlFor="clientCity">{t('montages.client_city')}</Label>
-                    <Input id="clientCity" value={formData.client_city || ''} onChange={(e) => setFormData({...formData, client_city: e.target.value})} className="bg-background border-input" />
+                   <div className="grid gap-1.5">
+                    <Label htmlFor="clientCity">{t('montages.client_city')} *</Label>
+                    <Input
+                      id="clientCity"
+                      value={formData.client_city || ''}
+                      onChange={(e) => handleMontageFieldChange('client_city', e.target.value)}
+                      onBlur={(e) => handleMontageFieldBlur('client_city', e.target.value)}
+                      aria-invalid={montageValidation.getFieldProps('client_city').status === 'invalid'}
+                      className="bg-background border-input"
+                    />
+                    <FieldMessage {...montageValidation.getFieldProps('client_city')} />
                   </div>
-                  <div className="col-span-1 sm:col-span-2 grid gap-2">
-                    <Label htmlFor="clientAddress">{t('montages.client_address')}</Label>
-                    <Input id="clientAddress" value={formData.client_address || ''} onChange={(e) => setFormData({...formData, client_address: e.target.value})} className="bg-background border-input" />
+                  <div className="col-span-1 sm:col-span-2 grid gap-1.5">
+                    <Label htmlFor="clientAddress">{t('montages.client_address')} *</Label>
+                    <Input
+                      id="clientAddress"
+                      value={formData.client_address || ''}
+                      onChange={(e) => handleMontageFieldChange('client_address', e.target.value)}
+                      onBlur={(e) => handleMontageFieldBlur('client_address', e.target.value)}
+                      aria-invalid={montageValidation.getFieldProps('client_address').status === 'invalid'}
+                      className="bg-background border-input"
+                    />
+                    <FieldMessage {...montageValidation.getFieldProps('client_address')} />
                   </div>
                </div>
             </div>
@@ -1021,11 +1102,11 @@ export default function MontagesPage() {
                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                    <div className="grid gap-2">
                     <Label htmlFor="price">{t('montages.total_price')}</Label>
-                    <Input id="price" type="number" value={formData.total_price || 0} onChange={(e) => setFormData({...formData, total_price: Number(e.target.value)})} className="bg-background border-input" />
+                    <Input id="price" type="number" min="0" value={formData.total_price || ''} onFocus={(e) => { if (formData.total_price === 0) setFormData({...formData, total_price: '' as unknown as number}) }} onChange={(e) => setFormData({...formData, total_price: e.target.value === '' ? 0 : Number(e.target.value)})} className="bg-background border-input" placeholder="0" />
                   </div>
                    <div className="grid gap-2">
                     <Label htmlFor="paid">{t('montages.paid_amount')}</Label>
-                    <Input id="paid" type="number" value={formData.paid_amount || 0} onChange={(e) => setFormData({...formData, paid_amount: Number(e.target.value)})} className="bg-background border-input" />
+                    <Input id="paid" type="number" min="0" value={formData.paid_amount || ''} onFocus={(e) => { if (formData.paid_amount === 0) setFormData({...formData, paid_amount: '' as unknown as number}) }} onChange={(e) => setFormData({...formData, paid_amount: e.target.value === '' ? 0 : Number(e.target.value)})} className="bg-background border-input" placeholder="0" />
                   </div>
                    <div className="grid gap-2">
                     <Label htmlFor="paymentStatus">{t('montages.payment_status')}</Label>

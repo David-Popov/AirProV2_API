@@ -305,38 +305,40 @@ export default function EmployeesPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-center">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-44">
-                          {!emp.roles.includes('Manager') && (
-                            <>
-                              {emp.is_active ? (
-                                <DropdownMenuItem onClick={(e) => handleDeactivateEmployee(e, emp)}>
-                                  <XCircle className="w-4 h-4 mr-2 text-orange-500" />
-                                  <span className="text-orange-500">{t('employees.deactivate', 'Deactivate')}</span>
+                      {emp.id !== user?.id && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-44">
+                            {!emp.roles.includes('Manager') && (
+                              <>
+                                {emp.is_active ? (
+                                  <DropdownMenuItem onClick={(e) => handleDeactivateEmployee(e, emp)}>
+                                    <XCircle className="w-4 h-4 mr-2 text-orange-500" />
+                                    <span className="text-orange-500">{t('employees.deactivate', 'Deactivate')}</span>
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem onClick={(e) => handleActivateEmployee(e, emp)}>
+                                    <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
+                                    <span className="text-green-500">{t('employees.activate', 'Activate')}</span>
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={(e) => { e.stopPropagation(); handleDeleteClick(emp) }}
+                                  className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
+                                >
+                                  <Trash className="w-4 h-4 mr-2" />
+                                  {t('common.delete')}
                                 </DropdownMenuItem>
-                              ) : (
-                                <DropdownMenuItem onClick={(e) => handleActivateEmployee(e, emp)}>
-                                  <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
-                                  <span className="text-green-500">{t('employees.activate', 'Activate')}</span>
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={(e) => { e.stopPropagation(); handleDeleteClick(emp) }}
-                                className="text-red-500 focus:text-red-500 focus:bg-red-500/10"
-                              >
-                                <Trash className="w-4 h-4 mr-2" />
-                                {t('common.delete')}
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </TableCell>
                   </TableRow>
                 )

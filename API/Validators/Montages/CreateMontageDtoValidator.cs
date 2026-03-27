@@ -9,11 +9,12 @@ public class CreateMontageDtoValidator : AbstractValidator<CreateMontageDto>
     {
         RuleFor(x => x.ClientName)
             .NotEmpty().WithMessage("Client name is required")
+            .MinimumLength(3).WithMessage("Client name must be at least 3 characters")
             .MaximumLength(200).WithMessage("Client name cannot exceed 200 characters");
 
         RuleFor(x => x.ClientPhone)
-            .MaximumLength(20).When(x => !string.IsNullOrEmpty(x.ClientPhone))
-            .WithMessage("Client phone cannot exceed 20 characters");
+            .Matches(@"^(\+359|0)\d{8,9}$").When(x => !string.IsNullOrEmpty(x.ClientPhone))
+            .WithMessage("Invalid phone number format (e.g. +359888123456 or 0888123456)");
 
         RuleFor(x => x.ClientEmail)
             .EmailAddress().When(x => !string.IsNullOrEmpty(x.ClientEmail))

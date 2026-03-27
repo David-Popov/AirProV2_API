@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Zap, AlertTriangle, Snowflake, Info } from "lucide-react";
@@ -15,6 +15,22 @@ import { toast } from "sonner";
 import { useAirConditioner, useAirConditionerErrorCodes } from "@/hooks";
 import { AirConditionerDetailsSkeleton } from "@/components/skeletons";
 import type { ErrorCode } from "@/types";
+
+function AcImage({ url, alt, size = 'sm' }: { url?: string | null; alt: string; size?: 'sm' | 'lg' }) {
+  const [failed, setFailed] = useState(false)
+  const handleError = useCallback(() => setFailed(true), [])
+
+  if (!url || failed) {
+    return (
+      <div className="flex flex-col items-center text-muted-foreground/50">
+        <Snowflake className={size === 'lg' ? 'w-24 h-24 mb-4 opacity-50' : 'w-12 h-12'} />
+        {size === 'lg' && <span className="text-sm">No Image Available</span>}
+      </div>
+    )
+  }
+
+  return <img src={url} alt={alt} className="w-full h-full object-cover" onError={handleError} />
+}
 
 export default function AirConditionerDetailsPage() {
   const { id } = useParams();
@@ -72,18 +88,7 @@ export default function AirConditionerDetailsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         {/* Image Section */}
         <div className="bg-muted/30 rounded-xl overflow-hidden aspect-[4/3] flex items-center justify-center border border-border">
-          {ac.image_url ? (
-            <img
-              src={ac.image_url}
-              alt={ac.name}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="text-muted-foreground/50 flex flex-col items-center">
-              <Snowflake className="w-24 h-24 mb-4 opacity-50" />
-              <span className="text-sm">No Image Available</span>
-            </div>
-          )}
+          <AcImage url={ac.image_url} alt={ac.name} size="lg" />
         </div>
 
         {/* Info Section */}

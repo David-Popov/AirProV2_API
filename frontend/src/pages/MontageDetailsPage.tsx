@@ -481,8 +481,10 @@ export default function MontageDetailsPage() {
                       type="number"
                       min="0.1"
                       step="0.1"
-                      value={quantity}
-                      onChange={(e) => setQuantity(Number(e.target.value))}
+                      value={quantity || ''}
+                      onFocus={() => { if (quantity === 0) setQuantity('' as unknown as number) }}
+                      onChange={(e) => setQuantity(e.target.value === '' ? 0 : Number(e.target.value))}
+                      placeholder="0"
                     />
                   </div>
                   <div className="grid gap-2">
@@ -524,8 +526,10 @@ export default function MontageDetailsPage() {
                       type="number"
                       min="0.1"
                       step="0.1"
-                      value={editQuantity}
-                      onChange={(e) => setEditQuantity(Number(e.target.value))}
+                      value={editQuantity || ''}
+                      onFocus={() => { if (editQuantity === 0) setEditQuantity('' as unknown as number) }}
+                      onChange={(e) => setEditQuantity(e.target.value === '' ? 0 : Number(e.target.value))}
+                      placeholder="0"
                     />
                   </div>
                 </div>
