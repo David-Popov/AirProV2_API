@@ -29,6 +29,7 @@ public static class ExternalServicesExtensions
 
         // Email
         services.Configure<EmailSettings>(config.GetSection("EmailSettings"));
+        services.AddHttpClient("Mailtrap");
         services.AddScoped<IEmailService, EmailService>();
         services.AddSingleton<IBackgroundEmailQueue, BackgroundEmailQueue>();
         services.AddHostedService<BackgroundEmailProcessor>();
