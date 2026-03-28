@@ -100,7 +100,7 @@ export default function DashboardPage() {
 
   if (isLoadingMontages && isLoadingInventory) {
     return (
-      <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300">
+      <div className="min-h-screen bg-background pt-14 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300">
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t('common.dashboard')}</h1>
           <p className="text-muted-foreground text-sm sm:text-base">
@@ -113,7 +113,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300 animate-fade-in">
+    <div className="min-h-screen bg-background pt-14 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300 animate-fade-in">
       {/* Header */}
       <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -167,6 +167,7 @@ export default function DashboardPage() {
           icon={ClipboardList}
           iconColor="text-primary"
           iconBg="bg-primary/10"
+          className="animate-slide-up stagger-1"
         />
         <StatCard
           title={t('dashboard.completed_montages')}
@@ -176,6 +177,7 @@ export default function DashboardPage() {
           iconColor="text-green-500"
           iconBg="bg-green-500/10"
           trend={dashboardData.summary.montagesTrend}
+          className="animate-slide-up stagger-2"
         />
         <StatCard
           title={t('dashboard.inventory_items')}
@@ -185,6 +187,7 @@ export default function DashboardPage() {
           iconColor={quickStats.lowStockCount > 0 ? 'text-orange-500' : 'text-violet-500'}
           iconBg={quickStats.lowStockCount > 0 ? 'bg-orange-500/10' : 'bg-violet-500/10'}
           warning={quickStats.lowStockCount > 0}
+          className="animate-slide-up stagger-3"
         />
         <StatCard
           title={t('dashboard.team_members')}
@@ -193,6 +196,7 @@ export default function DashboardPage() {
           icon={Users}
           iconColor="text-amber-500"
           iconBg="bg-amber-500/10"
+          className="animate-slide-up stagger-4"
         />
       </div>
 
@@ -358,11 +362,12 @@ interface StatCardProps {
   iconBg: string
   trend?: number
   warning?: boolean
+  className?: string
 }
 
-function StatCard({ title, value, subtitle, icon: Icon, iconColor, iconBg, trend, warning = false }: StatCardProps) {
+function StatCard({ title, value, subtitle, icon: Icon, iconColor, iconBg, trend, warning = false, className }: StatCardProps) {
   return (
-    <Card className="glass-card hover:shadow-md transition-shadow duration-300">
+    <Card className={`glass-card ${className ?? ''}`}>
       <CardContent className="p-4 sm:p-5">
         <div className="flex items-center justify-between mb-3">
           <div className={`p-2 rounded-lg shrink-0 ${iconBg}`}>

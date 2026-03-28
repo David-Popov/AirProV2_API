@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { Mail, Lock, Loader2, ArrowRight } from 'lucide-react'
+import { Mail, Lock, Loader2, ArrowRight, RefreshCw, AlertTriangle, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AuthLayout } from '@/components/layout'
 import { useAuth } from '@/context'
+import { authService } from '@/services'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -15,10 +16,10 @@ export default function LoginPage() {
   const { t } = useTranslation()
   const { login, isAuthenticated, isLoading: isAuthLoading } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  })
+  const [formData, setFormData] = useState({ email: '', password: '' })
+  const [emailNotConfirmed, setEmailNotConfirmed] = useState(false)
+  const [isResending, setIsResending] = useState(false)
+  const [accountLocked, setAccountLocked] = useState(false)
 
   useEffect(() => {
     if (!isAuthLoading && isAuthenticated) {
@@ -26,6 +27,17 @@ export default function LoginPage() {
       navigate(from, { replace: true })
     }
   }, [isAuthenticated, isAuthLoading, navigate, location.state])
+
+  // Show post-registration or password-reset message
+  useEffect(() => {
+    const stateMessage = (location.state as { message?: string })?.message
+    if (stateMessage) {
+      toast.info(stateMessage)
+      // L-2: Use React Router to clear the state instead of manipulating
+      // window.history directly, keeping React Router's internal history in sync.
+      navigate(location.pathname, { replace: true, state: null })
+    }
+  }, [location.state, location.pathname, navigate])
 
   if (isAuthLoading) {
     return (
@@ -38,21 +50,39 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setEmailNotConfirmed(false)
+    setAccountLocked(false)
 
     try {
-      await login({
-        email: formData.email,
-        password: formData.password,
-      })
-
+      await login({ email: formData.email, password: formData.password })
       toast.success(t('auth.login_success'))
-
       const from = (location.state as { from?: Location })?.from?.pathname || '/dashboard'
       navigate(from, { replace: true })
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('auth.login_failed'))
+      const message = error instanceof Error ? error.message : t('auth.login_failed')
+      if (message.toLowerCase().includes('confirm your email') || message.toLowerCase().includes('email address')) {
+        setEmailNotConfirmed(true)
+      } else if (message.toLowerCase().includes('locked')) {
+        setAccountLocked(true)
+      } else {
+        toast.error(message)
+      }
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleResendConfirmation = async () => {
+    if (!formData.email) return
+    setIsResending(true)
+    try {
+      await authService.resendConfirmation(formData.email)
+      toast.success(t('auth.resend_confirmation_sent'))
+      setEmailNotConfirmed(false)
+    } catch {
+      toast.error(t('auth.resend_confirmation_failed'))
+    } finally {
+      setIsResending(false)
     }
   }
 
@@ -64,6 +94,66 @@ export default function LoginPage() {
           {t('auth.sign_in_description')}
         </p>
 
+        {/* Email not confirmed banner */}
+        {emailNotConfirmed && (
+          <div className="mb-5 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 animate-slide-up">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                  {t('auth.email_not_confirmed_banner')}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {t('auth.resend_confirmation_hint')}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-3 h-8 text-xs border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/60"
+                  onClick={handleResendConfirmation}
+                  disabled={isResending}
+                >
+                  {isResending ? (
+                    <>
+                      <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                      {t('auth.sending')}
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-3 h-3 mr-1.5" />
+                      {t('auth.resend_confirmation')}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Account locked banner */}
+        {accountLocked && (
+          <div className="mb-5 p-4 rounded-xl border border-destructive/30 bg-destructive/10 animate-slide-up">
+            <div className="flex items-start gap-3">
+              <ShieldAlert className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-destructive">
+                  {t('auth.account_locked')}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {t('auth.account_locked_hint')}
+                </p>
+                <Link
+                  to="/forgot-password"
+                  className="inline-block mt-3 text-xs font-medium text-destructive hover:text-destructive/80 underline underline-offset-2 transition-colors"
+                >
+                  {t('auth.forgot_password', 'Forgot password?')}
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-1.5">
             <Label htmlFor="email" className="text-foreground font-medium text-sm">{t('auth.email')}</Label>
@@ -74,7 +164,11 @@ export default function LoginPage() {
                 type="email"
                 placeholder="john@airpro.com"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, email: e.target.value })
+                  if (emailNotConfirmed) setEmailNotConfirmed(false)
+                  if (accountLocked) setAccountLocked(false)
+                }}
                 required
                 className="pl-10 h-11 bg-background border-border"
               />
@@ -82,7 +176,12 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="password" className="text-foreground font-medium text-sm">{t('auth.password')}</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password" className="text-foreground font-medium text-sm">{t('auth.password')}</Label>
+              <Link to="/forgot-password" className="text-xs text-primary hover:text-primary/80 transition-colors">
+                {t('auth.forgot_password', 'Forgot password?')}
+              </Link>
+            </div>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input

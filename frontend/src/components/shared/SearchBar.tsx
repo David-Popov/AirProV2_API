@@ -21,11 +21,11 @@ export function SearchBar({
 }: SearchBarProps) {
   return (
     <div className={cn('flex gap-4 mb-4 sm:mb-6', className)}>
-      <div className={cn('relative flex-1', inputClassName)}>
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      <div className={cn('relative flex-1 group', inputClassName)}>
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors duration-200" />
         <Input
           placeholder={placeholder}
-          className="pl-10 bg-background/50 border-input text-foreground hover:bg-background/80 transition-colors"
+          className="pl-10 bg-card border-input text-foreground hover:border-primary/30 focus-visible:ring-primary/30 transition-all duration-200"
           value={value}
           onChange={(e) => onChange(e.target.value)}
         />

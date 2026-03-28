@@ -34,7 +34,7 @@ services:
     container_name: staging_backend
     restart: always
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_ENVIRONMENT: Staging
       ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}"
       JwtSettings__SecretKey: ${JWT_SECRET}
       MinioSettings__Endpoint: "minio:9000"

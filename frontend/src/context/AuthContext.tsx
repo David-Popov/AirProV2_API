@@ -1,13 +1,13 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { authService } from '@/services';
-import type { AuthUser, LoginRequest, RegisterRequest, AuthResponse } from '@/types';
+import type { AuthUser, LoginRequest, RegisterRequest, AuthResponse, MessageResponse } from '@/types';
 
 interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (data: LoginRequest) => Promise<AuthResponse>;
-  register: (data: RegisterRequest) => Promise<AuthResponse>;
+  register: (data: RegisterRequest) => Promise<MessageResponse>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -19,9 +19,16 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser]       = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Stable logout so it can be used in other callbacks and the event listener
+  const logout = useCallback(() => {
+    authService.logout();
+    setUser(null);
+  }, []);
+
+  // Initialise auth state from storage on mount
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -36,15 +43,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
         }
       } catch (error) {
-        console.error('Failed to initialize auth:', error);
-        authService.logout();
+        // L-5: Log only the message, not the full error object, to avoid leaking
+        // stack traces or internal API details in production devtools.
+        console.error('Failed to initialize auth:', error instanceof Error ? error.message : String(error));
+        logout();
       } finally {
         setIsLoading(false);
       }
     };
 
     initAuth();
-  }, []);
+  }, [logout]);
+
+  // M-5: Listen for the auth:session-expired event dispatched by the API client
+  // when a token refresh fails. Clears auth state so ProtectedRoute redirects
+  // to /login via React Router instead of a full page reload.
+  useEffect(() => {
+    const handleSessionExpired = () => logout();
+    window.addEventListener('auth:session-expired', handleSessionExpired);
+    return () => window.removeEventListener('auth:session-expired', handleSessionExpired);
+  }, [logout]);
 
   const login = useCallback(async (data: LoginRequest): Promise<AuthResponse> => {
     const response = await authService.login(data);
@@ -52,15 +70,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return response;
   }, []);
 
-  const register = useCallback(async (data: RegisterRequest): Promise<AuthResponse> => {
-    const response = await authService.register(data);
-    setUser(response.user);
-    return response;
-  }, []);
-
-  const logout = useCallback(() => {
-    authService.logout();
-    setUser(null);
+  const register = useCallback(async (data: RegisterRequest): Promise<MessageResponse> => {
+    return authService.register(data);
   }, []);
 
   const refreshUser = useCallback(async () => {
@@ -69,11 +80,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(fetchedUser);
       localStorage.setItem('user', JSON.stringify(fetchedUser));
     } catch (error) {
-      console.error('Failed to refresh user:', error);
+      console.error('Failed to refresh user:', error instanceof Error ? error.message : String(error));
       logout();
     }
   }, [logout]);
 
+  // L-4: Only include state values in the deps array — the stable callbacks
+  // (login, register, logout, refreshUser) are wrapped in useCallback with
+  // stable deps and do not need to be listed here.
   const value = useMemo<AuthContextType>(() => ({
     user,
     isAuthenticated: !!user && authService.isAuthenticated(),

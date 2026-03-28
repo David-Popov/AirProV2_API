@@ -76,28 +76,28 @@ function getStockIndicatorClass(item: InventoryItem): string {
 function StockStatusBadge({ item }: { item: InventoryItem }) {
   if (!item.is_active) {
     return (
-      <Badge variant="outline" className="text-muted-foreground border-muted-foreground/30 whitespace-nowrap">
+      <Badge variant="outline" className="text-muted-foreground border-muted-foreground/30 border-l-2 border-l-muted-foreground/40 whitespace-nowrap">
         Inactive
       </Badge>
     )
   }
   if (item.quantity === 0) {
     return (
-      <Badge className="bg-red-500/10 text-red-500 border-red-500/20 whitespace-nowrap">
+      <Badge className="bg-red-500/10 text-red-500 border-red-500/20 border-l-2 border-l-red-500 whitespace-nowrap">
         Out of Stock
       </Badge>
     )
   }
   if (item.is_low_stock) {
     return (
-      <Badge className="bg-orange-500/10 text-orange-500 border-orange-500/20 whitespace-nowrap">
+      <Badge className="bg-orange-500/10 text-orange-500 border-orange-500/20 border-l-2 border-l-orange-500/60 whitespace-nowrap">
         <AlertTriangle className="w-3 h-3 mr-1" />
         {('Low Stock')}
       </Badge>
     )
   }
   return (
-    <Badge className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 whitespace-nowrap">
+    <Badge className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 border-l-2 border-l-green-500/60 whitespace-nowrap">
       In Stock
     </Badge>
   )
@@ -295,7 +295,7 @@ export default function InventoryPage() {
   const endItem = Math.min(page * PAGE_SIZE, totalCount)
 
   return (
-    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300">
+    <div className="min-h-screen bg-background pt-14 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300 animate-fade-in">
       <PageHeader
         title={t('inventory.title')}
         subtitle={t('inventory.subtitle')}
@@ -408,14 +408,14 @@ export default function InventoryPage() {
                 const stockPct = getStockLevel(item)
                 const indicatorCls = getStockIndicatorClass(item)
                 return (
-                  <TableRow key={item.id} className="border-border hover:bg-muted/30 transition-colors animate-fade-in">
+                  <TableRow key={item.id} className="border-border table-row-interactive animate-fade-in">
                     <TableCell className="font-medium text-foreground">{item.name}</TableCell>
                     <TableCell className="text-muted-foreground font-mono text-xs">{item.sku || '—'}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2 min-w-[100px]">
                         <Progress value={stockPct} indicatorClassName={indicatorCls} className="h-1.5 w-20" />
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {item.quantity} {item.unit_of_measure}
+                          {item.quantity} {t(`inventory.units.${item.unit_of_measure.toLowerCase()}`, item.unit_of_measure)}
                         </span>
                       </div>
                     </TableCell>
@@ -480,11 +480,11 @@ export default function InventoryPage() {
         ) : filteredItems.length === 0 ? (
           <EmptyState icon={Package} message={t('inventory.no_items')} />
         ) : (
-          filteredItems.map((item) => {
+          filteredItems.map((item, index) => {
             const stockPct = getStockLevel(item)
             const indicatorCls = getStockIndicatorClass(item)
             return (
-              <Card key={item.id} className="glass-card animate-fade-in">
+              <Card key={item.id} className={`glass-card animate-slide-up stagger-${Math.min(index + 1, 8)}`}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1 min-w-0">
@@ -498,7 +498,7 @@ export default function InventoryPage() {
                   <div className="mb-3">
                     <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                       <span>Stock Level</span>
-                      <span>{item.quantity} {item.unit_of_measure}</span>
+                      <span>{item.quantity} {t(`inventory.units.${item.unit_of_measure.toLowerCase()}`, item.unit_of_measure)}</span>
                     </div>
                     <Progress value={stockPct} indicatorClassName={indicatorCls} className="h-1.5" />
                   </div>
@@ -605,7 +605,7 @@ export default function InventoryPage() {
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-border text-popover-foreground">
                     {UNIT_OF_MEASURE_OPTIONS.map((u) => (
-                      <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>
+                      <SelectItem key={u.value} value={u.value}>{t(`inventory.units.${u.value.toLowerCase()}`, u.label)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

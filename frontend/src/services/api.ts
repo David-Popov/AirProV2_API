@@ -3,6 +3,11 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5209/api'
 
 import { extractErrorMessage } from '../lib/utils';
 
+// C-4: Module-level promise ensures only one token refresh is in-flight at a time.
+// All concurrent 401 responses share the same refresh attempt instead of each
+// triggering an independent call (which would exhaust the single-use refresh token).
+let refreshPromise: Promise<void> | null = null;
+
 class ApiClient {
   private baseUrl: string;
 
@@ -31,30 +36,40 @@ class ApiClient {
 
   private async handleErrorResponse(response: Response, retryOriginalRequest: () => Promise<any>): Promise<any> {
     if (response.status === 401) {
-      const token = localStorage.getItem('token');
+      const token        = localStorage.getItem('token');
       const refreshToken = localStorage.getItem('refresh_token');
 
       if (token && refreshToken) {
-         try {
-           if (response.url.includes('/auth/refresh-token')) {
-             throw new Error('Refresh token expired');
-           }
+        try {
+          if (response.url.includes('/auth/refresh-token')) {
+            throw new Error('Refresh token expired');
+          }
 
-           const authService = (await import('./auth')).authService;
-           await authService.refreshToken(token, refreshToken);
-           
-           return retryOriginalRequest();
-         } catch (error) {
-           const authService = (await import('./auth')).authService;
-           authService.logout();
-           window.location.href = '/login';
-           throw error;
-         }
+          // C-4: Deduplicate concurrent refresh calls with a shared promise.
+          if (!refreshPromise) {
+            refreshPromise = (async () => {
+              const authService = (await import('./auth')).authService;
+              await authService.refreshToken(token, refreshToken);
+            })().finally(() => {
+              refreshPromise = null;
+            });
+          }
+
+          await refreshPromise;
+          return retryOriginalRequest();
+        } catch (error) {
+          const authService = (await import('./auth')).authService;
+          authService.logout();
+          // M-5: Dispatch a custom event so AuthContext can handle the navigation
+          // via React Router instead of a full page reload.
+          window.dispatchEvent(new CustomEvent('auth:session-expired'));
+          throw error;
+        }
       } else {
         const authService = (await import('./auth')).authService;
         authService.logout();
         if (!window.location.pathname.includes('/login')) {
-            window.location.href = '/login';
+          window.dispatchEvent(new CustomEvent('auth:session-expired'));
         }
       }
     }
@@ -66,7 +81,7 @@ class ApiClient {
     } catch {
       errorData = null;
     }
-    
+
     const message = extractErrorMessage(errorData);
     throw new Error(message);
   }

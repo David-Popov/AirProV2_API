@@ -210,7 +210,7 @@ export default function EmployeesPage() {
   )
 
   return (
-    <div className="min-h-screen bg-background pt-16 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300">
+    <div className="min-h-screen bg-background pt-14 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300 animate-fade-in">
       <PageHeader
         title={t('employees.title')}
         subtitle={t('employees.subtitle')}
@@ -256,7 +256,7 @@ export default function EmployeesPage() {
                 return (
                   <TableRow
                     key={emp.id}
-                    className="border-border hover:bg-muted/30 transition-colors cursor-pointer animate-fade-in"
+                    className="border-border table-row-interactive animate-fade-in"
                     onClick={() => navigate(`/employees/${emp.id}`)}
                   >
                     {/* Member column: avatar + name + email */}
@@ -355,7 +355,7 @@ export default function EmployeesPage() {
         ) : filteredEmployees.length === 0 ? (
           <EmptyState icon={Users} message={t('employees.no_employees')} />
         ) : (
-          filteredEmployees.map((emp) => {
+          filteredEmployees.map((emp, index) => {
             const activeMontageCount = workloadMap[emp.id] ?? 0
             const workloadPct = Math.min(Math.round((activeMontageCount / MAX_EXPECTED_MONTAGES) * 100), 100)
             const avatarColor = getAvatarColor(emp.full_name)
@@ -363,7 +363,7 @@ export default function EmployeesPage() {
             return (
               <Card
                 key={emp.id}
-                className="glass-card cursor-pointer hover:border-primary/50 transition-all animate-fade-in"
+                className={`glass-card cursor-pointer hover:border-primary/50 transition-all animate-slide-up stagger-${Math.min(index + 1, 8)}`}
                 onClick={() => navigate(`/employees/${emp.id}`)}
               >
                 <CardContent className="p-4">

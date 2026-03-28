@@ -7,6 +7,10 @@ import { AuthProvider } from '@/context'
 import HomePage from '@/pages/HomePage'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
+import ConfirmEmailPage from '@/pages/ConfirmEmailPage'
+import ForgotPasswordPage from '@/pages/ForgotPasswordPage'
+import ResetPasswordPage from '@/pages/ResetPasswordPage'
+import ConfirmEmailChangePage from '@/pages/ConfirmEmailChangePage'
 import DashboardPage from '@/pages/DashboardPage'
 import InventoryPage from '@/pages/InventoryPage'
 import InventoryItemHistoryPage from '@/pages/InventoryItemHistoryPage'
@@ -39,7 +43,11 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
-            
+            <Route path="/confirm-email" element={<ConfirmEmailPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/confirm-email-change" element={<ConfirmEmailChangePage />} />
+
             {/* Protected Routes */}
             <Route 
               element={

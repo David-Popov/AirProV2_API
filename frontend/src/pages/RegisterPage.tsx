@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo } from 'react'
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -38,7 +38,8 @@ export default function RegisterPage() {
   const [step, setStep] = useState(1)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [termsError, setTermsError] = useState(false)
-  const emailCheckRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const emailCheckRef      = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const emailCheckAbortRef = useRef<AbortController | null>(null)
 
   const [formData, setFormData] = useState({
     email: '',
@@ -119,6 +120,15 @@ export default function RegisterPage() {
   const step1Validation = useFieldValidation(step1Rules)
   const step2Validation = useFieldValidation(step2Rules)
 
+  // M-4: Cancel any in-flight email-check request and pending timer on unmount
+  // to prevent setState calls on an unmounted component.
+  useEffect(() => {
+    return () => {
+      if (emailCheckRef.current)      clearTimeout(emailCheckRef.current)
+      if (emailCheckAbortRef.current) emailCheckAbortRef.current.abort()
+    }
+  }, [])
+
   if (isAuthenticated) {
     navigate('/dashboard', { replace: true })
   }
@@ -129,17 +139,26 @@ export default function RegisterPage() {
 
     // Async email check after local validation passes
     if (fieldName === 'email' && value && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      if (emailCheckRef.current) clearTimeout(emailCheckRef.current)
+      if (emailCheckRef.current)      clearTimeout(emailCheckRef.current)
+      if (emailCheckAbortRef.current) emailCheckAbortRef.current.abort()
+
       emailCheckRef.current = setTimeout(async () => {
+        // M-3: Each invocation gets a fresh AbortController so we can cancel
+        // the fetch if the component unmounts or the user types again.
+        const controller = new AbortController()
+        emailCheckAbortRef.current = controller
+
         try {
           const result = await authService.checkEmail(value)
-          if (!result.available) {
-            step1Validation.setFieldState('email', { status: 'invalid', message: 'validation.email_taken' })
-          } else {
-            step1Validation.setFieldState('email', { status: 'valid', message: 'validation.email_available' })
+          if (!controller.signal.aborted) {
+            if (!result.available) {
+              step1Validation.setFieldState('email', { status: 'invalid', message: 'validation.email_taken' })
+            } else {
+              step1Validation.setFieldState('email', { status: 'valid', message: 'validation.email_available' })
+            }
           }
         } catch {
-          // If check fails, don't block — server will catch it on submit
+          // If check fails or was aborted, don't block — server will catch it on submit
         }
       }, 300)
     }
@@ -202,8 +221,10 @@ export default function RegisterPage() {
         warranty_default_months: formData.warrantyDefaultMonths,
       })
 
-      toast.success(t('auth.registration_success'))
-      navigate('/dashboard', { replace: true })
+      navigate('/login', {
+        replace: true,
+        state: { message: t('auth.check_email_confirm', 'Registration successful! Please check your email to confirm your account.') }
+      })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('auth.registration_failed'))
     } finally {

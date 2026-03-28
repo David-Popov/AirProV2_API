@@ -6,10 +6,9 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container using modular extensions
-builder.Services.AddApiServices(builder.Configuration);
+builder.Services.AddApiServices(builder.Configuration, builder.Environment);
 builder.Services.AddDatabaseServices(builder.Configuration);
-builder.Services.AddIdentityServices(builder.Configuration);
+builder.Services.AddIdentityServices(builder.Configuration, builder.Environment);
 builder.Services.AddRepositories();
 builder.Services.AddApplicationServices();
 builder.Services.AddExternalServices(builder.Configuration);
@@ -24,8 +23,14 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
         context.Database.Migrate();
-        
-        SeedDataManager.SeedAllData(services);
+
+        if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
+        {
+            SeedDataManager.SeedAllData(services);
+        }
+
+        // Production admin bootstrap: creates admin from env vars if no admin exists
+        ProductionAdminSeed.SeedAdminIfNotExists(services);
     }
     catch (Exception ex)
     {
@@ -34,11 +39,30 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// ── Security headers ──────────────────────────────────────────────────────────
+// Applied before any other middleware so every response carries them.
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Append("X-Content-Type-Options",  "nosniff");
+    context.Response.Headers.Append("X-Frame-Options",         "DENY");
+    context.Response.Headers.Append("X-XSS-Protection",        "1; mode=block");
+    context.Response.Headers.Append("Referrer-Policy",         "strict-origin-when-cross-origin");
+    context.Response.Headers.Append("Permissions-Policy",      "camera=(), microphone=(), geolocation=()");
+
+    if (!app.Environment.IsDevelopment())
+    {
+        // HSTS: tell browsers to use HTTPS for 1 year (only in production)
+        context.Response.Headers.Append("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    }
+
+    await next();
+});
+
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    
+
     app.MapScalarApiReference(options =>
     {
         options
@@ -52,6 +76,9 @@ app.UseHttpsRedirection();
 
 // Use CORS
 app.UseCors("AllowAll");
+
+// Rate limiting — must be after CORS and before auth/controllers
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();

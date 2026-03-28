@@ -5,6 +5,7 @@ using API.Services.Auth;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace API.Controllers;
 
@@ -16,17 +17,23 @@ public class AuthController : ControllerBase
     private readonly ILogger<AuthController> _logger;
     private readonly IValidator<RegisterDto> _registerValidator;
     private readonly IValidator<LoginDto> _loginValidator;
+    private readonly IValidator<ChangePasswordDto> _changePasswordValidator;
+    private readonly IValidator<ResetPasswordDto> _resetPasswordValidator;
 
     public AuthController(
         IAuthService authService,
         ILogger<AuthController> logger,
         IValidator<RegisterDto> registerValidator,
-        IValidator<LoginDto> loginValidator)
+        IValidator<LoginDto> loginValidator,
+        IValidator<ChangePasswordDto> changePasswordValidator,
+        IValidator<ResetPasswordDto> resetPasswordValidator)
     {
         _authService = authService;
         _logger = logger;
         _registerValidator = registerValidator;
         _loginValidator = loginValidator;
+        _changePasswordValidator = changePasswordValidator;
+        _resetPasswordValidator = resetPasswordValidator;
     }
 
     /// <summary>
@@ -34,13 +41,15 @@ public class AuthController : ControllerBase
     /// </summary>
     /// <remarks>
     /// Creates a new user account along with their company. The user will be set as the company owner.
-    /// Returns a JWT token upon successful registration.
+    /// A confirmation email will be sent — the user must confirm before logging in.
     /// </remarks>
     [HttpPost("register")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
+    [EnableRateLimiting("auth")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterDto dto)
+    public async Task<ActionResult> Register([FromBody] RegisterDto dto)
     {
         try
         {
@@ -50,8 +59,8 @@ public class AuthController : ControllerBase
                 return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
             }
 
-            var result = await _authService.RegisterAsync(dto);
-            return CreatedAtAction(nameof(GetCurrentUser), result);
+            await _authService.RegisterAsync(dto);
+            return Ok(new { message = "Registration successful! Please check your email to confirm your account." });
         }
         catch (InvalidOperationException ex)
         {
@@ -71,9 +80,11 @@ public class AuthController : ControllerBase
     /// Authenticates a user and returns a JWT token upon successful login.
     /// </remarks>
     [HttpPost("login")]
+    [EnableRateLimiting("auth")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto dto)
     {
@@ -223,6 +234,204 @@ public class AuthController : ControllerBase
         {
             _logger.LogError(ex, ex.Message);
             return StatusCode(500, new { message = "An error occurred while updating profile" });
+        }
+    }
+
+    /// <summary>
+    /// Confirm email address after registration
+    /// </summary>
+    [HttpPost("confirm-email")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult> ConfirmEmail([FromBody] ConfirmEmailDto dto)
+    {
+        try
+        {
+            var result = await _authService.ConfirmEmailAsync(dto.UserId, dto.Token);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                return BadRequest(new { message = errors });
+            }
+
+            return Ok(new { message = "Email confirmed successfully." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, new { message = "An error occurred while confirming email" });
+        }
+    }
+
+    /// <summary>
+    /// Resend email confirmation link
+    /// </summary>
+    [HttpPost("resend-confirmation")]
+    [EnableRateLimiting("auth")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
+    public async Task<ActionResult> ResendConfirmation([FromBody] ResendConfirmationDto dto)
+    {
+        try
+        {
+            await _authService.ResendConfirmationEmailAsync(dto.Email);
+            return Ok(new { message = "If an account exists with that email, a confirmation link has been sent." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return Ok(new { message = "If an account exists with that email, a confirmation link has been sent." });
+        }
+    }
+
+    /// <summary>
+    /// Request a password reset link
+    /// </summary>
+    [HttpPost("forgot-password")]
+    [EnableRateLimiting("auth")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
+    public async Task<ActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+    {
+        try
+        {
+            await _authService.ForgotPasswordAsync(dto.Email);
+            return Ok(new { message = "If an account exists with that email, a password reset link has been sent." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return Ok(new { message = "If an account exists with that email, a password reset link has been sent." });
+        }
+    }
+
+    /// <summary>
+    /// Reset password using a token from email
+    /// </summary>
+    [HttpPost("reset-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+    {
+        try
+        {
+            var validationResult = await _resetPasswordValidator.ValidateAsync(dto);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            }
+
+            var result = await _authService.ResetPasswordAsync(dto.Email, dto.Token, dto.NewPassword);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                return BadRequest(new { message = errors });
+            }
+
+            return Ok(new { message = "Password reset successfully." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, new { message = "An error occurred while resetting password" });
+        }
+    }
+
+    /// <summary>
+    /// Change password for authenticated user
+    /// </summary>
+    [HttpPut("change-password")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+    {
+        try
+        {
+            var validationResult = await _changePasswordValidator.ValidateAsync(dto);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User not authenticated" });
+            }
+
+            var result = await _authService.ChangePasswordAsync(userId, dto.NewPassword);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                return BadRequest(new { message = errors });
+            }
+
+            return Ok(new { message = "Password changed successfully." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, new { message = "An error occurred while changing password" });
+        }
+    }
+
+    /// <summary>
+    /// Request an email change (sends confirmation to new email)
+    /// </summary>
+    [HttpPost("change-email/request")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult> RequestEmailChange([FromBody] RequestEmailChangeDto dto)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User not authenticated" });
+            }
+
+            await _authService.RequestEmailChangeAsync(userId, dto.NewEmail);
+            return Ok(new { message = "A confirmation link has been sent to your new email address." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, new { message = "An error occurred while requesting email change" });
+        }
+    }
+
+    /// <summary>
+    /// Confirm email change using token from email
+    /// </summary>
+    [HttpPost("change-email/confirm")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult> ConfirmEmailChange([FromBody] ConfirmEmailChangeDto dto)
+    {
+        try
+        {
+            var result = await _authService.ConfirmEmailChangeAsync(dto.UserId, dto.NewEmail, dto.Token);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                return BadRequest(new { message = errors });
+            }
+
+            return Ok(new { message = "Email changed successfully." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, new { message = "An error occurred while confirming email change" });
         }
     }
 }

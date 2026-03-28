@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -36,24 +37,26 @@
   --sidebar-accent-foreground: oklch(0.6723 0.1606 244.9955);
   --sidebar-border: oklch(0.9271 0.0101 238.5177);
   --sidebar-ring: oklch(0.6818 0.1584 243.3540);
-  --font-sans: Open Sans, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
   --radius: 1.3rem;
-  --shadow-x: 0px;
-  --shadow-y: 2px;
-  --shadow-blur: 0px;
-  --shadow-spread: 0px;
-  --shadow-opacity: 0;
-  --shadow-color: rgba(29,161,242,0.15);
-  --shadow-2xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-sm: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 1px 2px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 1px 2px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-md: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 2px 4px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-lg: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 4px 6px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-xl: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 8px 10px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-2xl: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
+
+  /* Real shadows — light mode */
+  --shadow-2xs: 0px 1px 2px 0px oklch(0.1884 0.0128 248.5103 / 0.06);
+  --shadow-xs:  0px 1px 3px 0px oklch(0.1884 0.0128 248.5103 / 0.08);
+  --shadow-sm:  0px 1px 3px 0px oklch(0.1884 0.0128 248.5103 / 0.10),
+                0px 1px 2px -1px oklch(0.1884 0.0128 248.5103 / 0.08);
+  --shadow:     0px 2px 4px 0px oklch(0.1884 0.0128 248.5103 / 0.10),
+                0px 1px 2px -1px oklch(0.1884 0.0128 248.5103 / 0.08);
+  --shadow-md:  0px 4px 6px -1px oklch(0.1884 0.0128 248.5103 / 0.10),
+                0px 2px 4px -2px oklch(0.1884 0.0128 248.5103 / 0.08);
+  --shadow-lg:  0px 10px 15px -3px oklch(0.1884 0.0128 248.5103 / 0.10),
+                0px 4px 6px -4px oklch(0.1884 0.0128 248.5103 / 0.08);
+  --shadow-xl:  0px 20px 25px -5px oklch(0.1884 0.0128 248.5103 / 0.10),
+                0px 8px 10px -6px oklch(0.1884 0.0128 248.5103 / 0.08);
+  --shadow-2xl: 0px 25px 50px -12px oklch(0.1884 0.0128 248.5103 / 0.25);
+
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 }
@@ -91,24 +94,25 @@
   --sidebar-accent-foreground: oklch(0.6692 0.1607 245.0110);
   --sidebar-border: oklch(0.3795 0.0220 240.5943);
   --sidebar-ring: oklch(0.6818 0.1584 243.3540);
-  --font-sans: Open Sans, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
   --radius: 1.3rem;
-  --shadow-x: 0px;
-  --shadow-y: 2px;
-  --shadow-blur: 0px;
-  --shadow-spread: 0px;
-  --shadow-opacity: 0;
-  --shadow-color: rgba(29,161,242,0.25);
-  --shadow-2xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-sm: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 1px 2px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 1px 2px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-md: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 2px 4px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-lg: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 4px 6px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-xl: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 8px 10px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-2xl: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
+
+  /* Real shadows — dark mode */
+  --shadow-2xs: 0px 1px 2px 0px oklch(0 0 0 / 0.20);
+  --shadow-xs:  0px 1px 3px 0px oklch(0 0 0 / 0.25);
+  --shadow-sm:  0px 1px 3px 0px oklch(0 0 0 / 0.30),
+                0px 1px 2px -1px oklch(0 0 0 / 0.20);
+  --shadow:     0px 2px 4px 0px oklch(0 0 0 / 0.30),
+                0px 1px 2px -1px oklch(0 0 0 / 0.20);
+  --shadow-md:  0px 4px 6px -1px oklch(0 0 0 / 0.35),
+                0px 2px 4px -2px oklch(0 0 0 / 0.20);
+  --shadow-lg:  0px 10px 15px -3px oklch(0 0 0 / 0.40),
+                0px 4px 6px -4px oklch(0 0 0 / 0.20);
+  --shadow-xl:  0px 20px 25px -5px oklch(0 0 0 / 0.45),
+                0px 8px 10px -6px oklch(0 0 0 / 0.20);
+  --shadow-2xl: 0px 25px 50px -12px oklch(0 0 0 / 0.60);
 }
 
 @theme inline {
@@ -165,7 +169,7 @@
 
   /* Animation tokens */
   --animate-fade-in: fade-in 0.3s ease-out;
-  --animate-slide-up: slide-up 0.3s ease-out;
+  --animate-slide-up: slide-up 0.35s ease-out;
   --animate-scale-in: scale-in 0.2s ease-out;
 }
 
@@ -182,7 +186,7 @@
 @keyframes slide-up {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -229,9 +233,39 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  h1, h2, h3 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  [data-slot="card-title"] {
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    .animate-fade-in,
+    .animate-slide-up,
+    .animate-scale-in,
+    .animate-shimmer {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+    .glass-card {
+      transition: none !important;
+    }
   }
 }
 
@@ -239,14 +273,17 @@
   /* Animation Utilities */
   .animate-fade-in {
     animation: fade-in 0.3s ease-out forwards;
+    opacity: 0;
   }
 
   .animate-slide-up {
-    animation: slide-up 0.3s ease-out forwards;
+    animation: slide-up 0.35s ease-out forwards;
+    opacity: 0;
   }
 
   .animate-scale-in {
     animation: scale-in 0.2s ease-out forwards;
+    opacity: 0;
   }
 
   .animate-shimmer {
@@ -260,18 +297,31 @@
     background-size: 200% 100%;
   }
 
+  /* Stagger delay utilities */
+  .stagger-1 { animation-delay: 50ms; }
+  .stagger-2 { animation-delay: 100ms; }
+  .stagger-3 { animation-delay: 150ms; }
+  .stagger-4 { animation-delay: 200ms; }
+  .stagger-5 { animation-delay: 250ms; }
+  .stagger-6 { animation-delay: 300ms; }
+  .stagger-7 { animation-delay: 350ms; }
+  .stagger-8 { animation-delay: 400ms; }
+
   /* Glass Morphism */
   .glass {
     @apply bg-background/80 backdrop-blur-md border border-border/50;
   }
 
   .glass-card {
-    @apply bg-card/70 backdrop-blur-xl border border-border/40 shadow-sm;
-    @apply transition-all duration-200;
+    @apply bg-card/70 backdrop-blur-xl border border-border/40;
+    @apply transition-all duration-200 ease-out;
+    box-shadow: var(--shadow-sm);
   }
 
   .glass-card:hover {
-    @apply border-primary/20 shadow-md;
+    @apply border-primary/20;
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
   }
 
   .glass-sidebar {
@@ -288,9 +338,14 @@
   }
 
   .table-row-interactive {
-    @apply cursor-pointer transition-all duration-150;
-    @apply hover:bg-primary/5 hover:shadow-sm;
-    @apply border-l-2 border-l-transparent hover:border-l-primary;
+    @apply cursor-pointer;
+    border-left: 2px solid transparent;
+    transition: border-color 150ms ease, background-color 150ms ease;
+  }
+
+  .table-row-interactive:hover {
+    @apply bg-primary/5;
+    border-left-color: var(--primary);
   }
 
   /* Touch-friendly utilities */

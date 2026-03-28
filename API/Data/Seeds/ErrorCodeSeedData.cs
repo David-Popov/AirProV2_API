@@ -23,7 +23,6 @@ public static class ErrorCodeSeedData
     {
         var errorCodes = new List<ErrorCode>();
 
-        // Common error codes for Daikin air conditioners
         errorCodes.AddRange(new[]
         {
             new ErrorCode

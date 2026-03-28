@@ -1,9 +1,10 @@
 import { apiClient } from './api';
-import type { 
-  LoginRequest, 
-  RegisterRequest, 
-  AuthResponse, 
-  AuthUser 
+import type {
+  LoginRequest,
+  RegisterRequest,
+  AuthResponse,
+  AuthUser,
+  MessageResponse
 } from '@/types';
 
 export const authService = {
@@ -22,17 +23,10 @@ export const authService = {
   },
 
   /**
-   * Register new user with company
+   * Register new user with company (no auto-login — email confirmation required)
    */
-  async register(data: RegisterRequest): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>('/auth/register', data, false);
-    
-    localStorage.setItem('token', response.token);
-    localStorage.setItem('refresh_token', response.refresh_token);
-    localStorage.setItem('token_expiration', response.token_expiration);
-    localStorage.setItem('user', JSON.stringify(response.user));
-    
-    return response;
+  async register(data: RegisterRequest): Promise<MessageResponse> {
+    return apiClient.post<MessageResponse>('/auth/register', data, false);
   },
 
   /**
@@ -60,6 +54,66 @@ export const authService = {
   },
 
 
+
+  /**
+   * Confirm email address after registration
+   */
+  async confirmEmail(userId: string, token: string): Promise<MessageResponse> {
+    return apiClient.post<MessageResponse>('/auth/confirm-email', { user_id: userId, token }, false);
+  },
+
+  /**
+   * Resend email confirmation link
+   */
+  async resendConfirmation(email: string): Promise<MessageResponse> {
+    return apiClient.post<MessageResponse>('/auth/resend-confirmation', { email }, false);
+  },
+
+  /**
+   * Request password reset link
+   */
+  async forgotPassword(email: string): Promise<MessageResponse> {
+    return apiClient.post<MessageResponse>('/auth/forgot-password', { email }, false);
+  },
+
+  /**
+   * Reset password with token from email
+   */
+  async resetPassword(email: string, token: string, newPassword: string): Promise<MessageResponse> {
+    return apiClient.post<MessageResponse>('/auth/reset-password', {
+      email,
+      token,
+      new_password: newPassword,
+    }, false);
+  },
+
+  /**
+   * Change password for authenticated user
+   */
+  async changePassword(newPassword: string, confirmPassword: string): Promise<MessageResponse> {
+    return apiClient.put<MessageResponse>('/auth/change-password', {
+      new_password: newPassword,
+      confirm_password: confirmPassword,
+    });
+  },
+
+  /**
+   * Request email change (sends confirmation to new email)
+   */
+  async requestEmailChange(newEmail: string): Promise<MessageResponse> {
+    return apiClient.post<MessageResponse>('/auth/change-email/request', { new_email: newEmail });
+  },
+
+  /**
+   * Confirm email change using token from email
+   */
+  async confirmEmailChange(userId: string, newEmail: string, token: string): Promise<MessageResponse> {
+    return apiClient.post<MessageResponse>('/auth/change-email/confirm', {
+      user_id: userId,
+      new_email: newEmail,
+      token,
+    }, false);
+  },
 
   /**
    * Check if email is available

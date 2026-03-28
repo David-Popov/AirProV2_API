@@ -11,18 +11,25 @@ public interface IBackgroundEmailQueue
 public class BackgroundEmailQueue : IBackgroundEmailQueue
 {
     private readonly Channel<Func<IServiceProvider, Task>> _queue;
+    private readonly ILogger<BackgroundEmailQueue> _logger;
 
-    public BackgroundEmailQueue()
+    public BackgroundEmailQueue(ILogger<BackgroundEmailQueue> logger)
     {
-        _queue = Channel.CreateBounded<Func<IServiceProvider, Task>>(100);
+        _logger = logger;
+        // Unbounded channel — never silently drops emails.
+        // Under extreme load the queue grows in memory rather than losing emails.
+        _queue = Channel.CreateUnbounded<Func<IServiceProvider, Task>>();
     }
 
     public void QueueEmail(Func<IServiceProvider, Task> emailWork)
     {
         ArgumentNullException.ThrowIfNull(emailWork);
+
         if (!_queue.Writer.TryWrite(emailWork))
         {
-            // Queue is full — log and drop rather than blocking the caller
+            // TryWrite on an unbounded channel never returns false unless the channel
+            // is completed (i.e., app is shutting down). Log so it is visible.
+            _logger.LogError("Failed to enqueue email work item — the email channel may be closed (shutdown in progress)");
         }
     }
 
