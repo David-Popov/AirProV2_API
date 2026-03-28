@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { Mail, Lock, Loader2, ArrowRight } from 'lucide-react'
+import { Mail, Lock, Loader2, ArrowRight, RefreshCw, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AuthLayout } from '@/components/layout'
 import { useAuth } from '@/context'
+import { authService } from '@/services'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -15,10 +16,9 @@ export default function LoginPage() {
   const { t } = useTranslation()
   const { login, isAuthenticated, isLoading: isAuthLoading } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  })
+  const [formData, setFormData] = useState({ email: '', password: '' })
+  const [emailNotConfirmed, setEmailNotConfirmed] = useState(false)
+  const [isResending, setIsResending] = useState(false)
 
   useEffect(() => {
     if (!isAuthLoading && isAuthenticated) {
@@ -32,7 +32,6 @@ export default function LoginPage() {
     const stateMessage = (location.state as { message?: string })?.message
     if (stateMessage) {
       toast.info(stateMessage)
-      // Clear the state so it doesn't show again on refresh
       window.history.replaceState({}, document.title)
     }
   }, [location.state])
@@ -48,21 +47,37 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setEmailNotConfirmed(false)
 
     try {
-      await login({
-        email: formData.email,
-        password: formData.password,
-      })
-
+      await login({ email: formData.email, password: formData.password })
       toast.success(t('auth.login_success'))
-
       const from = (location.state as { from?: Location })?.from?.pathname || '/dashboard'
       navigate(from, { replace: true })
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('auth.login_failed'))
+      const message = error instanceof Error ? error.message : t('auth.login_failed')
+      // Detect "email not confirmed" error from the backend
+      if (message.toLowerCase().includes('confirm your email') || message.toLowerCase().includes('email address')) {
+        setEmailNotConfirmed(true)
+      } else {
+        toast.error(message)
+      }
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleResendConfirmation = async () => {
+    if (!formData.email) return
+    setIsResending(true)
+    try {
+      await authService.resendConfirmation(formData.email)
+      toast.success(t('auth.resend_confirmation_sent'))
+      setEmailNotConfirmed(false)
+    } catch {
+      toast.error(t('auth.resend_confirmation_failed'))
+    } finally {
+      setIsResending(false)
     }
   }
 
@@ -74,6 +89,43 @@ export default function LoginPage() {
           {t('auth.sign_in_description')}
         </p>
 
+        {/* Email not confirmed banner */}
+        {emailNotConfirmed && (
+          <div className="mb-5 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 animate-slide-up">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                  {t('auth.email_not_confirmed_banner')}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {t('auth.resend_confirmation_hint')}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-3 h-8 text-xs border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/60"
+                  onClick={handleResendConfirmation}
+                  disabled={isResending}
+                >
+                  {isResending ? (
+                    <>
+                      <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                      {t('auth.sending')}
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-3 h-3 mr-1.5" />
+                      {t('auth.resend_confirmation')}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-1.5">
             <Label htmlFor="email" className="text-foreground font-medium text-sm">{t('auth.email')}</Label>
@@ -84,7 +136,10 @@ export default function LoginPage() {
                 type="email"
                 placeholder="john@airpro.com"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, email: e.target.value })
+                  if (emailNotConfirmed) setEmailNotConfirmed(false)
+                }}
                 required
                 className="pl-10 h-11 bg-background border-border"
               />
