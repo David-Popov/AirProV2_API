@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /inventory
+Disallow: /montages
+Disallow: /employees
+Disallow: /air-conditioners
+Disallow: /error-codes
+Disallow: /companies
+Disallow: /settings
+Disallow: /subscription
+Disallow: /admin/
+
+Sitemap: https://airprobg.com/sitemap.xml
