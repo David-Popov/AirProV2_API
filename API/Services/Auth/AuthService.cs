@@ -146,7 +146,17 @@ public class AuthService : IAuthService
                 throw new InvalidOperationException("Invalid email or password");
             }
 
-            var result = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, lockoutOnFailure: false);
+            var result = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, lockoutOnFailure: true);
+
+            if (result.IsLockedOut)
+            {
+                // Reveal lockout state so the user knows to wait or use forgot-password.
+                // We do NOT reveal how many attempts remain to avoid aiding brute-force calibration.
+                throw new InvalidOperationException(
+                    "Your account has been temporarily locked due to too many failed login attempts. " +
+                    "Please wait 15 minutes or reset your password to unlock it immediately.");
+            }
+
             if (!result.Succeeded)
             {
                 throw new InvalidOperationException("Invalid email or password");
@@ -913,7 +923,17 @@ public class AuthService : IAuthService
         }
 
         var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
-        return await _userManager.ResetPasswordAsync(user, decodedToken, newPassword);
+        var result = await _userManager.ResetPasswordAsync(user, decodedToken, newPassword);
+
+        if (result.Succeeded)
+        {
+            // Proving email ownership via the reset link counts as sufficient verification —
+            // unlock the account so a locked-out user doesn't need to wait 15 minutes.
+            await _userManager.ResetAccessFailedCountAsync(user);
+            await _userManager.SetLockoutEndDateAsync(user, null);
+        }
+
+        return result;
     }
 
     public async Task<IdentityResult> ChangePasswordAsync(string userId, string newPassword)

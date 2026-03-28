@@ -17,8 +17,14 @@ public static class IdentityExtensions
                 options.Password.RequireLowercase = true;
                 options.Password.RequireUppercase = true;
                 options.Password.RequireNonAlphanumeric = false;
-                options.Password.RequiredLength = 6;
+                options.Password.RequiredLength = 8;
                 options.User.RequireUniqueEmail = true;
+
+                // Lock the account for 15 minutes after 10 consecutive failed attempts.
+                // Users can self-unlock by completing the forgot-password flow.
+                options.Lockout.MaxFailedAccessAttempts = 10;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+                options.Lockout.AllowedForNewUsers = true;
             })
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();

@@ -159,6 +159,8 @@
     "send_new_link": "Send New Link",
     "sending": "Sending...",
     "email_not_confirmed_banner": "Your email address is not confirmed yet.",
+    "account_locked": "Account temporarily locked",
+    "account_locked_hint": "Too many failed login attempts. Please wait 15 minutes or reset your password to unlock your account immediately.",
     "reset_password": "Reset Password",
     "reset_password_description": "Enter your new password below.",
     "new_password": "New Password",

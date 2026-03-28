@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { Mail, Lock, Loader2, ArrowRight, RefreshCw, AlertTriangle } from 'lucide-react'
+import { Mail, Lock, Loader2, ArrowRight, RefreshCw, AlertTriangle, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,6 +19,7 @@ export default function LoginPage() {
   const [formData, setFormData] = useState({ email: '', password: '' })
   const [emailNotConfirmed, setEmailNotConfirmed] = useState(false)
   const [isResending, setIsResending] = useState(false)
+  const [accountLocked, setAccountLocked] = useState(false)
 
   useEffect(() => {
     if (!isAuthLoading && isAuthenticated) {
@@ -48,6 +49,7 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
     setEmailNotConfirmed(false)
+    setAccountLocked(false)
 
     try {
       await login({ email: formData.email, password: formData.password })
@@ -56,9 +58,10 @@ export default function LoginPage() {
       navigate(from, { replace: true })
     } catch (error) {
       const message = error instanceof Error ? error.message : t('auth.login_failed')
-      // Detect "email not confirmed" error from the backend
       if (message.toLowerCase().includes('confirm your email') || message.toLowerCase().includes('email address')) {
         setEmailNotConfirmed(true)
+      } else if (message.toLowerCase().includes('locked')) {
+        setAccountLocked(true)
       } else {
         toast.error(message)
       }
@@ -126,6 +129,29 @@ export default function LoginPage() {
           </div>
         )}
 
+        {/* Account locked banner */}
+        {accountLocked && (
+          <div className="mb-5 p-4 rounded-xl border border-destructive/30 bg-destructive/10 animate-slide-up">
+            <div className="flex items-start gap-3">
+              <ShieldAlert className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-destructive">
+                  {t('auth.account_locked')}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {t('auth.account_locked_hint')}
+                </p>
+                <Link
+                  to="/forgot-password"
+                  className="inline-block mt-3 text-xs font-medium text-destructive hover:text-destructive/80 underline underline-offset-2 transition-colors"
+                >
+                  {t('auth.forgot_password', 'Forgot password?')}
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-1.5">
             <Label htmlFor="email" className="text-foreground font-medium text-sm">{t('auth.email')}</Label>
@@ -139,6 +165,7 @@ export default function LoginPage() {
                 onChange={(e) => {
                   setFormData({ ...formData, email: e.target.value })
                   if (emailNotConfirmed) setEmailNotConfirmed(false)
+                  if (accountLocked) setAccountLocked(false)
                 }}
                 required
                 className="pl-10 h-11 bg-background border-border"
