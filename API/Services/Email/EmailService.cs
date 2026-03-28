@@ -1,11 +1,11 @@
 using System.Collections.Concurrent;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Encodings.Web;
+using System.Text.Json;
 using API.Data.Entities;
 using API.Models;
-using MailKit.Net.Smtp;
-using MailKit.Security;
 using Microsoft.Extensions.Options;
-using MimeKit;
 
 namespace API.Services.Email;
 
@@ -13,6 +13,7 @@ public class EmailService : IEmailService
 {
     private readonly EmailSettings _emailSettings;
     private readonly IWebHostEnvironment _env;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<EmailService> _logger;
 
     private readonly ConcurrentDictionary<string, string> _templateCache = new();
@@ -20,10 +21,12 @@ public class EmailService : IEmailService
     public EmailService(
         IOptions<EmailSettings> emailSettings,
         IWebHostEnvironment env,
+        IHttpClientFactory httpClientFactory,
         ILogger<EmailService> logger)
     {
         _emailSettings = emailSettings.Value;
         _env = env;
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
     }
 
@@ -279,35 +282,47 @@ public class EmailService : IEmailService
 
     private async Task SendEmailAsync(string toEmail, string toName, string subject, string htmlBody)
     {
-        var message = new MimeMessage();
-        message.From.Add(new MailboxAddress(_emailSettings.SenderName, _emailSettings.SenderEmail));
-        message.To.Add(new MailboxAddress(toName, toEmail));
-        message.ReplyTo.Add(new MailboxAddress(_emailSettings.SenderName, _emailSettings.SupportEmail));
-        message.Subject = subject;
-        message.Body = new BodyBuilder { HtmlBody = htmlBody }.ToMessageBody();
+        var payload = new
+        {
+            from     = new { email = _emailSettings.SenderEmail, name = _emailSettings.SenderName },
+            to       = new[] { new { email = toEmail, name = toName } },
+            reply_to = new { email = _emailSettings.SupportEmail },
+            subject  = subject,
+            html     = htmlBody
+        };
 
-        using var client = new SmtpClient();
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{_emailSettings.ApiBaseUrl}/api/send")
+        {
+            Content = new StringContent(
+                JsonSerializer.Serialize(payload),
+                Encoding.UTF8,
+                "application/json")
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _emailSettings.ApiToken);
+
+        var client = _httpClientFactory.CreateClient("Mailtrap");
 
         try
         {
-            var secureSocketOptions = _emailSettings.UseSsl
-                ? SecureSocketOptions.StartTls
-                : SecureSocketOptions.None;
+            var response = await client.SendAsync(request);
 
-            await client.ConnectAsync(_emailSettings.SmtpHost, _emailSettings.SmtpPort, secureSocketOptions);
-            await client.AuthenticateAsync(_emailSettings.SmtpUsername, _emailSettings.SmtpPassword);
-            await client.SendAsync(message);
-
-            _logger.LogInformation("Email sent successfully to {Email} via Mailtrap", toEmail);
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogInformation("Email sent successfully to {Email} via Mailtrap API", toEmail);
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                _logger.LogError(
+                    "Failed to send email to {Email} via Mailtrap API. Status: {Status}, Body: {Error}",
+                    toEmail, (int)response.StatusCode, error);
+                throw new InvalidOperationException($"Mailtrap API error {(int)response.StatusCode}: {error}");
+            }
         }
-        catch (Exception ex)
+        catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "Failed to send email to {Email} via Mailtrap", toEmail);
+            _logger.LogError(ex, "Network error while sending email to {Email} via Mailtrap API", toEmail);
             throw;
-        }
-        finally
-        {
-            await client.DisconnectAsync(true);
         }
     }
 }

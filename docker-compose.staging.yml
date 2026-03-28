@@ -47,13 +47,11 @@ services:
       StripeSettings__WebhookSecret: ${STRIPE_WEBHOOK_SECRET}
       StripeSettings__PremiumPriceId: ${STRIPE_PREMIUM_PRICE_ID}
       EncryptionSettings__Key: ${ENCRYPTION_KEY}
-      EmailSettings__SmtpHost: ${SMTP_HOST}
-      EmailSettings__SmtpPort: ${SMTP_PORT}
-      EmailSettings__SmtpUsername: ${SMTP_USERNAME}
-      EmailSettings__SmtpPassword: ${SMTP_PASSWORD}
-      EmailSettings__SenderEmail: ${SMTP_SENDER_EMAIL}
-      EmailSettings__SenderName: ${SMTP_SENDER_NAME:-AirPro Support}
-      EmailSettings__SupportEmail: ${SMTP_SUPPORT_EMAIL:-support@airprobg.com}
+      EmailSettings__ApiToken: ${MAILTRAP_API_TOKEN}
+      EmailSettings__ApiBaseUrl: "https://send.api.mailtrap.io"
+      EmailSettings__SenderEmail: "support@airprobg.com"
+      EmailSettings__SenderName: "AirPro Support"
+      EmailSettings__SupportEmail: "support@airprobg.com"
       EmailSettings__WebsiteUrl: ${WEBSITE_URL}
     depends_on:
       - postgres
