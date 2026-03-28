@@ -25,7 +25,14 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<ApplicationDbContext>();
         context.Database.Migrate();
 
-        SeedDataManager.SeedAllData(services);
+        // Dev-only seeds: test companies and test users — never runs in production
+        if (app.Environment.IsDevelopment())
+        {
+            SeedDataManager.SeedAllData(services);
+        }
+
+        // Production admin bootstrap: creates admin from env vars if no admin exists
+        ProductionAdminSeed.SeedAdminIfNotExists(services);
     }
     catch (Exception ex)
     {

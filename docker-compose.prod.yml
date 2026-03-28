@@ -55,6 +55,8 @@ services:
       EmailSettings__SenderName: ${SMTP_SENDER_NAME:-AirPro Support}
       EmailSettings__SupportEmail: ${SMTP_SUPPORT_EMAIL:-support@airprobg.com}
       EmailSettings__WebsiteUrl: ${WEBSITE_URL}
+      PROD_ADMIN_EMAIL: ${PROD_ADMIN_EMAIL}
+      PROD_ADMIN_PASSWORD: ${PROD_ADMIN_PASSWORD}
     depends_on:
       - postgres
       - minio

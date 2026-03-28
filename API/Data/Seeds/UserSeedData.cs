@@ -106,7 +106,6 @@ public static class UserSeedData
         context.Users.AddRange(adminUser, managerUser, normalUser1, normalUser2);
         context.SaveChanges();
 
-        // Assign roles
         var userRoles = new List<IdentityUserRole<string>>
         {
             new() { UserId = "u0000000-0000-0000-0000-000000000001", RoleId = "r0000000-0000-0000-0000-000000000001" },
