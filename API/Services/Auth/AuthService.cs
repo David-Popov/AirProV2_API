@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using API.Constants;
 using API.Data;
 using API.Data.Entities;
 using API.DTOs;
@@ -109,7 +110,7 @@ public class AuthService : IAuthService
 
             // Add Manager role - user who self-registers is the company owner/manager
             // They can later add employees with "User" role
-            await _userManager.AddToRoleAsync(user, "Manager");
+            await _userManager.AddToRoleAsync(user, AppRoles.Manager);
 
             await transaction.CommitAsync();
 
@@ -321,54 +322,43 @@ public class AuthService : IAuthService
             throw new InvalidOperationException("Invalid token");
         }
 
-        var expiryDateUnix = long.Parse(principal.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Exp).Value);
-        var expiryDateTimeUtc = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-            .AddSeconds(expiryDateUnix);
+        var expiryDateUnix    = long.Parse(principal.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Exp).Value);
+        var expiryDateTimeUtc = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(expiryDateUnix);
 
-        if (expiryDateTimeUtc > DateTime.UtcNow)
+        // C-2: Only allow refresh of genuinely expired tokens (allow 30 s clock skew).
+        if (expiryDateTimeUtc > DateTime.UtcNow.AddSeconds(30))
         {
-           // throw new InvalidOperationException("This token has not expired yet");
+            throw new InvalidOperationException("This token has not expired yet.");
         }
 
         var jti = principal.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Jti).Value;
-        
+
+        // C-1: Atomic single-statement UPDATE that marks the token as used only if it
+        // was not already used/invalidated/expired and the jti matches.
+        // Returns 0 rows if ANY of those conditions are already violated — no TOCTOU window.
+        var affected = await _context.RefreshTokens
+            .Where(rt => rt.Token        == refreshToken
+                      && rt.JwtId        == jti
+                      && !rt.Used
+                      && !rt.Invalidated
+                      && rt.ExpiryDate   > DateTime.UtcNow)
+            .ExecuteUpdateAsync(s => s.SetProperty(rt => rt.Used, true));
+
+        if (affected == 0)
+        {
+            throw new InvalidOperationException("Refresh token is invalid, expired, already used, or does not match this JWT.");
+        }
+
         var storedRefreshToken = await _context.RefreshTokens
             .Include(x => x.ApplicationUser)
             .SingleOrDefaultAsync(x => x.Token == refreshToken);
 
-        if (storedRefreshToken == null)
-        {
-            throw new InvalidOperationException("Refresh token does not exist");
-        }
+        var user = storedRefreshToken?.ApplicationUser
+                   ?? await _userManager.FindByIdAsync(storedRefreshToken?.UserId ?? string.Empty);
 
-        if (DateTime.UtcNow > storedRefreshToken.ExpiryDate)
-        {
-            throw new InvalidOperationException("Refresh token has expired");
-        }
-
-        if (storedRefreshToken.Invalidated)
-        {
-            throw new InvalidOperationException("Refresh token has been invalidated");
-        }
-
-        if (storedRefreshToken.Used)
-        {
-            throw new InvalidOperationException("Refresh token has been used");
-        }
-
-        if (storedRefreshToken.JwtId != jti)
-        {
-            throw new InvalidOperationException("Refresh token does not match this JWT");
-        }
-
-        storedRefreshToken.Used = true;
-        _context.RefreshTokens.Update(storedRefreshToken);
-        await _context.SaveChangesAsync();
-
-        var user = await _userManager.FindByIdAsync(storedRefreshToken.UserId);
         if (user == null)
         {
-             throw new InvalidOperationException("User not found");
+            throw new InvalidOperationException("User not found");
         }
 
         var newToken = await GenerateJwtTokenAsync(user);
@@ -426,15 +416,20 @@ public class AuthService : IAuthService
     private ClaimsPrincipal? GetPrincipalFromExpiredToken(string? token)
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
-        var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured");
-        
+        var secretKey   = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured");
+
+        // H-6: Validate issuer and audience even for expired tokens to prevent
+        // token-substitution attacks (a token issued for a different system
+        // shares the same signing key but different iss/aud claims).
         var tokenValidationParameters = new TokenValidationParameters
         {
-            ValidateAudience = false,
-            ValidateIssuer = false,
+            ValidateAudience         = true,
+            ValidateIssuer           = true,
+            ValidIssuer              = jwtSettings["Issuer"],
+            ValidAudience            = jwtSettings["Audience"],
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-            ValidateLifetime = false
+            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+            ValidateLifetime         = false  // Intentional — we are validating an expired token during refresh
         };
 
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -558,16 +553,23 @@ public class AuthService : IAuthService
                 throw new InvalidOperationException($"Failed to create employee: {errors}");
             }
 
-            await _userManager.AddToRoleAsync(user, "User");
+            await _userManager.AddToRoleAsync(user, AppRoles.User);
+
+            // Generate a password-set link so the employee can set their own password.
+            // We never transmit the plain-text password in email (H-7).
+            var resetToken    = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var encodedToken  = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(resetToken));
+            var encodedEmail  = Uri.EscapeDataString(user.Email!);
+            var passwordSetLink = $"{_emailSettings.WebsiteUrl}/reset-password?email={encodedEmail}&token={encodedToken}";
 
             // Queue welcome email to new employee (non-blocking)
-            var empUser = user;
-            var empCompany = company;
-            var empPassword = dto.Password;
+            var empUser         = user;
+            var empCompany      = company;
+            var empPasswordLink = passwordSetLink;
             _backgroundEmailQueue.QueueEmail(async sp =>
             {
                 var emailService = sp.GetRequiredService<IEmailService>();
-                await emailService.SendNewEmployeeWelcomeEmailAsync(empUser, empCompany, empPassword);
+                await emailService.SendNewEmployeeWelcomeEmailAsync(empUser, empCompany, empPasswordLink);
             });
 
             var roles = await _userManager.GetRolesAsync(user);

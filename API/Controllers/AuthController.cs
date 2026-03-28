@@ -5,6 +5,7 @@ using API.Services.Auth;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace API.Controllers;
 
@@ -43,8 +44,10 @@ public class AuthController : ControllerBase
     /// A confirmation email will be sent — the user must confirm before logging in.
     /// </remarks>
     [HttpPost("register")]
+    [EnableRateLimiting("auth")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> Register([FromBody] RegisterDto dto)
     {
@@ -77,9 +80,11 @@ public class AuthController : ControllerBase
     /// Authenticates a user and returns a JWT token upon successful login.
     /// </remarks>
     [HttpPost("login")]
+    [EnableRateLimiting("auth")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto dto)
     {
@@ -262,7 +267,9 @@ public class AuthController : ControllerBase
     /// Resend email confirmation link
     /// </summary>
     [HttpPost("resend-confirmation")]
+    [EnableRateLimiting("auth")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult> ResendConfirmation([FromBody] ResendConfirmationDto dto)
     {
         try
@@ -281,7 +288,9 @@ public class AuthController : ControllerBase
     /// Request a password reset link
     /// </summary>
     [HttpPost("forgot-password")]
+    [EnableRateLimiting("auth")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
     {
         try

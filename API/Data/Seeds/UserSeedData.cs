@@ -16,6 +16,13 @@ public static class UserSeedData
 
         var hasher = new PasswordHasher<ApplicationUser>();
 
+        // M-12: Read seed passwords from environment variables so they are not
+        // committed to source control. Fall back to obvious dev-only defaults that
+        // must be changed before any real deployment.
+        var adminPassword   = Environment.GetEnvironmentVariable("SEED_ADMIN_PASSWORD")   ?? "Admin@Dev123!";
+        var managerPassword = Environment.GetEnvironmentVariable("SEED_MANAGER_PASSWORD") ?? "Manager@Dev123!";
+        var userPassword    = Environment.GetEnvironmentVariable("SEED_USER_PASSWORD")    ?? "User@Dev123!";
+
         var adminUser = new ApplicationUser
         {
             Id = "u0000000-0000-0000-0000-000000000001",
@@ -34,7 +41,7 @@ public static class UserSeedData
             SecurityStamp = Guid.NewGuid().ToString(),
             ConcurrencyStamp = Guid.NewGuid().ToString()
         };
-        adminUser.PasswordHash = hasher.HashPassword(adminUser, "Admin@123");
+        adminUser.PasswordHash = hasher.HashPassword(adminUser, adminPassword);
 
         var managerUser = new ApplicationUser
         {
@@ -54,7 +61,7 @@ public static class UserSeedData
             SecurityStamp = Guid.NewGuid().ToString(),
             ConcurrencyStamp = Guid.NewGuid().ToString()
         };
-        managerUser.PasswordHash = hasher.HashPassword(managerUser, "Manager@123");
+        managerUser.PasswordHash = hasher.HashPassword(managerUser, managerPassword);
 
         var normalUser1 = new ApplicationUser
         {
@@ -74,7 +81,7 @@ public static class UserSeedData
             SecurityStamp = Guid.NewGuid().ToString(),
             ConcurrencyStamp = Guid.NewGuid().ToString()
         };
-        normalUser1.PasswordHash = hasher.HashPassword(normalUser1, "User@123");
+        normalUser1.PasswordHash = hasher.HashPassword(normalUser1, userPassword);
 
         var normalUser2 = new ApplicationUser
         {
@@ -94,7 +101,7 @@ public static class UserSeedData
             SecurityStamp = Guid.NewGuid().ToString(),
             ConcurrencyStamp = Guid.NewGuid().ToString()
         };
-        normalUser2.PasswordHash = hasher.HashPassword(normalUser2, "User@123");
+        normalUser2.PasswordHash = hasher.HashPassword(normalUser2, userPassword);
 
         context.Users.AddRange(adminUser, managerUser, normalUser1, normalUser2);
         context.SaveChanges();

@@ -19,9 +19,16 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser]       = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Stable logout so it can be used in other callbacks and the event listener
+  const logout = useCallback(() => {
+    authService.logout();
+    setUser(null);
+  }, []);
+
+  // Initialise auth state from storage on mount
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -36,15 +43,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
         }
       } catch (error) {
-        console.error('Failed to initialize auth:', error);
-        authService.logout();
+        // L-5: Log only the message, not the full error object, to avoid leaking
+        // stack traces or internal API details in production devtools.
+        console.error('Failed to initialize auth:', error instanceof Error ? error.message : String(error));
+        logout();
       } finally {
         setIsLoading(false);
       }
     };
 
     initAuth();
-  }, []);
+  }, [logout]);
+
+  // M-5: Listen for the auth:session-expired event dispatched by the API client
+  // when a token refresh fails. Clears auth state so ProtectedRoute redirects
+  // to /login via React Router instead of a full page reload.
+  useEffect(() => {
+    const handleSessionExpired = () => logout();
+    window.addEventListener('auth:session-expired', handleSessionExpired);
+    return () => window.removeEventListener('auth:session-expired', handleSessionExpired);
+  }, [logout]);
 
   const login = useCallback(async (data: LoginRequest): Promise<AuthResponse> => {
     const response = await authService.login(data);
@@ -56,22 +74,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return authService.register(data);
   }, []);
 
-  const logout = useCallback(() => {
-    authService.logout();
-    setUser(null);
-  }, []);
-
   const refreshUser = useCallback(async () => {
     try {
       const fetchedUser = await authService.getCurrentUser();
       setUser(fetchedUser);
       localStorage.setItem('user', JSON.stringify(fetchedUser));
     } catch (error) {
-      console.error('Failed to refresh user:', error);
+      console.error('Failed to refresh user:', error instanceof Error ? error.message : String(error));
       logout();
     }
   }, [logout]);
 
+  // L-4: Only include state values in the deps array — the stable callbacks
+  // (login, register, logout, refreshUser) are wrapped in useCallback with
+  // stable deps and do not need to be listed here.
   const value = useMemo<AuthContextType>(() => ({
     user,
     isAuthenticated: !!user && authService.isAuthenticated(),

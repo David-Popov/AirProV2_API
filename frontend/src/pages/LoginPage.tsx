@@ -33,9 +33,11 @@ export default function LoginPage() {
     const stateMessage = (location.state as { message?: string })?.message
     if (stateMessage) {
       toast.info(stateMessage)
-      window.history.replaceState({}, document.title)
+      // L-2: Use React Router to clear the state instead of manipulating
+      // window.history directly, keeping React Router's internal history in sync.
+      navigate(location.pathname, { replace: true, state: null })
     }
-  }, [location.state])
+  }, [location.state, location.pathname, navigate])
 
   if (isAuthLoading) {
     return (

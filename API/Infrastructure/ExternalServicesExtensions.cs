@@ -1,4 +1,5 @@
 using API.Models;
+using API.Services.Background;
 using API.Services.Email;
 using API.Services.Stripe;
 using Minio;
@@ -31,6 +32,7 @@ public static class ExternalServicesExtensions
         services.AddScoped<IEmailService, EmailService>();
         services.AddSingleton<IBackgroundEmailQueue, BackgroundEmailQueue>();
         services.AddHostedService<BackgroundEmailProcessor>();
+        services.AddHostedService<RefreshTokenCleanupService>();
 
         return services;
     }

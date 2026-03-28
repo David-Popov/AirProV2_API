@@ -9,7 +9,8 @@ public interface IEmailService
     Task SendSubscriptionPurchasedEmailAsync(Company company, string planName);
     Task SendAccountDeletionConfirmationEmailAsync(string email, string companyName);
     Task SendSubscriptionStatusChangedEmailAsync(Company company, string previousStatus, string newStatus);
-    Task SendNewEmployeeWelcomeEmailAsync(ApplicationUser employee, Company company, string temporaryPassword);
+    /// <summary>Sends a welcome email to a new employee with a link to set their password.</summary>
+    Task SendNewEmployeeWelcomeEmailAsync(ApplicationUser employee, Company company, string passwordSetLink);
     Task SendTrialActivatedEmailAsync(Company company, DateTime trialEndDate);
     Task SendEmailConfirmationAsync(string toEmail, string userName, string confirmLink);
     Task SendPasswordResetEmailAsync(string toEmail, string userName, string resetLink);

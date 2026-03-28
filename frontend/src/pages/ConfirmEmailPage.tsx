@@ -12,16 +12,20 @@ import { CheckCircle2, XCircle, Loader2, Mail, RefreshCw } from 'lucide-react';
 export default function ConfirmEmailPage() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [status, setStatus]           = useState<'loading' | 'success' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState('');
-  const [resendEmail, setResendEmail] = useState('');
-  const [isResending, setIsResending] = useState(false);
-  const [resendSent, setResendSent] = useState(false);
+  const [resendEmail, setResendEmail]   = useState('');
+  const [isResending, setIsResending]   = useState(false);
+  const [resendSent, setResendSent]     = useState(false);
 
   const userId = searchParams.get('userId');
-  const token = searchParams.get('token');
+  const token  = searchParams.get('token');
 
   useEffect(() => {
+    // M-3: Use AbortController so the fetch is cancelled if the component
+    // unmounts before the response arrives (prevents setState on unmounted component).
+    const controller = new AbortController();
+
     const confirmEmail = async () => {
       if (!userId || !token) {
         setStatus('error');
@@ -31,15 +35,23 @@ export default function ConfirmEmailPage() {
 
       try {
         await authService.confirmEmail(userId, token);
-        setStatus('success');
+        if (!controller.signal.aborted) {
+          setStatus('success');
+        }
       } catch (err: unknown) {
-        setStatus('error');
-        const message = err instanceof Error ? err.message : t('auth.confirmation_failed', 'Email confirmation failed. The link may have expired.');
-        setErrorMessage(message);
+        if (!controller.signal.aborted) {
+          setStatus('error');
+          const message = err instanceof Error
+            ? err.message
+            : t('auth.confirmation_failed', 'Email confirmation failed. The link may have expired.');
+          setErrorMessage(message);
+        }
       }
     };
 
     confirmEmail();
+
+    return () => controller.abort();
   }, [userId, token, t]);
 
   const handleResend = async (e: React.FormEvent) => {

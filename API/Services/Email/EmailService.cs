@@ -1,3 +1,4 @@
+using System.Text.Encodings.Web;
 using API.Data.Entities;
 using API.Models;
 using MailKit.Net.Smtp;
@@ -86,10 +87,10 @@ public class EmailService : IEmailService
             htmlBody);
     }
 
-    public async Task SendNewEmployeeWelcomeEmailAsync(ApplicationUser employee, Company company, string temporaryPassword)
+    public async Task SendNewEmployeeWelcomeEmailAsync(ApplicationUser employee, Company company, string passwordSetLink)
     {
-        var subject = $"Welcome to {company.CompanyName} - Your AirPro Account";
-        var htmlBody = BuildNewEmployeeWelcomeEmailTemplate(employee, company, temporaryPassword);
+        var subject = $"Welcome to {HtmlEncoder.Default.Encode(company.CompanyName)} - Your AirPro Account";
+        var htmlBody = BuildNewEmployeeWelcomeEmailTemplate(employee, company, passwordSetLink);
 
         await SendEmailAsync(
             employee.Email!,
@@ -203,14 +204,18 @@ public class EmailService : IEmailService
 
     private string BuildWelcomeEmailTemplate(ApplicationUser user, Company company)
     {
+        var firstName   = HtmlEncoder.Default.Encode(user.FirstName);
+        var companyName = HtmlEncoder.Default.Encode(company.CompanyName);
+        var plan        = HtmlEncoder.Default.Encode(company.SubscriptionPlan.ToString());
+
         var content = $@"
-            <h1 style='color: #333; margin: 0 0 20px 0;'>Welcome to AirPro, {user.FirstName}!</h1>
+            <h1 style='color: #333; margin: 0 0 20px 0;'>Welcome to AirPro, {firstName}!</h1>
             <p style='color: #666; line-height: 1.6;'>
-                Thank you for registering <strong>{company.CompanyName}</strong> with AirPro.
+                Thank you for registering <strong>{companyName}</strong> with AirPro.
                 Your account is now active and ready to use.
             </p>
             <p style='color: #666; line-height: 1.6;'>
-                You're currently on the <strong>{company.SubscriptionPlan}</strong> plan.
+                You're currently on the <strong>{plan}</strong> plan.
             </p>
             <div style='margin: 30px 0; text-align: center;'>
                 <a href='{_emailSettings.WebsiteUrl}/login'
@@ -344,34 +349,34 @@ public class EmailService : IEmailService
         return WrapInBaseTemplate("Subscription Status Update", content);
     }
 
-    private string BuildNewEmployeeWelcomeEmailTemplate(ApplicationUser employee, Company company, string temporaryPassword)
+    private string BuildNewEmployeeWelcomeEmailTemplate(ApplicationUser employee, Company company, string passwordSetLink)
     {
+        var firstName   = HtmlEncoder.Default.Encode(employee.FirstName);
+        var emailAddr   = HtmlEncoder.Default.Encode(employee.Email ?? string.Empty);
+        var companyName = HtmlEncoder.Default.Encode(company.CompanyName);
+
         var content = $@"
-            <h1 style='color: #333; margin: 0 0 20px 0;'>Welcome to the Team, {employee.FirstName}!</h1>
+            <h1 style='color: #333; margin: 0 0 20px 0;'>Welcome to the Team, {firstName}!</h1>
             <p style='color: #666; line-height: 1.6;'>
-                You have been added as an employee at <strong>{company.CompanyName}</strong> on AirPro.
+                You have been added as an employee at <strong>{companyName}</strong> on AirPro.
             </p>
             <p style='color: #666; line-height: 1.6;'>
-                Your account has been created with the following credentials:
+                Your account has been created with the email address below. Use the button to set your password and access the platform.
             </p>
             <div style='background-color: #f8f8f8; padding: 15px; border-radius: 5px; margin: 20px 0;'>
                 <p style='margin: 0; color: #666;'>
-                    <strong>Email:</strong> {employee.Email}<br/>
-                    <strong>Temporary Password:</strong> {temporaryPassword}
+                    <strong>Email:</strong> {emailAddr}
                 </p>
             </div>
-            <p style='color: #666; line-height: 1.6;'>
-                <strong>Important:</strong> Please change your password after your first login for security purposes.
-            </p>
             <div style='margin: 30px 0; text-align: center;'>
-                <a href='{_emailSettings.WebsiteUrl}/login'
+                <a href='{passwordSetLink}'
                    style='background-color: #6b21a8; color: #ffffff; padding: 12px 30px;
                           text-decoration: none; border-radius: 5px; display: inline-block;'>
-                    Login Now
+                    Set Your Password
                 </a>
             </div>
             <p style='color: #666; line-height: 1.6;'>
-                If you have any questions, please contact your manager or our support team.
+                This link expires in 24 hours. If you have any questions, please contact your manager or our support team.
             </p>";
 
         return WrapInBaseTemplate("Welcome to AirPro", content);
@@ -379,11 +384,12 @@ public class EmailService : IEmailService
 
     public async Task SendEmailConfirmationAsync(string toEmail, string userName, string confirmLink)
     {
-        var subject = "Confirm Your Email - AirPro";
+        var subject        = "Confirm Your Email - AirPro";
+        var safeUserName   = HtmlEncoder.Default.Encode(userName);
         var content = $@"
             <h1 style='color: #333; margin: 0 0 20px 0;'>Confirm Your Email Address</h1>
             <p style='color: #666; line-height: 1.6;'>
-                Hi <strong>{userName}</strong>,
+                Hi <strong>{safeUserName}</strong>,
             </p>
             <p style='color: #666; line-height: 1.6;'>
                 Thank you for registering with AirPro. Please confirm your email address by clicking the button below.
@@ -405,11 +411,12 @@ public class EmailService : IEmailService
 
     public async Task SendPasswordResetEmailAsync(string toEmail, string userName, string resetLink)
     {
-        var subject = "Reset Your Password - AirPro";
+        var subject      = "Reset Your Password - AirPro";
+        var safeUserName = HtmlEncoder.Default.Encode(userName);
         var content = $@"
             <h1 style='color: #333; margin: 0 0 20px 0;'>Reset Your Password</h1>
             <p style='color: #666; line-height: 1.6;'>
-                Hi <strong>{userName}</strong>,
+                Hi <strong>{safeUserName}</strong>,
             </p>
             <p style='color: #666; line-height: 1.6;'>
                 We received a request to reset your password. Click the button below to set a new password.
@@ -431,14 +438,16 @@ public class EmailService : IEmailService
 
     public async Task SendEmailChangeConfirmationAsync(string toEmail, string userName, string newEmail, string confirmLink)
     {
-        var subject = "Confirm Email Change - AirPro";
+        var subject      = "Confirm Email Change - AirPro";
+        var safeUserName = HtmlEncoder.Default.Encode(userName);
+        var safeNewEmail = HtmlEncoder.Default.Encode(newEmail);
         var content = $@"
             <h1 style='color: #333; margin: 0 0 20px 0;'>Confirm Your New Email Address</h1>
             <p style='color: #666; line-height: 1.6;'>
-                Hi <strong>{userName}</strong>,
+                Hi <strong>{safeUserName}</strong>,
             </p>
             <p style='color: #666; line-height: 1.6;'>
-                You requested to change your email address to <strong>{newEmail}</strong>. Please confirm this change by clicking the button below.
+                You requested to change your email address to <strong>{safeNewEmail}</strong>. Please confirm this change by clicking the button below.
             </p>
             <div style='margin: 30px 0; text-align: center;'>
                 <a href='{confirmLink}'
