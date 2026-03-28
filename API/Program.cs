@@ -6,7 +6,6 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container using modular extensions
 builder.Services.AddApiServices(builder.Configuration, builder.Environment);
 builder.Services.AddDatabaseServices(builder.Configuration);
 builder.Services.AddIdentityServices(builder.Configuration, builder.Environment);
@@ -25,8 +24,7 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<ApplicationDbContext>();
         context.Database.Migrate();
 
-        // Dev-only seeds: test companies and test users — never runs in production
-        if (app.Environment.IsDevelopment())
+        if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
         {
             SeedDataManager.SeedAllData(services);
         }
