@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import { ModeToggle } from '@/components/mode-toggle'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { AcIcon } from '@/components/AcIcon'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 interface SectionProps {
   icon: React.ReactNode
@@ -313,6 +314,7 @@ const bg = {
 }
 
 export default function TermsPage() {
+  usePageTitle('Terms of Service')
   const { i18n, t } = useTranslation()
   const c = i18n.language.startsWith('bg') ? bg : en
 

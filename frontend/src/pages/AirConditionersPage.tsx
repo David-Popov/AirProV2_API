@@ -34,6 +34,7 @@ import {
 import { useAirConditioners, useCreateAirConditioner, useUpdateAirConditioner, useDeleteAirConditioner } from '@/hooks'
 import { useAuth } from '@/context'
 import type { AirConditioner, CreateAirConditionerRequest } from '@/types'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 function AcImage({ url, alt, size = 'sm' }: { url?: string | null; alt: string; size?: 'sm' | 'lg' }) {
   const [failed, setFailed] = useState(false)
@@ -52,6 +53,7 @@ function AcImage({ url, alt, size = 'sm' }: { url?: string | null; alt: string; 
 }
 
 export default function AirConditionersPage() {
+  usePageTitle('Air Conditioners')
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
