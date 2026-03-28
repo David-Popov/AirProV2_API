@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Home, ArrowLeft, Snowflake } from 'lucide-react'
+import { AcIcon } from '@/components/AcIcon'
 import { Button } from '@/components/ui/button'
 
 export default function NotFoundPage() {
@@ -15,7 +16,7 @@ export default function NotFoundPage() {
         {/* Logo / Brand */}
         <div className="flex items-center justify-center gap-2 mb-10 opacity-60">
           <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center">
-            <Snowflake className="w-4 h-4 text-primary-foreground" />
+            <AcIcon className="w-4 h-4 text-primary-foreground" />
           </div>
           <span className="font-semibold text-sm text-foreground">AirPro</span>
         </div>

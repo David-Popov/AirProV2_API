@@ -1,10 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M12 3v18" />
-  <path d="M12 12 4.5 7.5" />
-  <path d="M12 12 19.5 7.5" />
-  <path d="M12 12 4.5 16.5" />
-  <path d="M12 12 19.5 16.5" />
-  <circle cx="12" cy="12" r="3" fill="#0ea5e9" fill-opacity="0.1" />
-  <path d="M7 3.3 12 12" opacity="0.5" />
-  <path d="M17 3.3 12 12" opacity="0.5" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- AC unit body -->
+  <rect x="1.5" y="4.5" width="21" height="11" rx="2.5" fill="#0ea5e9"/>
+  <!-- Vent panel (darker strip at bottom of unit) -->
+  <rect x="1.5" y="11.8" width="21" height="3.7" rx="1.2" fill="rgba(0,0,0,0.22)"/>
+  <!-- Vent slat lines -->
+  <line x1="3.5" y1="13"   x2="20.5" y2="13"   stroke="rgba(255,255,255,0.32)" stroke-width="0.7" stroke-linecap="round"/>
+  <line x1="3.5" y1="14.4" x2="20.5" y2="14.4" stroke="rgba(255,255,255,0.18)" stroke-width="0.7" stroke-linecap="round"/>
+  <!-- Snowflake centred in the upper body -->
+  <g stroke="white" stroke-width="1.25" stroke-linecap="round">
+    <line x1="12"   y1="6.2"  x2="12"   y2="10.5"/>
+    <line x1="9.8"  y1="8.35" x2="14.2" y2="8.35"/>
+    <line x1="10.4" y1="6.6"  x2="13.6" y2="10.1"/>
+    <line x1="13.6" y1="6.6"  x2="10.4" y2="10.1"/>
+  </g>
+  <!-- Status/power indicator dot -->
+  <circle cx="19.5" cy="6.5" r="0.85" fill="white" opacity="0.65"/>
+  <!-- Airflow wavy lines below the unit -->
+  <path d="M3 18.5 Q7.5 22 12 18.5 Q16.5 15 21 18.5"       stroke="#38bdf8" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+  <path d="M5.5 21.5 Q9 23.5 12.5 21.5 Q16 19.5 18.5 21.5" stroke="#38bdf8" stroke-width="0.9" fill="none" stroke-linecap="round" opacity="0.5"/>
 </svg>

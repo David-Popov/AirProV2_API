@@ -85,7 +85,7 @@ namespace API.Data.Migrations
             // ── Error Codes ───────────────────────────────────────────────────
             // Severity enum values: Critical=1, Warning=2, Low=3, Medium=4
             migrationBuilder.Sql(@"
-                INSERT INTO error_codes (id, air_conditioner_id, code, error_name, description, solution, error_code_severity, created_at)
+                INSERT INTO error_codes (id, air_conditioner_id, error_code, error_name, description, solution, severity, created_at)
                 VALUES
                     -- Daikin
                     ('e0000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'A0',  'Защита срещу блокиране',                   'Активирана е защитата срещу блокиране на компресора',                    'Изчакайте 3 минути и рестартирайте системата',                            4, NOW()),

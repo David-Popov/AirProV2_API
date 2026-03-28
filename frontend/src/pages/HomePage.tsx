@@ -1,6 +1,5 @@
 import { Link, Navigate } from 'react-router-dom'
 import {
-  Snowflake,
   ClipboardList,
   Package,
   Users,
@@ -17,7 +16,10 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ModeToggle } from '@/components/mode-toggle'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { useAuth } from '@/context'
+import { AcIcon } from '@/components/AcIcon'
+import { FloatingParticles } from '@/components/FloatingParticles'
 
 export default function HomePage() {
   const { isAuthenticated, isLoading } = useAuth()
@@ -29,33 +31,37 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Ambient background */}
+      {/* Ambient background blobs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute -top-60 -right-60 w-125 h-125 bg-primary/8 rounded-full blur-3xl" />
         <div className="absolute top-1/3 -left-60 w-100 h-100 bg-primary/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/3 w-75 h-75 bg-violet-400/5 rounded-full blur-3xl" />
       </div>
 
+      {/* Floating air particles */}
+      <FloatingParticles />
+
       {/* ── Navigation ── */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="container mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shadow-md shadow-primary/30">
-              <Snowflake className="w-5 h-5 text-primary-foreground" />
+              <AcIcon className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="font-bold text-xl tracking-tight">AirPro</span>
           </div>
 
           <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             <ModeToggle />
             <Link to="/login">
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-                Login
+                {t('home.login')}
               </Button>
             </Link>
             <Link to="/register">
               <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm shadow-primary/25">
-                Get Started
+                {t('home.get_started')}
                 <ArrowRight className="w-4 h-4 ml-1.5" />
               </Button>
             </Link>
@@ -71,7 +77,7 @@ export default function HomePage() {
           </h1>
 
           <p className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
-            Welcome — manage your installations, inventory, and team in one place.
+            {t('home.hero_subtitle')}
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -80,7 +86,7 @@ export default function HomePage() {
                 size="lg"
                 className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-8 h-12 text-base shadow-lg shadow-primary/25 rounded-xl"
               >
-                Create your account
+                {t('home.create_account')}
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>
@@ -90,7 +96,7 @@ export default function HomePage() {
                 variant="outline"
                 className="w-full sm:w-auto px-8 h-12 text-base rounded-xl"
               >
-                Sign in
+                {t('home.sign_in')}
               </Button>
             </Link>
           </div>
@@ -99,15 +105,15 @@ export default function HomePage() {
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 mt-12 text-sm text-muted-foreground">
             <span className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-              No credit card required
+              {t('home.no_credit_card')}
             </span>
             <span className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-              Set up in minutes
+              {t('home.setup_minutes')}
             </span>
             <span className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-              Cancel anytime
+              {t('home.cancel_anytime')}
             </span>
           </div>
         </div>
@@ -171,53 +177,53 @@ export default function HomePage() {
       <section className="container mx-auto px-4 sm:px-6 py-20 lg:py-28">
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl font-bold mb-4 tracking-tight">
-            Everything your team needs
+            {t('home.features_title')}
           </h2>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            From the first site visit to the final invoice — AirPro covers every step.
+            {t('home.features_subtitle')}
           </p>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           <FeatureCard
             icon={ClipboardList}
-            title="Montage Tracking"
-            description="Log every AC installation with client details, serial numbers, dates, and real-time status updates."
+            title={t('home.feature_montage_title')}
+            description={t('home.feature_montage_desc')}
             iconBg="bg-primary/10"
             iconColor="text-primary"
           />
           <FeatureCard
             icon={Package}
-            title="Inventory Management"
-            description="Track stock levels in real-time. Get automatic low-stock alerts before you run out on-site."
+            title={t('home.feature_inventory_title')}
+            description={t('home.feature_inventory_desc')}
             iconBg="bg-emerald-500/10"
             iconColor="text-emerald-600 dark:text-emerald-400"
           />
           <FeatureCard
             icon={Users}
-            title="Team Management"
-            description="Invite employees, assign roles, track workloads, and manage performance from one dashboard."
+            title={t('home.feature_team_title')}
+            description={t('home.feature_team_desc')}
             iconBg="bg-violet-500/10"
             iconColor="text-violet-600 dark:text-violet-400"
           />
           <FeatureCard
             icon={BarChart3}
-            title="Revenue Analytics"
-            description="Track completed montages, revenue over time, and spot your busiest periods at a glance."
+            title={t('home.feature_analytics_title')}
+            description={t('home.feature_analytics_desc')}
             iconBg="bg-amber-500/10"
             iconColor="text-amber-600 dark:text-amber-400"
           />
           <FeatureCard
             icon={Bell}
-            title="Maintenance Reminders"
-            description="Automatically reminds you when clients are due for annual AC service — never miss a follow-up."
+            title={t('home.feature_reminders_title')}
+            description={t('home.feature_reminders_desc')}
             iconBg="bg-rose-500/10"
             iconColor="text-rose-600 dark:text-rose-400"
           />
           <FeatureCard
             icon={Shield}
-            title="Secure & Role-Based"
-            description="Enterprise-grade security with encrypted data and granular access control per employee role."
+            title={t('home.feature_security_title')}
+            description={t('home.feature_security_desc')}
             iconBg="bg-sky-500/10"
             iconColor="text-sky-600 dark:text-sky-400"
           />
@@ -325,10 +331,10 @@ export default function HomePage() {
           <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-black/10 rounded-full blur-2xl pointer-events-none" />
           <div className="relative">
             <h2 className="text-3xl sm:text-4xl font-bold text-primary-foreground mb-4 tracking-tight">
-              Ready to run a tighter operation?
+              {t('home.cta_title')}
             </h2>
             <p className="text-primary-foreground/80 text-lg mb-8 max-w-xl mx-auto">
-              Create your account in under 2 minutes and get 6 months free — no card needed.
+              {t('home.cta_subtitle')}
             </p>
             <Link to="/register">
               <Button
@@ -336,7 +342,7 @@ export default function HomePage() {
                 variant="secondary"
                 className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-semibold px-10 h-12 rounded-xl shadow-lg text-base"
               >
-                Get Started — It's Free
+                {t('home.cta_button')}
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>
@@ -349,14 +355,14 @@ export default function HomePage() {
         <div className="container mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center">
-              <Snowflake className="w-4 h-4 text-primary-foreground" />
+              <AcIcon className="w-4 h-4 text-primary-foreground" />
             </div>
-            <span>© 2026 AirPro. All rights reserved.</span>
+            <span>© {new Date().getFullYear()} AirPro. {t('public.copyright')}</span>
           </div>
           <div className="flex items-center gap-6">
-            <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
-            <a href="#" className="hover:text-foreground transition-colors">Terms</a>
-            <a href="#" className="hover:text-foreground transition-colors">Contact</a>
+            <Link to="/privacy" className="hover:text-foreground transition-colors">{t('public.privacy')}</Link>
+            <Link to="/terms" className="hover:text-foreground transition-colors">{t('public.terms')}</Link>
+            <Link to="/contact" className="hover:text-foreground transition-colors">{t('public.contact')}</Link>
           </div>
         </div>
       </footer>
