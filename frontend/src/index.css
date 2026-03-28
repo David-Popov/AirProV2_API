@@ -173,6 +173,17 @@
   --animate-scale-in: scale-in 0.2s ease-out;
 }
 
+/* Floating air particles — landing page background */
+@keyframes airFloat {
+  0%   { transform: translateY(0px)    translateX(0px);   opacity: 0; }
+  8%   {                                                   opacity: 1; }
+  28%  { transform: translateY(-28vh)  translateX(22px);              }
+  52%  { transform: translateY(-52vh)  translateX(-16px);             }
+  76%  { transform: translateY(-76vh)  translateX(20px);              }
+  92%  {                                                   opacity: 1; }
+  100% { transform: translateY(-105vh) translateX(0px);   opacity: 0; }
+}
+
 /* Animation Keyframes */
 @keyframes fade-in {
   from {
@@ -265,6 +276,9 @@
     }
     .glass-card {
       transition: none !important;
+    }
+    .air-particle {
+      display: none !important;
     }
   }
 }

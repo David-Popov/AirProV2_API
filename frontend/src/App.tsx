@@ -23,6 +23,9 @@ import AirConditionerDetailsPage from '@/pages/AirConditionerDetailsPage'
 import CompaniesPage from '@/pages/CompaniesPage'
 import ErrorCodesPage from '@/pages/ErrorCodesPage'
 import SettingsPage from '@/pages/SettingsPage'
+import ContactPage from '@/pages/ContactPage'
+import TermsPage from '@/pages/TermsPage'
+import PrivacyPage from '@/pages/PrivacyPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 import ReportedProblemsPage from '@/pages/ReportedProblemsPage'
 import { AdminCompaniesPage, AdminUsersPage, AdminMontagesPage } from '@/pages/admin'
@@ -47,6 +50,9 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/confirm-email-change" element={<ConfirmEmailChangePage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
 
             {/* Protected Routes */}
             <Route 

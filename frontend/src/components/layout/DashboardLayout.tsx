@@ -16,6 +16,8 @@ import {
   Bug,
   MessageSquareWarning
 } from 'lucide-react'
+
+import { AcIcon } from '@/components/AcIcon'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -91,7 +93,7 @@ export default function DashboardLayout() {
         </button>
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 bg-primary rounded-md flex items-center justify-center shadow-sm shadow-primary/30">
-            <Snowflake className="w-3.5 h-3.5 text-primary-foreground" />
+            <AcIcon className="w-3.5 h-3.5 text-primary-foreground" />
           </div>
           <span className="font-semibold text-sm text-foreground">{t('app_name')}</span>
         </div>
@@ -127,7 +129,7 @@ export default function DashboardLayout() {
           <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shrink-0
                           shadow-md shadow-primary/30 ring-1 ring-primary/20
                           group-hover:shadow-lg group-hover:shadow-primary/40 transition-all duration-200">
-            <Snowflake className="w-5 h-5 text-primary-foreground" />
+            <AcIcon className="w-5 h-5 text-primary-foreground" />
           </div>
           <div className="min-w-0">
             <span className="text-sidebar-foreground font-semibold text-base tracking-tight leading-tight block truncate">

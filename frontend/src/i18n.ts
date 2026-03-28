@@ -10,7 +10,11 @@ i18n
   .use(initReactI18next)
   .init({
     debug: true,
-    fallbackLng: ['bg'],
+    fallbackLng: 'bg',
+    detection: {
+      order: ['localStorage'],
+      caches: ['localStorage'],
+    },
     interpolation: {
       escapeValue: false, // not needed for react as it escapes by default
     },

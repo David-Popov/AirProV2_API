@@ -877,5 +877,50 @@
     "montage_updated": "Montage updated successfully",
     "montage_deleted": "Montage deleted successfully",
     "delete_montage_warning": "Are you sure you want to delete this montage? This action cannot be undone."
+  },
+  "public": {
+    "back": "Back",
+    "back_to_home": "Back to home",
+    "copyright": "All rights reserved.",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "contact": "Contact"
+  },
+  "contact": {
+    "page_title": "Get in touch",
+    "page_subtitle": "Reach out for support, questions, or partnership inquiries.",
+    "label_name": "Name",
+    "label_phone": "Phone",
+    "label_email": "Email",
+    "label_location": "Location",
+    "call_now": "Call now",
+    "send_email": "Send email"
+  },
+  "home": {
+    "login": "Login",
+    "get_started": "Get Started",
+    "hero_subtitle": "Welcome — manage your installations, inventory, and team in one place.",
+    "create_account": "Create your account",
+    "sign_in": "Sign in",
+    "no_credit_card": "No credit card required",
+    "setup_minutes": "Set up in minutes",
+    "cancel_anytime": "Cancel anytime",
+    "features_title": "Everything your team needs",
+    "features_subtitle": "From the first site visit to the final invoice — AirPro covers every step.",
+    "feature_montage_title": "Montage Tracking",
+    "feature_montage_desc": "Log every AC installation with client details, serial numbers, dates, and real-time status updates.",
+    "feature_inventory_title": "Inventory Management",
+    "feature_inventory_desc": "Track stock levels in real-time. Get automatic low-stock alerts before you run out on-site.",
+    "feature_team_title": "Team Management",
+    "feature_team_desc": "Invite employees, assign roles, track workloads, and manage performance from one dashboard.",
+    "feature_analytics_title": "Revenue Analytics",
+    "feature_analytics_desc": "Track completed montages, revenue over time, and spot your busiest periods at a glance.",
+    "feature_reminders_title": "Maintenance Reminders",
+    "feature_reminders_desc": "Automatically reminds you when clients are due for annual AC service — never miss a follow-up.",
+    "feature_security_title": "Secure & Role-Based",
+    "feature_security_desc": "Enterprise-grade security with encrypted data and granular access control per employee role.",
+    "cta_title": "Ready to run a tighter operation?",
+    "cta_subtitle": "Create your account in under 2 minutes and get 6 months free — no card needed.",
+    "cta_button": "Get Started — It's Free"
   }
 }
