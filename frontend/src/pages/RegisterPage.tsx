@@ -29,8 +29,10 @@ import {
 } from '@/lib/validation-rules'
 import { COMPANY_TYPE_OPTIONS } from '@/types'
 import { authService } from '@/services/auth'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 export default function RegisterPage() {
+  usePageTitle('Register')
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { register, isAuthenticated } = useAuth()

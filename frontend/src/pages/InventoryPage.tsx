@@ -58,6 +58,7 @@ import { inventoryService } from '@/services'
 import type { InventoryItem, CreateInventoryItemRequest, UnitOfMeasure } from '@/types'
 import { UNIT_OF_MEASURE_OPTIONS } from '@/types'
 import { generateSKU } from '@/lib/generators'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 type StatusFilter = 'all' | 'in_stock' | 'low_stock' | 'inactive'
 
@@ -104,6 +105,7 @@ function StockStatusBadge({ item }: { item: InventoryItem }) {
 }
 
 export default function InventoryPage() {
+  usePageTitle('Inventory')
   const { user } = useAuth()
   const navigate = useNavigate()
   const { t } = useTranslation()

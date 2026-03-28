@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { ModeToggle } from '@/components/mode-toggle'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { AcIcon } from '@/components/AcIcon'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 interface ContactCardProps {
   icon: React.ReactNode
@@ -37,6 +38,7 @@ function ContactCard({ icon, label, value, href }: ContactCardProps) {
 }
 
 export default function ContactPage() {
+  usePageTitle('Contact')
   const { t } = useTranslation()
 
   return (

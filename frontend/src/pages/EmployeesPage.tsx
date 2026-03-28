@@ -47,6 +47,7 @@ import type { Employee, CreateEmployeeRequest } from '@/types'
 import { validatePasswordRules, isValidEmail } from '@/lib/validators'
 import { TrialActivationModal, PremiumUpgradeModal } from '@/components/subscription'
 import { useAuth } from '@/context'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 const MAX_EXPECTED_MONTAGES = 5
 
@@ -79,6 +80,7 @@ function getWorkloadColor(pct: number): string {
 }
 
 export default function EmployeesPage() {
+  usePageTitle('Employees')
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()

@@ -20,8 +20,10 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { useAuth } from '@/context'
 import { AcIcon } from '@/components/AcIcon'
 import { FloatingParticles } from '@/components/FloatingParticles'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 export default function HomePage() {
+  usePageTitle('HVAC Service Management')
   const { isAuthenticated, isLoading } = useAuth()
   const { t } = useTranslation()
 

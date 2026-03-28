@@ -25,6 +25,7 @@ import { RevenueChart } from '@/components/dashboard/RevenueChart'
 import { MontageStatusChart } from '@/components/dashboard/MontageStatusChart'
 import { PaymentStatusChart } from '@/components/dashboard/PaymentStatusChart'
 import { MonthlyActivityChart } from '@/components/dashboard/MonthlyActivityChart'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 function getMontageStatusColor(status: string | null | undefined) {
   switch (status) {
@@ -45,6 +46,7 @@ function getMontageStatusLabel(status: string | null | undefined) {
 }
 
 export default function DashboardPage() {
+  usePageTitle('Dashboard')
   const { user } = useAuth()
   const { t } = useTranslation()
   const navigate = useNavigate()

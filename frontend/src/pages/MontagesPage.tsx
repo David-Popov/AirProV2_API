@@ -65,8 +65,9 @@ import { airConditionerService } from '@/services/air-conditioner'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { cn } from '@/lib/utils'
-import { 
-  type Montage, 
+import { usePageTitle } from '@/hooks/usePageTitle'
+import {
+  type Montage,
   type AirConditioner,
   type CreateMontageRequest,
   type UpdateMontageRequest,
@@ -88,6 +89,7 @@ interface MontageFormState extends CreateMontageRequest {
 }
 
 export default function MontagesPage() {
+  usePageTitle('Montages')
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [items, setItems] = useState<Montage[]>([])
