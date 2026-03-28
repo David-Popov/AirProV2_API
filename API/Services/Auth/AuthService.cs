@@ -832,8 +832,33 @@ public class AuthService : IAuthService
             return IdentityResult.Failed(new IdentityError { Description = "Invalid confirmation link." });
         }
 
+        // Already confirmed — idempotent success (handles double-clicks / browser pre-fetches)
+        if (user.EmailConfirmed)
+        {
+            return IdentityResult.Success;
+        }
+
         var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
-        return await _userManager.ConfirmEmailAsync(user, decodedToken);
+
+        try
+        {
+            return await _userManager.ConfirmEmailAsync(user, decodedToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // A concurrent request confirmed the email between our load and our update.
+            // Re-fetch to verify — if confirmed now, treat as success.
+            var freshUser = await _userManager.FindByIdAsync(userId);
+            if (freshUser?.EmailConfirmed == true)
+            {
+                return IdentityResult.Success;
+            }
+
+            return IdentityResult.Failed(new IdentityError
+            {
+                Description = "Email confirmation failed due to a concurrent request. Please try again."
+            });
+        }
     }
 
     public async Task ResendConfirmationEmailAsync(string email)
