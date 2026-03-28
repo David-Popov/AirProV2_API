@@ -233,6 +233,9 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans);
@@ -249,6 +252,9 @@
 
   /* Reduced motion support */
   @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
     .animate-fade-in,
     .animate-slide-up,
     .animate-scale-in,
