@@ -78,6 +78,11 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  optimizeDeps: {
+    // Pre-bundle the entire icon barrel so Rollup sees it as one module
+    // instead of scanning ~9000 individual re-exports
+    include: ['@phosphor-icons/react', 'motion/react'],
+  },
   build: {
     // Raise warning threshold — vendor chunks are intentionally large
     chunkSizeWarningLimit: 1000,
