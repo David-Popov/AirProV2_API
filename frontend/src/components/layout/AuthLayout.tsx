@@ -2,13 +2,13 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'motion/react'
 import {
-  ClipboardText,
-  Cube,
-  UsersThree,
+  ClipboardList,
+  Box,
+  Users,
   ShieldCheck,
-  ChartBar,
+  BarChart2,
   ArrowRight,
-} from '@phosphor-icons/react'
+} from 'lucide-react'
 import { AcIcon } from '@/components/AcIcon'
 import { Button } from '@/components/ui/button'
 import { ModeToggle } from '@/components/mode-toggle'
@@ -43,7 +43,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
             <Link to="/register">
               <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm shadow-primary/25">
                 {t('auth.get_started')}
-                <ArrowRight className="w-4 h-4 ml-1.5" weight="bold" />
+                <ArrowRight className="w-4 h-4 ml-1.5" strokeWidth={2.5} />
               </Button>
             </Link>
           </div>
@@ -91,7 +91,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
               transition={{ duration: 0.6, delay: 0.1 }}
             >
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium">
-                <ShieldCheck className="w-4 h-4" weight="duotone" />
+                <ShieldCheck className="w-4 h-4" />
                 Trusted by HVAC professionals
               </div>
             </motion.div>
@@ -116,10 +116,10 @@ export function AuthLayout({ children }: AuthLayoutProps) {
               {/* Feature list */}
               <div className="space-y-3">
                 {[
-                  { Icon: ClipboardText, text: t('auth.badge_montages') },
-                  { Icon: Cube,          text: t('auth.badge_inventory') },
-                  { Icon: UsersThree,    text: t('auth.badge_employees') },
-                  { Icon: ChartBar,      text: t('auth.badge_analytics', 'Real-time analytics') },
+                  { Icon: ClipboardList, text: t('auth.badge_montages') },
+                  { Icon: Box,           text: t('auth.badge_inventory') },
+                  { Icon: Users,         text: t('auth.badge_employees') },
+                  { Icon: BarChart2,     text: t('auth.badge_analytics', 'Real-time analytics') },
                 ].map(({ Icon, text }, i) => (
                   <motion.div
                     key={text}
@@ -129,7 +129,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
                     className="flex items-center gap-3"
                   >
                     <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                      <Icon className="w-4 h-4 text-primary" weight="duotone" />
+                      <Icon className="w-4 h-4 text-primary" />
                     </div>
                     <span className="text-sm text-foreground/80 font-medium">{text}</span>
                   </motion.div>

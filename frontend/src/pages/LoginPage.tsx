@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Mail, Lock, Loader2, RefreshCw, AlertTriangle, ShieldAlert } from 'lucide-react'
-import { ArrowRight } from '@phosphor-icons/react'
+import { ArrowRight } from 'lucide-react'
 import { motion } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -216,7 +216,7 @@ export default function LoginPage() {
                 {isLoading ? (
                   <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('auth.signing_in')}</>
                 ) : (
-                  <>{t('auth.sign_in')}<ArrowRight className="w-4 h-4 ml-2" weight="bold" /></>
+                  <>{t('auth.sign_in')}<ArrowRight className="w-4 h-4 ml-2" strokeWidth={2.5} /></>
                 )}
               </Button>
             </motion.div>

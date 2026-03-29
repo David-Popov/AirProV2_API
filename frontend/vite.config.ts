@@ -79,13 +79,10 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    // Pre-bundle the entire icon barrel so Rollup sees it as one module
-    // instead of scanning ~9000 individual re-exports
-    include: ['@phosphor-icons/react', 'motion/react'],
+    include: ['motion/react'],
   },
   build: {
-    // Raise warning threshold — vendor chunks are intentionally large
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 500,
     rollupOptions: {
       output: {
         manualChunks: {
@@ -93,8 +90,6 @@ export default defineConfig({
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           // Animation library — large, isolated
           'vendor-motion': ['motion'],
-          // Icon library — 9k icons, never changes per release
-          'vendor-icons': ['@phosphor-icons/react'],
           // Radix UI primitives
           'vendor-radix': [
             '@radix-ui/react-alert-dialog',
