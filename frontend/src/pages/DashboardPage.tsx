@@ -3,16 +3,16 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangle, Phone, TrendingUp, TrendingDown } from 'lucide-react'
 import {
-  ClipboardText,
+  ClipboardList,
   Package,
-  UsersThree,
-  Heartbeat,
-  SunHorizon,
+  Users,
+  Activity,
+  Sunrise,
   Sun,
   Moon,
-  Sparkle,
-  type IconWeight,
-} from '@phosphor-icons/react'
+  Sparkles,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { motion, type Variants } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -50,7 +50,7 @@ function getMontageStatusLabel(status: string | null | undefined) {
 
 function getGreeting() {
   const h = new Date().getHours()
-  if (h < 12) return { text: 'good_morning',   Icon: SunHorizon }
+  if (h < 12) return { text: 'good_morning',   Icon: Sunrise }
   if (h < 17) return { text: 'good_afternoon',  Icon: Sun }
   return           { text: 'good_evening',    Icon: Moon }
 }
@@ -153,7 +153,7 @@ export default function DashboardPage() {
       >
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <greeting.Icon className="w-5 h-5 text-primary" weight="duotone" />
+            <greeting.Icon className="w-5 h-5 text-primary" />
             <span className="text-sm text-muted-foreground font-medium">
               {t(`common.${greeting.text}`, greeting.text.replace('_', ' '))}
               {user?.first_name && `, ${user.first_name}`}
@@ -183,7 +183,7 @@ export default function DashboardPage() {
           transition={{ delay: 0.1 }}
         >
           <div className="p-2 bg-primary/20 rounded-full shrink-0">
-            <Sparkle className="w-5 h-5 text-primary" weight="duotone" />
+            <Sparkles className="w-5 h-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-foreground font-medium">{t('dashboard.free_trial_title')}</h3>
@@ -215,7 +215,7 @@ export default function DashboardPage() {
           title={t('dashboard.active_montages')}
           value={quickStats.activeMontages}
           subtitle={t('dashboard.current')}
-          icon={ClipboardText}
+          icon={ClipboardList}
           iconColor="text-primary"
           iconBg="from-primary/20 to-primary/5"
           variants={itemVariants}
@@ -244,7 +244,7 @@ export default function DashboardPage() {
           title={t('dashboard.team_members')}
           value={quickStats.employeeCount}
           subtitle={t('common.active')}
-          icon={UsersThree}
+          icon={Users}
           iconColor="text-amber-500"
           iconBg="from-amber-500/20 to-amber-500/5"
           variants={itemVariants}
@@ -313,7 +313,7 @@ export default function DashboardPage() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-foreground flex items-center gap-2 text-base">
-                  <Heartbeat className="w-4 h-4 text-primary" weight="duotone" />
+                  <Activity className="w-4 h-4 text-primary" />
                   {t('dashboard.recent_activity')}
                 </CardTitle>
                 <Button
@@ -340,7 +340,7 @@ export default function DashboardPage() {
                       className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-muted/30 cursor-pointer transition-colors group"
                     >
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${colorClass}`}>
-                        <ClipboardText className="w-3.5 h-3.5" />
+                        <ClipboardList className="w-3.5 h-3.5" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">{m.client_name}</p>
@@ -357,7 +357,7 @@ export default function DashboardPage() {
                 })
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  <ClipboardText className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                  <ClipboardList className="w-8 h-8 mx-auto mb-2 opacity-20" />
                   <p className="text-sm">{t('dashboard.no_recent_activity')}</p>
                 </div>
               )}
@@ -483,7 +483,7 @@ interface StatCardProps {
   title: string
   value: number
   subtitle: string
-  icon: React.ComponentType<{ className?: string; weight?: IconWeight }>
+  icon: LucideIcon
   iconColor: string
   iconBg: string
   trend?: number
@@ -502,7 +502,7 @@ function StatCard({ title, value, subtitle, icon: Icon, iconColor, iconBg, trend
         <CardContent className="p-4 sm:p-5">
           <div className="flex items-center justify-between mb-3">
             <div className={`p-2 rounded-xl bg-gradient-to-br ${iconBg} shrink-0`}>
-              <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${iconColor}`} weight="duotone" />
+              <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${iconColor}`} fill="currentColor" />
             </div>
             {trend !== undefined && trend !== 0 && (
               <span className={`text-xs font-medium flex items-center gap-0.5 ${trend >= 0 ? 'text-green-500' : 'text-red-500'}`}>

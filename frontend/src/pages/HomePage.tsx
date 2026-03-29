@@ -1,16 +1,16 @@
 import { Link, Navigate } from 'react-router-dom'
 import { Check, X } from 'lucide-react'
 import {
-  ClipboardText,
-  Cube,
-  UsersThree,
-  ChartBar,
+  ClipboardList,
+  Box,
+  Users,
+  BarChart2,
   Bell,
   ShieldCheck,
   ArrowRight,
-  Sparkle,
-  type IconWeight,
-} from '@phosphor-icons/react'
+  Sparkles,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
@@ -103,7 +103,7 @@ export default function HomePage() {
               <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
                 <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm shadow-primary/25">
                   {t('home.get_started')}
-                  <ArrowRight className="w-4 h-4 ml-1.5" weight="bold" />
+                  <ArrowRight className="w-4 h-4 ml-1.5" strokeWidth={2.5} />
                 </Button>
               </motion.div>
             </Link>
@@ -119,7 +119,7 @@ export default function HomePage() {
               variant="outline"
               className="mb-6 border-primary/30 bg-primary/5 text-primary text-xs px-3 py-1 rounded-full"
             >
-              <Sparkle className="w-3 h-3 mr-1.5" weight="duotone" />
+              <Sparkles className="w-3 h-3 mr-1.5" />
               HVAC Service Management Platform
             </Badge>
           </motion.div>
@@ -149,7 +149,7 @@ export default function HomePage() {
                   className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-8 h-12 text-base shadow-lg shadow-primary/25 rounded-xl"
                 >
                   {t('home.create_account')}
-                  <ArrowRight className="w-5 h-5 ml-2" weight="bold" />
+                  <ArrowRight className="w-5 h-5 ml-2" strokeWidth={2.5} />
                 </Button>
               </motion.div>
             </Link>
@@ -265,10 +265,10 @@ export default function HomePage() {
           whileInView="show"
           viewport={{ once: true, margin: '-80px' }}
         >
-          <FeatureCard icon={ClipboardText} title={t('home.feature_montage_title')} description={t('home.feature_montage_desc')} iconBg="from-primary/20 to-primary/5" iconColor="text-primary" />
-          <FeatureCard icon={Cube} title={t('home.feature_inventory_title')} description={t('home.feature_inventory_desc')} iconBg="from-emerald-500/20 to-emerald-500/5" iconColor="text-emerald-600 dark:text-emerald-400" />
-          <FeatureCard icon={UsersThree} title={t('home.feature_team_title')} description={t('home.feature_team_desc')} iconBg="from-violet-500/20 to-violet-500/5" iconColor="text-violet-600 dark:text-violet-400" />
-          <FeatureCard icon={ChartBar} title={t('home.feature_analytics_title')} description={t('home.feature_analytics_desc')} iconBg="from-amber-500/20 to-amber-500/5" iconColor="text-amber-600 dark:text-amber-400" />
+          <FeatureCard icon={ClipboardList} title={t('home.feature_montage_title')} description={t('home.feature_montage_desc')} iconBg="from-primary/20 to-primary/5" iconColor="text-primary" />
+          <FeatureCard icon={Box} title={t('home.feature_inventory_title')} description={t('home.feature_inventory_desc')} iconBg="from-emerald-500/20 to-emerald-500/5" iconColor="text-emerald-600 dark:text-emerald-400" />
+          <FeatureCard icon={Users} title={t('home.feature_team_title')} description={t('home.feature_team_desc')} iconBg="from-violet-500/20 to-violet-500/5" iconColor="text-violet-600 dark:text-violet-400" />
+          <FeatureCard icon={BarChart2} title={t('home.feature_analytics_title')} description={t('home.feature_analytics_desc')} iconBg="from-amber-500/20 to-amber-500/5" iconColor="text-amber-600 dark:text-amber-400" />
           <FeatureCard icon={Bell} title={t('home.feature_reminders_title')} description={t('home.feature_reminders_desc')} iconBg="from-rose-500/20 to-rose-500/5" iconColor="text-rose-600 dark:text-rose-400" />
           <FeatureCard icon={ShieldCheck} title={t('home.feature_security_title')} description={t('home.feature_security_desc')} iconBg="from-sky-500/20 to-sky-500/5" iconColor="text-sky-600 dark:text-sky-400" />
         </motion.div>
@@ -328,7 +328,7 @@ export default function HomePage() {
           >
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
               <Badge className="bg-primary text-primary-foreground px-3 py-0.5 text-xs font-semibold shadow-md shadow-primary/25">
-                <Sparkle className="w-3 h-3 mr-1" weight="duotone" />
+                <Sparkles className="w-3 h-3 mr-1" />
                 {t('landing.recommended')}
               </Badge>
             </div>
@@ -350,7 +350,7 @@ export default function HomePage() {
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <Button className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/25">
                   {t('landing.start_trial')}
-                  <ArrowRight className="w-4 h-4 ml-2" weight="bold" />
+                  <ArrowRight className="w-4 h-4 ml-2" strokeWidth={2.5} />
                 </Button>
               </motion.div>
             </Link>
@@ -428,7 +428,7 @@ export default function HomePage() {
                   className="bg-white text-primary hover:bg-white/90 font-semibold px-10 h-12 rounded-xl shadow-lg text-base"
                 >
                   {t('home.cta_button')}
-                  <ArrowRight className="w-5 h-5 ml-2" weight="bold" />
+                  <ArrowRight className="w-5 h-5 ml-2" strokeWidth={2.5} />
                 </Button>
               </motion.div>
             </Link>
@@ -457,7 +457,7 @@ export default function HomePage() {
 }
 
 interface FeatureCardProps {
-  icon: React.ComponentType<{ className?: string; weight?: IconWeight }>
+  icon: LucideIcon
   title: string
   description: string
   iconBg: string
@@ -472,7 +472,7 @@ function FeatureCard({ icon: Icon, title, description, iconBg, iconColor }: Feat
       className="group bg-card/70 backdrop-blur-sm border border-border/50 rounded-2xl p-7 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-colors duration-300"
     >
       <div className={`w-12 h-12 bg-gradient-to-br ${iconBg} rounded-xl flex items-center justify-center mb-5 group-hover:scale-105 transition-transform duration-200`}>
-        <Icon className={`w-6 h-6 ${iconColor}`} weight="duotone" />
+        <Icon className={`w-6 h-6 ${iconColor}`} />
       </div>
       <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
       <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>

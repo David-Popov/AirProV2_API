@@ -1,21 +1,22 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react'
-import { Menu, X } from 'lucide-react'
 import {
-  SquaresFour,
-  ClipboardText,
-  Cube,
-  UsersThree,
+  Menu,
+  X,
+  LayoutDashboard,
+  ClipboardList,
+  Box,
+  Users,
   Snowflake,
-  GearSix,
-  Buildings,
-  Warning,
-  SignOut,
-  BugBeetle,
-  ChatCenteredText,
-  type IconWeight,
-} from '@phosphor-icons/react'
+  Settings,
+  Building2,
+  AlertTriangle,
+  LogOut,
+  Bug,
+  MessageSquare,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 import { AcIcon } from '@/components/AcIcon'
 import { Badge } from '@/components/ui/badge'
@@ -146,7 +147,7 @@ export default function DashboardLayout() {
         <nav className="flex-1 overflow-y-auto space-y-0.5 min-h-0 [&::-webkit-scrollbar]:w-0 [&::-webkit-scrollbar]:hidden">
           {isManager && !isAdmin && (
             <NavItem
-              icon={SquaresFour}
+              icon={LayoutDashboard}
               label={t('nav.dashboard')}
               active={location.pathname === '/dashboard'}
               onClick={() => handleNavClick('/dashboard')}
@@ -154,7 +155,7 @@ export default function DashboardLayout() {
           )}
           {!isAdmin && (
             <NavItem
-              icon={ClipboardText}
+              icon={ClipboardList}
               label={t('nav.montages')}
               active={location.pathname === '/montages' || location.pathname.startsWith('/montages/')}
               onClick={() => handleNavClick('/montages')}
@@ -162,7 +163,7 @@ export default function DashboardLayout() {
           )}
           {!isAdmin && (
             <NavItem
-              icon={Cube}
+              icon={Box}
               label={t('nav.inventory')}
               active={location.pathname === '/inventory'}
               onClick={() => handleNavClick('/inventory')}
@@ -170,7 +171,7 @@ export default function DashboardLayout() {
           )}
           {isManager && !isAdmin && (
             <NavItem
-              icon={UsersThree}
+              icon={Users}
               label={t('nav.employees')}
               active={location.pathname === '/employees'}
               onClick={() => handleNavClick('/employees')}
@@ -193,7 +194,7 @@ export default function DashboardLayout() {
               onClick={() => handleNavClick('/air-conditioners')}
             />
             <NavItem
-              icon={Warning}
+              icon={AlertTriangle}
               label={t('nav.error_codes', 'Error Codes')}
               active={location.pathname === '/error-codes'}
               onClick={() => handleNavClick('/error-codes')}
@@ -211,13 +212,13 @@ export default function DashboardLayout() {
                 <div className="flex-1 h-px bg-gradient-to-r from-transparent via-sidebar-border/60 to-transparent" />
               </div>
               <NavItem
-                icon={Buildings}
+                icon={Building2}
                 label={t('nav.companies', 'Companies')}
                 active={location.pathname === '/companies'}
                 onClick={() => handleNavClick('/companies')}
               />
               <NavItem
-                icon={ChatCenteredText}
+                icon={MessageSquare}
                 label={t('nav.reported_problems', 'Reported Problems')}
                 active={location.pathname === '/reported-problems'}
                 onClick={() => handleNavClick('/reported-problems')}
@@ -229,7 +230,7 @@ export default function DashboardLayout() {
           <div className="pt-3 mt-2">
             <div className="h-px bg-gradient-to-r from-transparent via-sidebar-border/60 to-transparent mb-2" />
             <NavItem
-              icon={GearSix}
+              icon={Settings}
               label={t('common.settings')}
               active={location.pathname === '/settings'}
               onClick={() => handleNavClick('/settings')}
@@ -276,7 +277,7 @@ export default function DashboardLayout() {
                          hover:bg-orange-500/5 transition-all duration-200"
               onClick={() => setIsReportModalOpen(true)}
             >
-              <BugBeetle className="w-3.5 h-3.5 shrink-0" />
+              <Bug className="w-3.5 h-3.5 shrink-0" />
               {t('problem_reports.report_problem')}
             </button>
           )}
@@ -288,7 +289,7 @@ export default function DashboardLayout() {
                          hover:text-destructive hover:bg-destructive/8 transition-all duration-200"
               onClick={handleLogout}
             >
-              <SignOut className="w-3.5 h-3.5 shrink-0" />
+              <LogOut className="w-3.5 h-3.5 shrink-0" />
               {t('common.logout')}
             </button>
             <ModeToggle />
@@ -311,7 +312,7 @@ export default function DashboardLayout() {
 }
 
 interface NavItemProps {
-  icon: React.ComponentType<{ className?: string; weight?: IconWeight }>
+  icon: LucideIcon
   label: string
   active?: boolean
   onClick: () => void
@@ -333,7 +334,8 @@ function NavItem({ icon: Icon, label, active = false, onClick }: NavItemProps) {
             ? 'text-primary'
             : 'group-hover:scale-110'
         }`}
-        weight={active ? 'duotone' : 'regular'}
+        fill={active ? 'currentColor' : 'none'}
+        strokeWidth={1.5}
       />
       <span className="truncate">{label}</span>
       {active && (
