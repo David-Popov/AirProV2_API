@@ -24,7 +24,7 @@ public class AirConditionerService : IAirConditionerService
         _logger = logger;
     }
 
-    public async Task AddAirConditionerAsync(CreateAirConditionerDto dto)
+    public async Task<Guid> AddAirConditionerAsync(CreateAirConditionerDto dto)
     {
         try
         {
@@ -60,8 +60,9 @@ public class AirConditionerService : IAirConditionerService
                 MaxPipeLength = dto.MaxPipeLength,
                 MaxHeightDifference = dto.MaxHeightDifference
             };
-            
+
             await _repository.AddAirConditionerAsync(airConditioner);
+            return airConditioner.Id;
         }
         catch (Exception e)
         {
@@ -77,7 +78,7 @@ public class AirConditionerService : IAirConditionerService
             var airConditioner = await _repository.GetByIdAsync(airConditionerId);
             if (airConditioner == null)
             {
-                throw new InvalidOperationException("Air conditioner not found");
+                throw new NotFoundException("Air conditioner not found");
             }
 
             airConditioner.Name = dto.Name;
@@ -135,7 +136,7 @@ public class AirConditionerService : IAirConditionerService
             
             if (entity is null)
             {
-                throw new InvalidOperationException("Air conditioner not found");
+                throw new NotFoundException("Air conditioner not found");
             }
             
             return ToDto(entity);
@@ -224,7 +225,7 @@ public class AirConditionerService : IAirConditionerService
         }
     }
 
-    public async Task AddErrorCodeAsync(CreateErrorCodeDto dto)
+    public async Task<Guid> AddErrorCodeAsync(CreateErrorCodeDto dto)
     {
         try
         {
@@ -246,8 +247,9 @@ public class AirConditionerService : IAirConditionerService
                 Solution = dto.Solution,
                 ErrorCodeSeverity = string.IsNullOrEmpty(dto.Severity) ? ErrorCodeSeverity.Low : Enum.Parse<ErrorCodeSeverity>(dto.Severity)
             };
-            
+
             await _repository.AddErrorCodeAsync(errorCode);
+            return errorCode.Id;
         }
         catch (Exception e)
         {
@@ -263,7 +265,7 @@ public class AirConditionerService : IAirConditionerService
             var errorCode = await _repository.GetErrorCodeByIdAsync(errorCodeId);
             if (errorCode == null)
             {
-                throw new InvalidOperationException("Error code not found");
+                throw new NotFoundException("Error code not found");
             }
 
             errorCode.AirConditionerId = dto.AirConditionerId;
@@ -311,7 +313,7 @@ public class AirConditionerService : IAirConditionerService
 
             if (entity is null)
             {
-                throw new InvalidOperationException("Error code not found");
+                throw new NotFoundException("Error code not found");
             }
             
             return ToDto(entity);

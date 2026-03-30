@@ -24,16 +24,9 @@ public class MontageInventoryController : ControllerBase
     [HttpPost("{montageId}/materials")]
     public async Task<ActionResult<List<MontageInventoryItemDto>>> AddMaterials(Guid montageId, [FromBody] AddMaterialsToMontageRequest request)
     {
-        try
-        {
-            request.UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            var result = await _service.AddMaterialsAsync(montageId, request);
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        request.UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var result = await _service.AddMaterialsAsync(montageId, request);
+        return Ok(result);
     }
 
     /// <summary>
@@ -52,15 +45,8 @@ public class MontageInventoryController : ControllerBase
     [HttpDelete("materials/{materialId}")]
     public async Task<IActionResult> RemoveMaterial(Guid materialId)
     {
-        try
-        {
-            await _service.RemoveMaterialAsync(materialId);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        await _service.RemoveMaterialAsync(materialId);
+        return NoContent();
     }
 
     /// <summary>
@@ -69,15 +55,8 @@ public class MontageInventoryController : ControllerBase
     [HttpPut("materials/{materialId}")]
     public async Task<IActionResult> UpdateMaterial(Guid materialId, [FromBody] UpdateMontageMaterialDto request)
     {
-        try
-        {
-            await _service.UpdateMaterialQuantityAsync(materialId, request.QuantityUsed);
-            return Ok();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        await _service.UpdateMaterialQuantityAsync(materialId, request.QuantityUsed);
+        return Ok();
     }
 
     /// <summary>
@@ -85,8 +64,8 @@ public class MontageInventoryController : ControllerBase
     /// </summary>
     [HttpGet("item/{inventoryItemId}/usage")]
     public async Task<ActionResult<PagedList<MontageInventoryItemDto>>> GetItemUsageHistory(
-        Guid inventoryItemId, 
-        [FromQuery] int page = 1, 
+        Guid inventoryItemId,
+        [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
         var pageParams = new PageParameters { PageNumber = page, PageSize = pageSize };

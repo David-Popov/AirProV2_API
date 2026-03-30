@@ -5,7 +5,7 @@ namespace API.Services.Montages;
 
 public interface IMontageService
 {
-    Task AddMontageAsync(CreateMontageDto dto);
+    Task<Guid> AddMontageAsync(CreateMontageDto dto);
     
     Task UpdateMontageAsync(Guid montageId, UpdateMontageDto dto);
     

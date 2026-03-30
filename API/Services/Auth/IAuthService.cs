@@ -36,6 +36,23 @@ public interface IAuthService
 
     Task<bool> IsManagerAsync(string userId);
 
+    // Manager company/employee operations (DB logic extracted from ManagerController)
+
+    /// <summary>Activates an employee. Throws NotFoundException or InvalidOperationException on business-rule violations.</summary>
+    Task ActivateEmployeeAsync(string employeeId, Guid companyId);
+
+    /// <summary>Deactivates an employee. Throws NotFoundException or InvalidOperationException on business-rule violations.</summary>
+    Task DeactivateEmployeeAsync(string employeeId, Guid companyId);
+
+    /// <summary>Activates the free trial for the company. Returns a DTO with trial details and the company entity for email queuing.</summary>
+    Task<TrialActivationResultDto> ActivateTrialAsync(Guid companyId);
+
+    /// <summary>Returns the current and maximum employee counts for the company's subscription plan.</summary>
+    Task<EmployeeLimitsDto> GetEmployeeLimitsAsync(Guid companyId);
+
+    /// <summary>Deletes the company and all associated data. Returns (companyEmail, companyName) for the controller to queue a confirmation email.</summary>
+    Task<(string email, string companyName)> DeleteAccountAndCompanyAsync(Guid companyId);
+
     // Email confirmation & password management
     Task<IdentityResult> ConfirmEmailAsync(string userId, string token);
     Task ResendConfirmationEmailAsync(string email);

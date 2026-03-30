@@ -11,12 +11,10 @@ namespace API.Controllers;
 public class AdminController : ControllerBase
 {
     private readonly IAdminService _adminService;
-    private readonly ILogger<AdminController> _logger;
 
-    public AdminController(IAdminService adminService, ILogger<AdminController> logger)
+    public AdminController(IAdminService adminService)
     {
         _adminService = adminService;
-        _logger = logger;
     }
 
     #region Company Endpoints
@@ -118,7 +116,7 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> ChangeUserPassword(string id, [FromBody] AdminChangePasswordDto dto)
     {
         var result = await _adminService.ChangeUserPasswordAsync(id, dto);
-        if (!result) return BadRequest("Failed to change password");
+        if (!result) return BadRequest(new { message = "Failed to change password" });
         return NoContent();
     }
 
@@ -130,11 +128,11 @@ public class AdminController : ControllerBase
     {
         if (dto.NewRole != "Manager" && dto.NewRole != "User")
         {
-            return BadRequest("Only 'Manager' or 'User' roles are allowed");
+            return BadRequest(new { message = "Only 'Manager' or 'User' roles are allowed" });
         }
 
         var result = await _adminService.ChangeUserRoleAsync(id, dto);
-        if (!result) return BadRequest("Failed to change role. Admin users cannot have their roles changed.");
+        if (!result) return BadRequest(new { message = "Failed to change role. Admin users cannot have their roles changed." });
         return NoContent();
     }
 

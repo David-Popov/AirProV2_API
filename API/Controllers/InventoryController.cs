@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using API.Common;
 using API.DTOs;
 using API.Services.Inventory;
@@ -8,26 +7,21 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-[ApiController]
-[Route("api/[controller]")]
 [Authorize]
-public class InventoryController : ControllerBase
+public class InventoryController : ApiControllerBase
 {
     private readonly IInventoryService _service;
-    private readonly ILogger<InventoryController> _logger;
     private readonly IValidator<CreateInventoryItemDto> _createValidator;
     private readonly IValidator<UpdateInventoryItemDto> _updateValidator;
     private readonly IValidator<AdjustInventoryQuantityDto> _adjustValidator;
 
     public InventoryController(
         IInventoryService service,
-        ILogger<InventoryController> logger,
         IValidator<CreateInventoryItemDto> createValidator,
         IValidator<UpdateInventoryItemDto> updateValidator,
         IValidator<AdjustInventoryQuantityDto> adjustValidator)
     {
         _service = service;
-        _logger = logger;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
         _adjustValidator = adjustValidator;
@@ -41,22 +35,14 @@ public class InventoryController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<PagedList<InventoryItemDto>>> GetAll([FromQuery] PageParameters pageParameters)
     {
-        try
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
         {
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
+            return BadRequest(new { message = "User is not associated with a company" });
+        }
 
-            var result = await _service.GetByCompanyIdAsync(companyId.Value, pageParameters);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+        var result = await _service.GetByCompanyIdAsync(companyId.Value, pageParameters);
+        return Ok(result);
     }
 
     /// <summary>
@@ -67,22 +53,14 @@ public class InventoryController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<PagedList<InventoryItemDto>>> GetLowStock([FromQuery] PageParameters pageParameters)
     {
-        try
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
         {
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
+            return BadRequest(new { message = "User is not associated with a company" });
+        }
 
-            var result = await _service.GetLowStockByCompanyIdAsync(companyId.Value, pageParameters);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+        var result = await _service.GetLowStockByCompanyIdAsync(companyId.Value, pageParameters);
+        return Ok(result);
     }
 
     /// <summary>
@@ -94,31 +72,23 @@ public class InventoryController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<InventoryItemDto>> GetById(Guid id)
     {
-        try
+        if (id == Guid.Empty)
         {
-            if (id == Guid.Empty)
-            {
-                return BadRequest("Id is required");
-            }
-
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
-
-            var result = await _service.GetByIdAsync(id);
-            if (result == null || result.CompanyId != companyId)
-            {
-                return NotFound(new { message = "Inventory item not found" });
-            }
-            return Ok(result);
+            return BadRequest(new { message = "Id is required" });
         }
-        catch (Exception ex)
+
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
         {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
+            return BadRequest(new { message = "User is not associated with a company" });
         }
+
+        var result = await _service.GetByIdAsync(id);
+        if (result == null || result.CompanyId != companyId)
+        {
+            return NotFound(new { message = "Inventory item not found" });
+        }
+        return Ok(result);
     }
 
     /// <summary>
@@ -129,16 +99,8 @@ public class InventoryController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<PagedList<InventoryItemDto>>> GetByCompanyId(Guid companyId, [FromQuery] PageParameters pageParameters)
     {
-        try
-        {
-            var result = await _service.GetByCompanyIdAsync(companyId, pageParameters);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+        var result = await _service.GetByCompanyIdAsync(companyId, pageParameters);
+        return Ok(result);
     }
 
     /// <summary>
@@ -149,16 +111,8 @@ public class InventoryController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<PagedList<InventoryItemDto>>> GetLowStockByCompanyId(Guid companyId, [FromQuery] PageParameters pageParameters)
     {
-        try
-        {
-            var result = await _service.GetLowStockByCompanyIdAsync(companyId, pageParameters);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+        var result = await _service.GetLowStockByCompanyIdAsync(companyId, pageParameters);
+        return Ok(result);
     }
 
     /// <summary>
@@ -168,25 +122,23 @@ public class InventoryController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<PagedList<InventoryItemDto>>> SearchByCompanyId(
-        Guid companyId, 
-        [FromQuery] string searchTerm, 
+        Guid companyId,
+        [FromQuery] string searchTerm,
         [FromQuery] PageParameters pageParameters)
     {
-        try
+        if (string.IsNullOrWhiteSpace(searchTerm))
         {
-            if (string.IsNullOrWhiteSpace(searchTerm))
-            {
-                return BadRequest(new { message = "Search term is required" });
-            }
+            return BadRequest(new { message = "Search term is required" });
+        }
 
-            var result = await _service.SearchByCompanyIdAsync(companyId, searchTerm, pageParameters);
-            return Ok(result);
-        }
-        catch (Exception ex)
+        var userCompanyId = GetCurrentUserCompanyId();
+        if (userCompanyId == null || userCompanyId != companyId)
         {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
+            return Forbid();
         }
+
+        var result = await _service.SearchByCompanyIdAsync(companyId, searchTerm, pageParameters);
+        return Ok(result);
     }
 
     /// <summary>
@@ -198,20 +150,12 @@ public class InventoryController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<InventoryItemDto>> GetBySkuAndCompanyId(Guid companyId, string sku)
     {
-        try
+        var result = await _service.GetBySkuAndCompanyIdAsync(sku, companyId);
+        if (result == null)
         {
-            var result = await _service.GetBySkuAndCompanyIdAsync(sku, companyId);
-            if (result == null)
-            {
-                return NotFound(new { message = "Inventory item not found" });
-            }
-            return Ok(result);
+            return NotFound(new { message = "Inventory item not found" });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+        return Ok(result);
     }
 
     /// <summary>
@@ -223,34 +167,22 @@ public class InventoryController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> Create([FromBody] CreateInventoryItemDto dto)
     {
-        try
+        var validationResult = await _createValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
         {
-            var validationResult = await _createValidator.ValidateAsync(dto);
-            if (!validationResult.IsValid)
-            {
-                return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
-            }
+            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+        }
 
-            dto.UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            
-            var companyIdClaim = User.FindFirst("company_id")?.Value;
-            if (!string.IsNullOrEmpty(companyIdClaim) && Guid.TryParse(companyIdClaim, out var companyId))
-            {
-                dto.CompanyId = companyId;
-            }
-            
-            await _service.AddAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = Guid.NewGuid() }, dto);
-        }
-        catch (InvalidOperationException ex)
+        dto.UserId = GetCurrentUserId();
+
+        var companyIdClaim = User.FindFirst("company_id")?.Value;
+        if (!string.IsNullOrEmpty(companyIdClaim) && Guid.TryParse(companyIdClaim, out var companyId))
         {
-            return BadRequest(new { message = ex.Message });
+            dto.CompanyId = companyId;
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+
+        var id = await _service.AddAsync(dto);
+        return CreatedAtAction(nameof(GetById), new { id }, dto);
     }
 
     /// <summary>
@@ -263,42 +195,26 @@ public class InventoryController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> Update(Guid id, [FromBody] UpdateInventoryItemDto dto)
     {
-        try
+        var validationResult = await _updateValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
         {
-            var validationResult = await _updateValidator.ValidateAsync(dto);
-            if (!validationResult.IsValid)
-            {
-                return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
-            }
+            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+        }
 
-            dto.UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            
-            var companyIdClaim = User.FindFirst("company_id")?.Value;
-            if (!string.IsNullOrEmpty(companyIdClaim) && Guid.TryParse(companyIdClaim, out var companyId))
-            {
-                var existingItem = await _service.GetByIdAsync(id);
-                if (existingItem != null && existingItem.CompanyId != companyId)
-                {
-                    return NotFound(new { message = "Inventory item not found" });
-                }
-            }
+        dto.UserId = GetCurrentUserId();
 
-            await _service.UpdateAsync(id, dto);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
+        var companyIdClaim = User.FindFirst("company_id")?.Value;
+        if (!string.IsNullOrEmpty(companyIdClaim) && Guid.TryParse(companyIdClaim, out var companyId))
         {
-            if (ex.Message.Contains("not found"))
+            var existingItem = await _service.GetByIdAsync(id);
+            if (existingItem != null && existingItem.CompanyId != companyId)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(new { message = "Inventory item not found" });
             }
-            return BadRequest(new { message = ex.Message });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+
+        await _service.UpdateAsync(id, dto);
+        return NoContent();
     }
 
     /// <summary>
@@ -315,43 +231,27 @@ public class InventoryController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<InventoryItemDto>> AdjustQuantity(Guid id, [FromBody] AdjustInventoryQuantityDto dto)
     {
-        try
+        var validationResult = await _adjustValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
         {
-            var validationResult = await _adjustValidator.ValidateAsync(dto);
-            if (!validationResult.IsValid)
-            {
-                return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
-            }
-
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
-
-            var existing = await _service.GetByIdAsync(id);
-            if (existing == null || existing.CompanyId != companyId)
-            {
-                return NotFound(new { message = "Inventory item not found" });
-            }
-
-            dto.UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            var result = await _service.AdjustQuantityAsync(id, dto);
-            return Ok(result);
+            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
         }
-        catch (InvalidOperationException ex)
+
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
         {
-            if (ex.Message.Contains("not found"))
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            return BadRequest(new { message = ex.Message });
+            return BadRequest(new { message = "User is not associated with a company" });
         }
-        catch (Exception ex)
+
+        var existing = await _service.GetByIdAsync(id);
+        if (existing == null || existing.CompanyId != companyId)
         {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
+            return NotFound(new { message = "Inventory item not found" });
         }
+
+        dto.UserId = GetCurrentUserId();
+        var result = await _service.AdjustQuantityAsync(id, dto);
+        return Ok(result);
     }
 
     /// <summary>
@@ -363,32 +263,20 @@ public class InventoryController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateInventoryItemStatusDto request)
     {
-        try
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
         {
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
+            return BadRequest(new { message = "User is not associated with a company" });
+        }
 
-            var existing = await _service.GetByIdAsync(id);
-            if (existing == null || existing.CompanyId != companyId)
-            {
-                return NotFound(new { message = "Inventory item not found" });
-            }
+        var existing = await _service.GetByIdAsync(id);
+        if (existing == null || existing.CompanyId != companyId)
+        {
+            return NotFound(new { message = "Inventory item not found" });
+        }
 
-            await _service.UpdateStatusAsync(id, request.IsActive);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+        await _service.UpdateStatusAsync(id, request.IsActive);
+        return NoContent();
     }
 
     /// <summary>
@@ -398,16 +286,8 @@ public class InventoryController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<bool>> CanDelete(Guid id)
     {
-        try
-        {
-            var canDelete = await _service.CanDeleteAsync(id);
-            return Ok(new { canDelete });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+        var canDelete = await _service.CanDeleteAsync(id);
+        return Ok(new { canDelete });
     }
 
     /// <summary>
@@ -419,43 +299,26 @@ public class InventoryController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> Delete(Guid id)
     {
-        try
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
         {
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
-
-            var existing = await _service.GetByIdAsync(id);
-            if (existing == null || existing.CompanyId != companyId)
-            {
-                return NotFound(new { message = "Inventory item not found" });
-            }
-
-            var canDelete = await _service.CanDeleteAsync(id);
-            if (!canDelete)
-            {
-                return BadRequest(new { message = "Cannot delete this item. It has been used in montages or is older than 30 days. You can deactivate it instead." });
-            }
-
-            await _service.DeleteAsync(id);
-            return NoContent();
+            return BadRequest(new { message = "User is not associated with a company" });
         }
-        catch (Exception ex)
+
+        var existing = await _service.GetByIdAsync(id);
+        if (existing == null || existing.CompanyId != companyId)
         {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
+            return NotFound(new { message = "Inventory item not found" });
         }
+
+        var canDelete = await _service.CanDeleteAsync(id);
+        if (!canDelete)
+        {
+            return BadRequest(new { message = "Cannot delete this item. It has been used in montages or is older than 30 days. You can deactivate it instead." });
+        }
+
+        await _service.DeleteAsync(id);
+        return NoContent();
     }
 
-    private Guid? GetCurrentUserCompanyId()
-    {
-        var companyIdClaim = User.FindFirstValue("company_id");
-        if (string.IsNullOrEmpty(companyIdClaim))
-        {
-            return null;
-        }
-        return Guid.TryParse(companyIdClaim, out var companyId) ? companyId : null;
-    }
 }

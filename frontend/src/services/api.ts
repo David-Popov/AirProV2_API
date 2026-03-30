@@ -34,7 +34,7 @@ class ApiClient {
     return headers;
   }
 
-  private async handleErrorResponse(response: Response, retryOriginalRequest: () => Promise<any>): Promise<any> {
+  private async handleErrorResponse<T>(response: Response, retryOriginalRequest: () => Promise<T>): Promise<T> {
     if (response.status === 401) {
       const token        = localStorage.getItem('token');
       const refreshToken = localStorage.getItem('refresh_token');

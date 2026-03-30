@@ -5,7 +5,7 @@ namespace API.Services.Inventory;
 
 public interface IInventoryService
 {
-    Task AddAsync(CreateInventoryItemDto dto);
+    Task<Guid> AddAsync(CreateInventoryItemDto dto);
     
     Task UpdateAsync(Guid itemId, UpdateInventoryItemDto dto);
     

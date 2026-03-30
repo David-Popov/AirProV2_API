@@ -24,15 +24,15 @@ public class MontageService : IMontageService
         _logger = logger;
     }
 
-    public async Task AddMontageAsync(CreateMontageDto dto)
+    public async Task<Guid> AddMontageAsync(CreateMontageDto dto)
     {
         try
         {
             var existing = await _context.Montages
                 .AsNoTracking()
-                .FirstOrDefaultAsync(m => 
-                    m.CompanyId == dto.CompanyId && 
-                    m.ClientEmail == dto.ClientEmail && 
+                .FirstOrDefaultAsync(m =>
+                    m.CompanyId == dto.CompanyId &&
+                    m.ClientEmail == dto.ClientEmail &&
                     m.InstallationDate == dto.InstallationDate &&
                     m.AirConditionerId == dto.AirConditionerId);
 
@@ -66,6 +66,7 @@ public class MontageService : IMontageService
             };
 
             await _repository.AddMontageAsync(montage);
+            return montage.Id;
         }
         catch (Exception e)
         {
@@ -81,7 +82,7 @@ public class MontageService : IMontageService
             var montage = await _repository.GetByIdAsync(montageId);
             if (montage == null)
             {
-                throw new InvalidOperationException("Montage not found");
+                throw new NotFoundException("Montage not found");
             }
 
             montage.AirConditionerId = dto.AirConditionerId;
@@ -119,7 +120,7 @@ public class MontageService : IMontageService
             var montage = await _repository.GetByIdAsync(montageId);
             if (montage == null)
             {
-                throw new InvalidOperationException("Montage not found");
+                throw new NotFoundException("Montage not found");
             }
 
             var newStatus = Enum.TryParse(status, out MontageStatus montageStatus) 
@@ -159,7 +160,7 @@ public class MontageService : IMontageService
             var montage = await _repository.GetByIdAsync(montageId);
             if (montage == null)
             {
-                throw new InvalidOperationException("Montage not found");
+                throw new NotFoundException("Montage not found");
             }
 
             var newPaymentStatus = Enum.TryParse(paymentStatus, out MontagePaymentStatus status) 

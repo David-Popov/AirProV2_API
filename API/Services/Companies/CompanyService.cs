@@ -94,7 +94,7 @@ public class CompanyService : ICompanyService
             var company = await _repository.GetByIdAsync(companyId);
             if (company == null)
             {
-                throw new InvalidOperationException("Company not found");
+                throw new NotFoundException("Company not found");
             }
 
             if (!Enum.TryParse<CompanyType>(dto.CompanyType, out var companyType))
@@ -270,7 +270,7 @@ public class CompanyService : ICompanyService
             var company = await _repository.GetByIdAsync(companyId);
             if (company == null)
             {
-                throw new InvalidOperationException("Company not found");
+                throw new NotFoundException("Company not found");
             }
 
             if (company.IsSubscriptionActive != true)
@@ -327,7 +327,7 @@ public class CompanyService : ICompanyService
             var company = await _repository.GetByIdAsync(companyId);
             if (company == null)
             {
-                throw new InvalidOperationException("Company not found");
+                throw new NotFoundException("Company not found");
             }
 
             if (!Enum.TryParse<SubscriptionPlan>(dto.SubscriptionPlan, out var subscriptionPlan))
@@ -359,7 +359,7 @@ public class CompanyService : ICompanyService
             var company = await _repository.GetByIdWithUsersAsync(companyId);
             if (company == null)
             {
-                throw new InvalidOperationException("Company not found");
+                throw new NotFoundException("Company not found");
             }
 
             company.IsSubscriptionActive = true;

@@ -61,8 +61,8 @@ public class StripeController : ControllerBase
             price = 4.99m,
             currency = "EUR",
             interval = "month",
-            features = new[] 
-            { 
+            features = new[]
+            {
                 "Unlimited montages",
                 "Advanced inventory management",
                 "Full team management",
@@ -101,24 +101,16 @@ public class StripeController : ControllerBase
             return BadRequest(new { message = "Premium plan is not configured. Please set PremiumPriceId in appsettings.json" });
         }
 
-        try
-        {
-            var successUrl = $"{_frontendBaseUrl}/settings?tab=subscription&success=true";
-            var cancelUrl = $"{_frontendBaseUrl}/settings?tab=subscription";
+        var successUrl = $"{_frontendBaseUrl}/settings?tab=subscription&success=true";
+        var cancelUrl = $"{_frontendBaseUrl}/settings?tab=subscription";
 
-            var checkoutUrl = await _stripeService.CreateCheckoutSessionAsync(
-                user.Company, 
-                _stripeSettings.PremiumPriceId, 
-                successUrl, 
-                cancelUrl);
+        var checkoutUrl = await _stripeService.CreateCheckoutSessionAsync(
+            user.Company,
+            _stripeSettings.PremiumPriceId,
+            successUrl,
+            cancelUrl);
 
-            return Ok(new { url = checkoutUrl });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to create checkout session for company {CompanyId}", user.Company.Id);
-            return BadRequest(new { message = "Failed to create checkout session. Please try again." });
-        }
+        return Ok(new { url = checkoutUrl });
     }
 
     /// <summary>
@@ -148,18 +140,10 @@ public class StripeController : ControllerBase
             return BadRequest(new { message = "No subscription found. Please subscribe first." });
         }
 
-        try
-        {
-            var returnUrl = $"{_frontendBaseUrl}/settings?tab=subscription";
-            var portalUrl = await _stripeService.CreateCustomerPortalSessionAsync(user.Company, returnUrl);
+        var returnUrl = $"{_frontendBaseUrl}/settings?tab=subscription";
+        var portalUrl = await _stripeService.CreateCustomerPortalSessionAsync(user.Company, returnUrl);
 
-            return Ok(new { url = portalUrl });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to create portal session for company {CompanyId}", user.Company.Id);
-            return BadRequest(new { message = "Failed to open customer portal. Please try again." });
-        }
+        return Ok(new { url = portalUrl });
     }
 
     /// <summary>
@@ -185,7 +169,7 @@ public class StripeController : ControllerBase
         }
 
         var company = user.Company;
-        
+
         return Ok(new
         {
             plan = company.SubscriptionPlan.ToString(),
@@ -229,53 +213,45 @@ public class StripeController : ControllerBase
         }
 
         await using var transaction = await _context.Database.BeginTransactionAsync();
-        try
+
+        _logger.LogInformation($"Returning company {company.CompanyName} ({company.Id}) to Free plan");
+
+        // Deactivate all employees (User role only, not Manager)
+        var users = await _context.Users
+            .Where(u => u.CompanyId == company.Id)
+            .ToListAsync();
+
+        var userManager = HttpContext.RequestServices.GetRequiredService<UserManager<ApplicationUser>>();
+
+        int deactivatedCount = 0;
+        foreach (var emp in users)
         {
-            _logger.LogInformation($"Returning company {company.CompanyName} ({company.Id}) to Free plan");
-
-            // Deactivate all employees (User role only, not Manager)
-            var users = await _context.Users
-                .Where(u => u.CompanyId == company.Id)
-                .ToListAsync();
-
-            var userManager = HttpContext.RequestServices.GetRequiredService<UserManager<ApplicationUser>>();
-
-            int deactivatedCount = 0;
-            foreach (var emp in users)
+            var roles = await userManager.GetRolesAsync(emp);
+            if (!roles.Contains("Manager"))
             {
-                var roles = await userManager.GetRolesAsync(emp);
-                if (!roles.Contains("Manager"))
-                {
-                    emp.IsActive = false;
-                    _context.Entry(emp).State = EntityState.Modified;
-                    deactivatedCount++;
-                    _logger.LogInformation($"Deactivating user: {emp.Email} (ID: {emp.Id})");
-                }
+                emp.IsActive = false;
+                _context.Entry(emp).State = EntityState.Modified;
+                deactivatedCount++;
+                _logger.LogInformation($"Deactivating user: {emp.Email} (ID: {emp.Id})");
             }
-
-            _logger.LogInformation($"Total users to deactivate: {deactivatedCount}");
-
-            // Move to Free plan
-            company.SubscriptionPlan = SubscriptionPlan.Free;
-            company.SubscriptionStatus = SubscriptionStatus.Active;
-            company.IsSubscriptionActive = true;
-            company.UpdatedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
-
-            _logger.LogInformation(
-                $"Successfully moved company {company.CompanyName} to Free plan. " +
-                $"All employees deactivated. Manager can reactivate up to 2 employees.");
-
-            return Ok(new { message = "Successfully returned to Free plan. All employees have been deactivated." });
         }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            _logger.LogError(ex, $"Failed to return company {company.CompanyName} ({company.Id}) to Free plan");
-            return BadRequest(new { message = "Failed to return to Free plan. Please try again." });
-        }
+
+        _logger.LogInformation($"Total users to deactivate: {deactivatedCount}");
+
+        // Move to Free plan
+        company.SubscriptionPlan = SubscriptionPlan.Free;
+        company.SubscriptionStatus = SubscriptionStatus.Active;
+        company.IsSubscriptionActive = true;
+        company.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
+
+        _logger.LogInformation(
+            $"Successfully moved company {company.CompanyName} to Free plan. " +
+            $"All employees deactivated. Manager can reactivate up to 2 employees.");
+
+        return Ok(new { message = "Successfully returned to Free plan. All employees have been deactivated." });
     }
 
     /// <summary>
@@ -286,7 +262,7 @@ public class StripeController : ControllerBase
     public async Task<IActionResult> Webhook()
     {
         _logger.LogInformation("=== WEBHOOK RECEIVED ===");
-        
+
         var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
         var signature = Request.Headers["Stripe-Signature"].ToString();
 
@@ -299,17 +275,9 @@ public class StripeController : ControllerBase
             return BadRequest(new { message = "Missing Stripe signature" });
         }
 
-        try
-        {
-            _logger.LogInformation("Calling HandleWebhookEventAsync...");
-            await _stripeService.HandleWebhookEventAsync(json, signature);
-            _logger.LogInformation("=== WEBHOOK PROCESSED SUCCESSFULLY ===");
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "=== WEBHOOK PROCESSING FAILED ===");
-            return BadRequest(new { message = "Webhook processing failed", error = ex.Message });
-        }
+        _logger.LogInformation("Calling HandleWebhookEventAsync...");
+        await _stripeService.HandleWebhookEventAsync(json, signature);
+        _logger.LogInformation("=== WEBHOOK PROCESSED SUCCESSFULLY ===");
+        return Ok();
     }
 }

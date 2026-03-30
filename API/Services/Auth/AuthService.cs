@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using API.Common;
 using API.Constants;
 using API.Data;
 using API.Data.Entities;
@@ -267,7 +268,7 @@ public class AuthService : IAuthService
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
-                throw new InvalidOperationException("User not found");
+                throw new NotFoundException("User not found");
             }
 
             // Email changes are handled through the dedicated change-email flow
@@ -358,7 +359,7 @@ public class AuthService : IAuthService
 
         if (user == null)
         {
-            throw new InvalidOperationException("User not found");
+            throw new NotFoundException("User not found");
         }
 
         var newToken = await GenerateJwtTokenAsync(user);
@@ -509,7 +510,7 @@ public class AuthService : IAuthService
             var company = await _context.Companies.FindAsync(companyId);
             if (company == null)
             {
-                throw new InvalidOperationException("Company not found");
+                throw new NotFoundException("Company not found");
             }
 
             var currentEmployeeCount = await GetActiveEmployeeCountAsync(companyId);
@@ -679,7 +680,7 @@ public class AuthService : IAuthService
             var user = await _userManager.FindByIdAsync(employeeId);
             if (user == null || user.CompanyId != companyId)
             {
-                throw new InvalidOperationException("Employee not found");
+                throw new NotFoundException("Employee not found");
             }
 
             if (await IsManagerAsync(employeeId))
@@ -716,7 +717,7 @@ public class AuthService : IAuthService
             var user = await _userManager.FindByIdAsync(employeeId);
             if (user == null || user.CompanyId != companyId)
             {
-                throw new InvalidOperationException("Employee not found");
+                throw new NotFoundException("Employee not found");
             }
 
             if (user.Email != dto.Email)
@@ -785,7 +786,7 @@ public class AuthService : IAuthService
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
-                throw new InvalidOperationException("User not found");
+                throw new NotFoundException("User not found");
             }
 
             return await _userManager.GetRolesAsync(user);
@@ -826,6 +827,220 @@ public class AuthService : IAuthService
         {
             var roles = await GetUserRolesAsync(userId);
             return roles.Contains("Manager");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, e.Message);
+            throw;
+        }
+    }
+
+    // Manager company/employee operations (extracted from ManagerController)
+
+    public async Task ActivateEmployeeAsync(string employeeId, Guid companyId)
+    {
+        try
+        {
+            var company = await _context.Companies.FindAsync(companyId);
+            if (company == null)
+            {
+                throw new NotFoundException("Company not found");
+            }
+
+            var activeCount = await GetActiveEmployeeCountAsync(companyId);
+            var maxEmployees = SubscriptionLimits.GetMaxEmployees(company.SubscriptionPlan);
+
+            if (activeCount >= maxEmployees)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot activate more employees. Current plan allows {maxEmployees} active employees.");
+            }
+
+            var employee = await _context.Users.FindAsync(employeeId);
+            if (employee == null || employee.CompanyId != companyId)
+            {
+                throw new NotFoundException("Employee not found");
+            }
+
+            if (await IsManagerAsync(employeeId))
+            {
+                throw new InvalidOperationException("Cannot activate a Manager");
+            }
+
+            employee.IsActive = true;
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, e.Message);
+            throw;
+        }
+    }
+
+    public async Task DeactivateEmployeeAsync(string employeeId, Guid companyId)
+    {
+        try
+        {
+            var employee = await _context.Users.FindAsync(employeeId);
+            if (employee == null || employee.CompanyId != companyId)
+            {
+                throw new NotFoundException("Employee not found");
+            }
+
+            if (await IsManagerAsync(employeeId))
+            {
+                throw new InvalidOperationException("Cannot deactivate a Manager");
+            }
+
+            employee.IsActive = false;
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, e.Message);
+            throw;
+        }
+    }
+
+    public async Task<TrialActivationResultDto> ActivateTrialAsync(Guid companyId)
+    {
+        try
+        {
+            var company = await _context.Companies.FindAsync(companyId);
+            if (company == null)
+            {
+                throw new NotFoundException("Company not found");
+            }
+
+            if (company.HasUsedTrial)
+            {
+                throw new InvalidOperationException(
+                    "Trial period has already been used for this company. Please upgrade to Premium plan.");
+            }
+
+            if (company.SubscriptionPlan != SubscriptionPlan.Free)
+            {
+                throw new InvalidOperationException(
+                    $"Trial can only be activated from Free plan. Current plan: {company.SubscriptionPlan}");
+            }
+
+            company.SubscriptionPlan = SubscriptionPlan.FreeTrial;
+            company.SubscriptionStatus = SubscriptionStatus.Trial;
+            company.TrialStartDate = DateTime.UtcNow;
+            company.TrialEndDate = DateTime.UtcNow.AddMonths(6);
+            company.HasUsedTrial = true;
+            company.IsSubscriptionActive = true;
+            company.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return new TrialActivationResultDto
+            {
+                TrialEndDate = company.TrialEndDate!.Value,
+                SubscriptionPlan = company.SubscriptionPlan.ToString(),
+                SubscriptionStatus = company.SubscriptionStatus.ToString(),
+                Company = company
+            };
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, e.Message);
+            throw;
+        }
+    }
+
+    public async Task<EmployeeLimitsDto> GetEmployeeLimitsAsync(Guid companyId)
+    {
+        try
+        {
+            var company = await _context.Companies.FindAsync(companyId);
+            if (company == null)
+            {
+                throw new NotFoundException("Company not found");
+            }
+
+            var currentCount = await GetActiveEmployeeCountAsync(companyId);
+            var maxCount = SubscriptionLimits.GetMaxEmployees(company.SubscriptionPlan);
+
+            return new EmployeeLimitsDto
+            {
+                CurrentCount = currentCount,
+                MaxCount = maxCount,
+                CanAddMore = currentCount < maxCount,
+                SubscriptionPlan = company.SubscriptionPlan.ToString()
+            };
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, e.Message);
+            throw;
+        }
+    }
+
+    public async Task<(string email, string companyName)> DeleteAccountAndCompanyAsync(Guid companyId)
+    {
+        try
+        {
+            var company = await _context.Companies.FindAsync(companyId);
+            if (company == null)
+            {
+                throw new NotFoundException("Company not found");
+            }
+
+            var companyEmail = company.Email ?? string.Empty;
+            var companyName = company.CompanyName;
+
+            // Delete montage-related data
+            var montageIds = await _context.Montages
+                .Where(m => m.CompanyId == companyId)
+                .Select(m => m.Id)
+                .ToListAsync();
+
+            if (montageIds.Count > 0)
+            {
+                await _context.MontageInventoryItems
+                    .Where(mi => montageIds.Contains(mi.MontageId))
+                    .ExecuteDeleteAsync();
+
+                await _context.MontagePhotos
+                    .Where(mp => montageIds.Contains(mp.MontageId))
+                    .ExecuteDeleteAsync();
+
+                await _context.Montages
+                    .Where(m => m.CompanyId == companyId)
+                    .ExecuteDeleteAsync();
+            }
+
+            // Delete user-related data
+            var userIds = await _context.Users
+                .Where(u => u.CompanyId == companyId)
+                .Select(u => u.Id)
+                .ToListAsync();
+
+            if (userIds.Count > 0)
+            {
+                await _context.ReportedProblems
+                    .Where(rp => userIds.Contains(rp.UserId))
+                    .ExecuteDeleteAsync();
+
+                await _context.RefreshTokens
+                    .Where(rt => userIds.Contains(rt.UserId))
+                    .ExecuteDeleteAsync();
+
+                await _context.UserRoles
+                    .Where(ur => userIds.Contains(ur.UserId))
+                    .ExecuteDeleteAsync();
+
+                await _context.Users
+                    .Where(u => u.CompanyId == companyId)
+                    .ExecuteDeleteAsync();
+            }
+
+            // Delete company (cascades to inventory items and audit logs)
+            _context.Companies.Remove(company);
+            await _context.SaveChangesAsync();
+
+            return (companyEmail, companyName);
         }
         catch (Exception e)
         {
@@ -956,7 +1171,7 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
         {
-            throw new InvalidOperationException("User not found.");
+            throw new NotFoundException("User not found.");
         }
 
         var existingUser = await _userManager.FindByEmailAsync(newEmail);

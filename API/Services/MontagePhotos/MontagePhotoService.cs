@@ -1,3 +1,4 @@
+using API.Common;
 using API.Data;
 using API.Data.Entities;
 using API.DTOs;
@@ -33,7 +34,7 @@ public class MontagePhotoService : IMontagePhotoService
         var montageExists = await _context.Montages.AnyAsync(m => m.Id == montageId);
         if (!montageExists)
         {
-            throw new InvalidOperationException("Montage not found");
+            throw new NotFoundException("Montage not found");
         }
 
         var (canAdd, countError) = await CanAddPhotoAsync(montageId);
