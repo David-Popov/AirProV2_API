@@ -32,39 +32,26 @@ public class ReportedProblemsController : ControllerBase
         [FromForm] string description,
         IFormFile? screenshot)
     {
-        try
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized();
-            }
-
-            if (string.IsNullOrWhiteSpace(description))
-            {
-                return BadRequest(new { message = "Description is required" });
-            }
-
-            if (description.Length > 2000)
-            {
-                return BadRequest(new { message = "Description cannot exceed 2000 characters" });
-            }
-
-            var result = await _service.CreateAsync(userId, category, description, screenshot);
-            _logger.LogInformation("Problem report created by user {UserId}, Category: {Category}", userId, category);
-            
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            return Unauthorized();
         }
-        catch (InvalidOperationException ex)
+
+        if (string.IsNullOrWhiteSpace(description))
         {
-            _logger.LogWarning(ex, "Failed to create problem report");
-            return BadRequest(new { message = ex.Message });
+            return BadRequest(new { message = "Description is required" });
         }
-        catch (Exception ex)
+
+        if (description.Length > 2000)
         {
-            _logger.LogError(ex, "Error creating problem report");
-            return StatusCode(500, new { message = "An error occurred while creating the problem report" });
+            return BadRequest(new { message = "Description cannot exceed 2000 characters" });
         }
+
+        var result = await _service.CreateAsync(userId, category, description, screenshot);
+        _logger.LogInformation("Problem report created by user {UserId}, Category: {Category}", userId, category);
+
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
     /// <summary>
@@ -74,16 +61,8 @@ public class ReportedProblemsController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<List<ReportedProblemDto>>> GetAll()
     {
-        try
-        {
-            var problems = await _service.GetAllAsync();
-            return Ok(problems);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting all problem reports");
-            return StatusCode(500, new { message = "An error occurred while fetching problem reports" });
-        }
+        var problems = await _service.GetAllAsync();
+        return Ok(problems);
     }
 
     /// <summary>
@@ -93,21 +72,13 @@ public class ReportedProblemsController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ReportedProblemDto>> GetById(Guid id)
     {
-        try
+        var problem = await _service.GetByIdAsync(id);
+        if (problem == null)
         {
-            var problem = await _service.GetByIdAsync(id);
-            if (problem == null)
-            {
-                return NotFound(new { message = "Problem report not found" });
-            }
+            return NotFound(new { message = "Problem report not found" });
+        }
 
-            return Ok(problem);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting problem report {Id}", id);
-            return StatusCode(500, new { message = "An error occurred while fetching the problem report" });
-        }
+        return Ok(problem);
     }
 
     /// <summary>
@@ -117,22 +88,14 @@ public class ReportedProblemsController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetScreenshot(Guid id)
     {
-        try
+        var result = await _service.GetScreenshotStreamAsync(id);
+        if (result == null)
         {
-            var result = await _service.GetScreenshotStreamAsync(id);
-            if (result == null)
-            {
-                return NotFound(new { message = "Screenshot not found" });
-            }
+            return NotFound(new { message = "Screenshot not found" });
+        }
 
-            var (stream, contentType, fileName) = result.Value;
-            return File(stream, contentType, fileName);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error downloading screenshot for problem {Id}", id);
-            return StatusCode(500, new { message = "An error occurred while downloading the screenshot" });
-        }
+        var (stream, contentType, fileName) = result.Value;
+        return File(stream, contentType, fileName);
     }
 
     /// <summary>
@@ -142,22 +105,14 @@ public class ReportedProblemsController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> MarkAsReviewed(Guid id)
     {
-        try
+        var result = await _service.MarkAsReviewedAsync(id);
+        if (!result)
         {
-            var result = await _service.MarkAsReviewedAsync(id);
-            if (!result)
-            {
-                return NotFound(new { message = "Problem report not found" });
-            }
+            return NotFound(new { message = "Problem report not found" });
+        }
 
-            _logger.LogInformation("Problem report {Id} marked as reviewed and deleted", id);
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error marking problem {Id} as reviewed", id);
-            return StatusCode(500, new { message = "An error occurred while marking the problem as reviewed" });
-        }
+        _logger.LogInformation("Problem report {Id} marked as reviewed and deleted", id);
+        return NoContent();
     }
 
     /// <summary>

@@ -57,7 +57,7 @@ public class MontageInventoryService : IMontageInventoryService
         var montage = await _context.Montages.FindAsync(montageId);
         if (montage == null)
         {
-            throw new InvalidOperationException("Montage not found");
+            throw new NotFoundException("Montage not found");
         }
 
         var addedItems = new List<MontageInventoryItemDto>();
@@ -156,7 +156,7 @@ public class MontageInventoryService : IMontageInventoryService
 
             if (montageItem == null)
             {
-                throw new InvalidOperationException("Material record not found");
+                throw new NotFoundException("Material record not found");
             }
 
             // Restore quantity to inventory
@@ -191,12 +191,12 @@ public class MontageInventoryService : IMontageInventoryService
 
             if (montageItem == null)
             {
-                throw new InvalidOperationException("Material record not found");
+                throw new NotFoundException("Material record not found");
             }
 
             if (montageItem.InventoryItem == null)
             {
-                throw new InvalidOperationException("Inventory item no longer exists");
+                throw new NotFoundException("Inventory item no longer exists");
             }
             
             decimal diff = newQuantity - montageItem.QuantityUsed;

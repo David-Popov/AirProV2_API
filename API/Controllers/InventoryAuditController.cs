@@ -34,16 +34,8 @@ public class InventoryAuditController : ControllerBase
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 20)
     {
-        try
-        {
-            var result = await _auditService.GetAuditLogsAsync(itemId, pageNumber, pageSize);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting audit history for item {ItemId}", itemId);
-            return StatusCode(500, new { message = "Error retrieving audit history" });
-        }
+        var result = await _auditService.GetAuditLogsAsync(itemId, pageNumber, pageSize);
+        return Ok(result);
     }
 
     /// <summary>
@@ -53,36 +45,28 @@ public class InventoryAuditController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult> GetRecentActivity([FromQuery] int count = 6)
     {
-        try
-        {
-            var companyId = User.FindFirst("company_id")?.Value;
-            
-            _logger.LogInformation("GetRecentActivity: User Claims: {Claims}", string.Join(", ", User.Claims.Select(c => $"{c.Type}={c.Value}")));
+        var companyId = User.FindFirst("company_id")?.Value;
 
-            if (string.IsNullOrEmpty(companyId) || !Guid.TryParse(companyId, out var parsedCompanyId))
+        _logger.LogInformation("GetRecentActivity: User Claims: {Claims}", string.Join(", ", User.Claims.Select(c => $"{c.Type}={c.Value}")));
+
+        if (string.IsNullOrEmpty(companyId) || !Guid.TryParse(companyId, out var parsedCompanyId))
+        {
+            // Fallback check for "CompanyId" just in case
+            companyId = User.FindFirst("CompanyId")?.Value;
+            if (string.IsNullOrEmpty(companyId) || !Guid.TryParse(companyId, out parsedCompanyId))
             {
-                // Fallback check for "CompanyId" just in case
-                companyId = User.FindFirst("CompanyId")?.Value;
-                if (string.IsNullOrEmpty(companyId) || !Guid.TryParse(companyId, out parsedCompanyId))
-                {
-                     _logger.LogWarning("GetRecentActivity: Company ID not found in token");
-                     return BadRequest(new { message = "Company ID not found in token" });
-                }
+                 _logger.LogWarning("GetRecentActivity: Company ID not found in token");
+                 return BadRequest(new { message = "Company ID not found in token" });
             }
-
-            _logger.LogInformation("GetRecentActivity: Fetching for CompanyId: {CompanyId}, Count: {Count}", parsedCompanyId, count);
-
-            var result = await _auditService.GetRecentActivityAsync(parsedCompanyId, count);
-            
-            _logger.LogInformation("GetRecentActivity: Found {Count} items", result.Count);
-
-            return Ok(result);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting recent activity");
-            return StatusCode(500, new { message = "Error retrieving recent activity" });
-        }
+
+        _logger.LogInformation("GetRecentActivity: Fetching for CompanyId: {CompanyId}, Count: {Count}", parsedCompanyId, count);
+
+        var result = await _auditService.GetRecentActivityAsync(parsedCompanyId, count);
+
+        _logger.LogInformation("GetRecentActivity: Found {Count} items", result.Count);
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -95,15 +79,7 @@ public class InventoryAuditController : ControllerBase
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 20)
     {
-        try
-        {
-            var result = await _auditService.GetAuditLogsByUserAsync(userId, pageNumber, pageSize);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting audit history for user {UserId}", userId);
-            return StatusCode(500, new { message = "Error retrieving user history" });
-        }
+        var result = await _auditService.GetAuditLogsByUserAsync(userId, pageNumber, pageSize);
+        return Ok(result);
     }
 }

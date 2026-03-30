@@ -1,3 +1,4 @@
+using API.Common;
 using API.Data;
 using API.Data.Entities;
 using API.DTOs.ReportedProblems;
@@ -16,9 +17,7 @@ public class ReportedProblemService : IReportedProblemService
     private readonly MinioSettings _minioSettings;
     private readonly ILogger<ReportedProblemService> _logger;
 
-    private static readonly string[] AllowedContentTypes = { "image/jpeg", "image/png", "image/gif", "image/webp" };
-    private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-    private const long MaxFileSizeBytes = 10 * 1024 * 1024; // 10MB
+    private const long MaxFileSizeBytes = 10 * 1024 * 1024; // 10MB — higher limit for bug report images
 
     public ReportedProblemService(
         ApplicationDbContext context,
@@ -170,15 +169,15 @@ public class ReportedProblemService : IReportedProblemService
         }
 
         var contentType = file.ContentType.ToLowerInvariant();
-        if (!AllowedContentTypes.Contains(contentType))
+        if (!ImageValidationConstants.AllowedContentTypes.Contains(contentType))
         {
-            return (false, $"Invalid file type. Allowed types: {string.Join(", ", AllowedExtensions)}");
+            return (false, $"Invalid file type. Allowed types: {string.Join(", ", ImageValidationConstants.AllowedExtensions)}");
         }
 
         var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-        if (!AllowedExtensions.Contains(extension))
+        if (!ImageValidationConstants.AllowedExtensions.Contains(extension))
         {
-            return (false, $"Invalid file extension. Allowed extensions: {string.Join(", ", AllowedExtensions)}");
+            return (false, $"Invalid file extension. Allowed extensions: {string.Join(", ", ImageValidationConstants.AllowedExtensions)}");
         }
 
         return (true, null);

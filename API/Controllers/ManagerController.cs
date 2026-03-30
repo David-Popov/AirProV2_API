@@ -1,40 +1,29 @@
-using System.Security.Claims;
-using API.Data;
+using API.Common;
 using API.DTOs;
-using API.Models;
 using API.Services.Auth;
 using API.Services.Email;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers;
 
 /// <summary>
 /// Controller for manager-specific operations like employee management
 /// </summary>
-[ApiController]
-[Route("api/[controller]")]
 [Authorize(Roles = "Manager,Admin")]
-public class ManagerController : ControllerBase
+public class ManagerController : ApiControllerBase
 {
     private readonly IAuthService _authService;
-    private readonly ApplicationDbContext _context;
-    private readonly ILogger<ManagerController> _logger;
     private readonly IValidator<CreateEmployeeDto> _createEmployeeValidator;
     private readonly IBackgroundEmailQueue _backgroundEmailQueue;
 
     public ManagerController(
         IAuthService authService,
-        ApplicationDbContext context,
-        ILogger<ManagerController> logger,
         IValidator<CreateEmployeeDto> createEmployeeValidator,
         IBackgroundEmailQueue backgroundEmailQueue)
     {
         _authService = authService;
-        _context = context;
-        _logger = logger;
         _createEmployeeValidator = createEmployeeValidator;
         _backgroundEmailQueue = backgroundEmailQueue;
     }
@@ -54,32 +43,20 @@ public class ManagerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<EmployeeDto>> CreateEmployee([FromBody] CreateEmployeeDto dto)
     {
-        try
+        var validationResult = await _createEmployeeValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
         {
-            var validationResult = await _createEmployeeValidator.ValidateAsync(dto);
-            if (!validationResult.IsValid)
-            {
-                return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
-            }
+            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+        }
 
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
+        {
+            return BadRequest(new { message = "User is not associated with a company" });
+        }
 
-            var result = await _authService.CreateEmployeeAsync(dto, companyId.Value);
-            return CreatedAtAction(nameof(GetEmployeeById), new { id = result.Id }, result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = "An error occurred while creating the employee" });
-        }
+        var result = await _authService.CreateEmployeeAsync(dto, companyId.Value);
+        return CreatedAtAction(nameof(GetEmployeeById), new { id = result.Id }, result);
     }
 
     /// <summary>
@@ -92,22 +69,14 @@ public class ManagerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<List<EmployeeDto>>> GetEmployees()
     {
-        try
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
         {
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
+            return BadRequest(new { message = "User is not associated with a company" });
+        }
 
-            var employees = await _authService.GetEmployeesByCompanyIdAsync(companyId.Value);
-            return Ok(employees);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = "An error occurred while retrieving employees" });
-        }
+        var employees = await _authService.GetEmployeesByCompanyIdAsync(companyId.Value);
+        return Ok(employees);
     }
 
     /// <summary>
@@ -121,27 +90,19 @@ public class ManagerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<EmployeeDto>> GetEmployeeById(string id)
     {
-        try
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
         {
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
-
-            var employee = await _authService.GetEmployeeByIdAsync(id, companyId.Value);
-            if (employee == null)
-            {
-                return NotFound(new { message = "Employee not found" });
-            }
-
-            return Ok(employee);
+            return BadRequest(new { message = "User is not associated with a company" });
         }
-        catch (Exception ex)
+
+        var employee = await _authService.GetEmployeeByIdAsync(id, companyId.Value);
+        if (employee == null)
         {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = "An error occurred while retrieving the employee" });
+            return NotFound(new { message = "Employee not found" });
         }
+
+        return Ok(employee);
     }
 
     /// <summary>
@@ -156,42 +117,26 @@ public class ManagerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<EmployeeDto>> UpdateEmployee(string id, [FromBody] CreateEmployeeDto dto)
     {
-        try
-        {
-            // Password is optional for updates
-            var validationResult = await _createEmployeeValidator.ValidateAsync(dto);
-            // Filter out password validation errors if password is empty (optional for update)
-            var errors = validationResult.Errors
-                .Where(e => !e.PropertyName.Equals("Password", StringComparison.OrdinalIgnoreCase) || !string.IsNullOrEmpty(dto.Password))
-                .ToList();
-            
-            if (errors.Any())
-            {
-                return BadRequest(new { errors = errors.Select(e => e.ErrorMessage) });
-            }
+        // Password is optional for updates
+        var validationResult = await _createEmployeeValidator.ValidateAsync(dto);
+        // Filter out password validation errors if password is empty (optional for update)
+        var errors = validationResult.Errors
+            .Where(e => !e.PropertyName.Equals("Password", StringComparison.OrdinalIgnoreCase) || !string.IsNullOrEmpty(dto.Password))
+            .ToList();
 
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
+        if (errors.Any())
+        {
+            return BadRequest(new { errors = errors.Select(e => e.ErrorMessage) });
+        }
 
-            var result = await _authService.UpdateEmployeeAsync(id, dto, companyId.Value);
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
         {
-            if (ex.Message.Contains("not found"))
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            return BadRequest(new { message = ex.Message });
+            return BadRequest(new { message = "User is not associated with a company" });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = "An error occurred while updating the employee" });
-        }
+
+        var result = await _authService.UpdateEmployeeAsync(id, dto, companyId.Value);
+        return Ok(result);
     }
 
     /// <summary>
@@ -206,50 +151,14 @@ public class ManagerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> ActivateEmployee(string id)
     {
-        try
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
         {
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
-
-            var activeCount = await _authService.GetActiveEmployeeCountAsync(companyId.Value);
-
-            var company = await _context.Companies.FindAsync(companyId.Value);
-            if (company == null)
-            {
-                return NotFound(new { message = "Company not found" });
-            }
-
-            var maxEmployees = SubscriptionLimits.GetMaxEmployees(company.SubscriptionPlan);
-
-            if (activeCount >= maxEmployees)
-            {
-                return BadRequest(new { message = $"Cannot activate more employees. Current plan allows {maxEmployees} active employees." });
-            }
-
-            var employee = await _context.Users.FindAsync(id);
-            if (employee == null || employee.CompanyId != companyId.Value)
-            {
-                return NotFound(new { message = "Employee not found" });
-            }
-
-            if (await _authService.IsManagerAsync(id))
-            {
-                return BadRequest(new { message = "Cannot activate a Manager" });
-            }
-
-            employee.IsActive = true;
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Employee activated successfully" });
+            return BadRequest(new { message = "User is not associated with a company" });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = "An error occurred while activating the employee" });
-        }
+
+        await _authService.ActivateEmployeeAsync(id, companyId.Value);
+        return Ok(new { message = "Employee activated successfully" });
     }
 
     /// <summary>
@@ -264,35 +173,14 @@ public class ManagerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeactivateEmployee(string id)
     {
-        try
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
         {
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
-
-            var employee = await _context.Users.FindAsync(id);
-            if (employee == null || employee.CompanyId != companyId.Value)
-            {
-                return NotFound(new { message = "Employee not found" });
-            }
-
-            if (await _authService.IsManagerAsync(id))
-            {
-                return BadRequest(new { message = "Cannot deactivate a Manager" });
-            }
-
-            employee.IsActive = false;
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Employee deactivated successfully" });
+            return BadRequest(new { message = "User is not associated with a company" });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = "An error occurred while deactivating the employee" });
-        }
+
+        await _authService.DeactivateEmployeeAsync(id, companyId.Value);
+        return Ok(new { message = "Employee deactivated successfully" });
     }
 
     /// <summary>
@@ -310,37 +198,21 @@ public class ManagerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteEmployee(string id)
     {
-        try
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
         {
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
+            return BadRequest(new { message = "User is not associated with a company" });
+        }
 
-            // Prevent self-deletion
-            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (id == currentUserId)
-            {
-                return BadRequest(new { message = "You cannot delete your own account" });
-            }
+        // Prevent self-deletion
+        var currentUserId = GetCurrentUserId();
+        if (id == currentUserId)
+        {
+            return BadRequest(new { message = "You cannot delete your own account" });
+        }
 
-            await _authService.DeleteEmployeeAsync(id, companyId.Value);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            if (ex.Message.Contains("not found"))
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = "An error occurred while deleting the employee" });
-        }
+        await _authService.DeleteEmployeeAsync(id, companyId.Value);
+        return NoContent();
     }
 
     /// <summary>
@@ -358,65 +230,30 @@ public class ManagerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> ActivateTrial()
     {
-        try
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
         {
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
-
-            var company = await _context.Companies.FindAsync(companyId.Value);
-            if (company == null)
-            {
-                return NotFound(new { message = "Company not found" });
-            }
-
-            // Check if trial has already been used
-            if (company.HasUsedTrial)
-            {
-                return BadRequest(new { message = "Trial period has already been used for this company. Please upgrade to Premium plan." });
-            }
-
-            // Can only activate trial from Free plan
-            if (company.SubscriptionPlan != SubscriptionPlan.Free)
-            {
-                return BadRequest(new { message = $"Trial can only be activated from Free plan. Current plan: {company.SubscriptionPlan}" });
-            }
-
-            // Activate trial
-            company.SubscriptionPlan = SubscriptionPlan.FreeTrial;
-            company.SubscriptionStatus = SubscriptionStatus.Trial;
-            company.TrialStartDate = DateTime.UtcNow;
-            company.TrialEndDate = DateTime.UtcNow.AddMonths(6);  // 6 months trial
-            company.HasUsedTrial = true;  // Mark as used (cannot activate again)
-            company.IsSubscriptionActive = true;
-            company.UpdatedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-
-            // Queue trial activation email (non-blocking)
-            var trialCompany = company;
-            var trialEndDate = company.TrialEndDate!.Value;
-            _backgroundEmailQueue.QueueEmail(async sp =>
-            {
-                var emailService = sp.GetRequiredService<IEmailService>();
-                await emailService.SendTrialActivatedEmailAsync(trialCompany, trialEndDate);
-            });
-
-            return Ok(new
-            {
-                message = "Trial activated successfully",
-                trial_end_date = company.TrialEndDate,
-                subscription_plan = company.SubscriptionPlan.ToString(),
-                subscription_status = company.SubscriptionStatus.ToString()
-            });
+            return BadRequest(new { message = "User is not associated with a company" });
         }
-        catch (Exception ex)
+
+        var result = await _authService.ActivateTrialAsync(companyId.Value);
+
+        // Queue trial activation email (non-blocking)
+        var trialCompany = result.Company;
+        var trialEndDate = result.TrialEndDate;
+        _backgroundEmailQueue.QueueEmail(async sp =>
         {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = "An error occurred while activating trial" });
-        }
+            var emailService = sp.GetRequiredService<IEmailService>();
+            await emailService.SendTrialActivatedEmailAsync(trialCompany, trialEndDate);
+        });
+
+        return Ok(new
+        {
+            message = "Trial activated successfully",
+            trial_end_date = result.TrialEndDate,
+            subscription_plan = result.SubscriptionPlan,
+            subscription_status = result.SubscriptionStatus
+        });
     }
 
     /// <summary>
@@ -430,37 +267,14 @@ public class ManagerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<EmployeeLimitsDto>> GetEmployeeLimits()
     {
-        try
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
         {
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
-
-            var company = await _context.Companies.FindAsync(companyId.Value);
-            if (company == null)
-            {
-                return NotFound(new { message = "Company not found" });
-            }
-
-            // Count only active User role employees (NOT Manager role!)
-            var currentCount = await _authService.GetActiveEmployeeCountAsync(companyId.Value);
-            var maxCount = SubscriptionLimits.GetMaxEmployees(company.SubscriptionPlan);
-
-            return Ok(new EmployeeLimitsDto
-            {
-                CurrentCount = currentCount,
-                MaxCount = maxCount,
-                CanAddMore = currentCount < maxCount,
-                SubscriptionPlan = company.SubscriptionPlan.ToString()
-            });
+            return BadRequest(new { message = "User is not associated with a company" });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = "An error occurred while retrieving employee limits" });
-        }
+
+        var result = await _authService.GetEmployeeLimitsAsync(companyId.Value);
+        return Ok(result);
     }
 
     /// <summary>
@@ -482,111 +296,31 @@ public class ManagerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteAccountAndCompany()
     {
-        try
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
         {
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
-
-            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(currentUserId))
-            {
-                return BadRequest(new { message = "Unable to identify current user" });
-            }
-
-            var company = await _context.Companies.FindAsync(companyId.Value);
-            if (company == null)
-            {
-                return NotFound(new { message = "Company not found" });
-            }
-
-            var companyEmail = company.Email;
-            var companyName = company.CompanyName;
-
-            // Delete all montage photos (cascade from montages won't cover MinIO cleanup, but DB records will be removed)
-            var montageIds = await _context.Montages
-                .Where(m => m.CompanyId == companyId.Value)
-                .Select(m => m.Id)
-                .ToListAsync();
-
-            if (montageIds.Count > 0)
-            {
-                // Delete montage inventory items
-                await _context.MontageInventoryItems
-                    .Where(mi => montageIds.Contains(mi.MontageId))
-                    .ExecuteDeleteAsync();
-
-                // Delete montage photos
-                await _context.MontagePhotos
-                    .Where(mp => montageIds.Contains(mp.MontageId))
-                    .ExecuteDeleteAsync();
-
-                // Delete montages
-                await _context.Montages
-                    .Where(m => m.CompanyId == companyId.Value)
-                    .ExecuteDeleteAsync();
-            }
-
-            // Delete reported problems for all company users
-            var userIds = await _context.Users
-                .Where(u => u.CompanyId == companyId.Value)
-                .Select(u => u.Id)
-                .ToListAsync();
-
-            if (userIds.Count > 0)
-            {
-                await _context.ReportedProblems
-                    .Where(rp => userIds.Contains(rp.UserId))
-                    .ExecuteDeleteAsync();
-
-                // Delete refresh tokens
-                await _context.RefreshTokens
-                    .Where(rt => userIds.Contains(rt.UserId))
-                    .ExecuteDeleteAsync();
-
-                // Delete user roles
-                await _context.UserRoles
-                    .Where(ur => userIds.Contains(ur.UserId))
-                    .ExecuteDeleteAsync();
-
-                // Delete users (hard delete)
-                await _context.Users
-                    .Where(u => u.CompanyId == companyId.Value)
-                    .ExecuteDeleteAsync();
-            }
-
-            // Delete company (cascades to inventory items and audit logs)
-            _context.Companies.Remove(company);
-            await _context.SaveChangesAsync();
-
-            // Queue deletion confirmation email
-            if (!string.IsNullOrEmpty(companyEmail))
-            {
-                _backgroundEmailQueue.QueueEmail(async sp =>
-                {
-                    var emailService = sp.GetRequiredService<IEmailService>();
-                    await emailService.SendAccountDeletionConfirmationEmailAsync(companyEmail, companyName);
-                });
-            }
-
-            return NoContent();
+            return BadRequest(new { message = "User is not associated with a company" });
         }
-        catch (Exception ex)
+
+        var currentUserId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(currentUserId))
         {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = "An error occurred while deleting the account and company" });
+            return BadRequest(new { message = "Unable to identify current user" });
         }
+
+        var (companyEmail, companyName) = await _authService.DeleteAccountAndCompanyAsync(companyId.Value);
+
+        // Queue deletion confirmation email
+        if (!string.IsNullOrEmpty(companyEmail))
+        {
+            _backgroundEmailQueue.QueueEmail(async sp =>
+            {
+                var emailService = sp.GetRequiredService<IEmailService>();
+                await emailService.SendAccountDeletionConfirmationEmailAsync(companyEmail, companyName);
+            });
+        }
+
+        return NoContent();
     }
 
-    private Guid? GetCurrentUserCompanyId()
-    {
-        var companyIdClaim = User.FindFirstValue("company_id");
-        if (string.IsNullOrEmpty(companyIdClaim))
-        {
-            return null;
-        }
-        return Guid.TryParse(companyIdClaim, out var companyId) ? companyId : null;
-    }
 }
