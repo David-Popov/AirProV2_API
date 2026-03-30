@@ -171,6 +171,9 @@
   --animate-fade-in: fade-in 0.3s ease-out;
   --animate-slide-up: slide-up 0.35s ease-out;
   --animate-scale-in: scale-in 0.2s ease-out;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-float-slow: float-slow 9s ease-in-out infinite;
+  --animate-pulse-glow: pulse-glow 2.5s ease-in-out infinite;
 }
 
 /* Floating air particles — landing page background */
@@ -223,6 +226,32 @@
   100% {
     background-position: 200% 0;
   }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) translateX(0px); }
+  33%       { transform: translateY(-18px) translateX(8px); }
+  66%       { transform: translateY(-8px) translateX(-12px); }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) translateX(0px); }
+  50%       { transform: translateY(-24px) translateX(16px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px oklch(0.6723 0.1606 244.9955 / 0.3), 0 0 0 0 oklch(0.6723 0.1606 244.9955 / 0.1); }
+  50%       { box-shadow: 0 0 20px oklch(0.6723 0.1606 244.9955 / 0.5), 0 0 0 4px oklch(0.6723 0.1606 244.9955 / 0.05); }
+}
+
+@keyframes gradient-drift {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+@keyframes shimmer-line {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 /* View Transition API — theme switch ripple */
@@ -321,25 +350,130 @@
   .stagger-7 { animation-delay: 350ms; }
   .stagger-8 { animation-delay: 400ms; }
 
+  /* Animation utilities */
+  .animate-float      { animation: var(--animate-float); }
+  .animate-float-slow { animation: var(--animate-float-slow); }
+  .animate-pulse-glow { animation: var(--animate-pulse-glow); }
+
+  /* Glow utilities */
+  .glow-sm {
+    box-shadow: 0 0 10px oklch(0.6723 0.1606 244.9955 / 0.20),
+                0 0 20px oklch(0.6723 0.1606 244.9955 / 0.08);
+  }
+  .glow-md {
+    box-shadow: 0 0 20px oklch(0.6723 0.1606 244.9955 / 0.30),
+                0 0 40px oklch(0.6723 0.1606 244.9955 / 0.12);
+  }
+  .glow-lg {
+    box-shadow: 0 0 30px oklch(0.6723 0.1606 244.9955 / 0.40),
+                0 0 60px oklch(0.6723 0.1606 244.9955 / 0.18),
+                0 0 90px oklch(0.6723 0.1606 244.9955 / 0.08);
+  }
+  .glow-red {
+    box-shadow: 0 0 12px oklch(0.6188 0.2376 25.7658 / 0.30),
+                0 0 24px oklch(0.6188 0.2376 25.7658 / 0.12);
+  }
+  .glow-orange {
+    box-shadow: 0 0 12px oklch(0.75 0.18 55 / 0.30),
+                0 0 24px oklch(0.75 0.18 55 / 0.12);
+  }
+
+  /* Gradient text */
+  .text-gradient {
+    @apply text-transparent bg-clip-text;
+    background-image: linear-gradient(135deg, oklch(0.6723 0.1606 244.9955) 0%, oklch(0.70 0.18 280) 100%);
+  }
+  .text-gradient-primary {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-primary to-violet-400;
+  }
+
   /* Glass Morphism */
   .glass {
     @apply bg-background/80 backdrop-blur-md border border-border/50;
   }
 
   .glass-card {
-    @apply bg-card/70 backdrop-blur-xl border border-border/40;
-    @apply transition-all duration-200 ease-out;
+    background: color-mix(in oklch, var(--card) 75%, transparent);
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    border: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+    @apply transition-all duration-300 ease-out;
     box-shadow: var(--shadow-sm);
   }
 
   .glass-card:hover {
-    @apply border-primary/20;
-    box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
+    border-color: color-mix(in oklch, var(--primary) 25%, transparent);
+    box-shadow: var(--shadow-md), 0 0 0 1px color-mix(in oklch, var(--primary) 10%, transparent);
+    transform: translateY(-2px);
+  }
+
+  .glass-card-elevated {
+    background: color-mix(in oklch, var(--card) 85%, transparent);
+    backdrop-filter: blur(24px) saturate(1.6);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6);
+    border: 1px solid color-mix(in oklch, var(--primary) 20%, var(--border));
+    @apply transition-all duration-300 ease-out;
+    box-shadow: var(--shadow-md),
+                inset 0 1px 0 color-mix(in oklch, white 8%, transparent);
   }
 
   .glass-sidebar {
-    @apply bg-sidebar/95 backdrop-blur-xl border-r border-sidebar-border;
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--sidebar) 98%, var(--primary)) 0%,
+      color-mix(in oklch, var(--sidebar) 95%, transparent) 100%
+    );
+    backdrop-filter: blur(24px) saturate(1.5);
+    -webkit-backdrop-filter: blur(24px) saturate(1.5);
+    border-right: 1px solid color-mix(in oklch, var(--sidebar-border) 80%, transparent);
+  }
+
+  /* Border glow */
+  .border-glow {
+    border-color: color-mix(in oklch, var(--primary) 40%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--primary) 20%, transparent),
+                0 0 12px color-mix(in oklch, var(--primary) 15%, transparent);
+  }
+
+  /* Gradient animated background */
+  .bg-gradient-animated {
+    background: linear-gradient(-45deg,
+      color-mix(in oklch, var(--primary) 8%, var(--background)),
+      color-mix(in oklch, oklch(0.70 0.18 280) 6%, var(--background)),
+      var(--background),
+      color-mix(in oklch, var(--primary) 5%, var(--background))
+    );
+    background-size: 400% 400%;
+    animation: gradient-drift 15s ease infinite;
+  }
+
+  /* Shimmer overlay for CTA / cards */
+  .shimmer-overlay {
+    position: relative;
+    overflow: hidden;
+  }
+  .shimmer-overlay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 40%,
+      color-mix(in oklch, white 8%, transparent) 50%,
+      transparent 60%
+    );
+    animation: shimmer-line 3s ease-in-out infinite;
+  }
+
+  /* Dark mode amplified glow on glass cards */
+  :is(.dark *) .glass-card:hover {
+    box-shadow: var(--shadow-lg),
+                0 0 20px color-mix(in oklch, var(--primary) 20%, transparent);
+  }
+  :is(.dark *) .glass-card-elevated {
+    box-shadow: var(--shadow-lg),
+                0 0 30px color-mix(in oklch, var(--primary) 15%, transparent),
+                inset 0 1px 0 color-mix(in oklch, white 5%, transparent);
   }
 
   /* Modern Table Styles */
@@ -398,8 +532,4 @@
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background;
   }
 
-  /* Gradient text utility */
-  .text-gradient-primary {
-    @apply text-transparent bg-clip-text bg-gradient-to-r from-primary to-violet-400;
-  }
 }

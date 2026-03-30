@@ -2,23 +2,23 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react'
 import {
+  Menu,
+  X,
   LayoutDashboard,
   ClipboardList,
-  Package,
+  Box,
   Users,
   Snowflake,
   Settings,
-  LogOut,
-  AlertCircle,
   Building2,
-  Menu,
-  X,
+  AlertTriangle,
+  LogOut,
   Bug,
-  MessageSquareWarning
+  MessageSquare,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 import { AcIcon } from '@/components/AcIcon'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useAuth } from '@/context'
@@ -48,18 +48,11 @@ export default function DashboardLayout() {
 
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        refreshUser()
-      }
+      if (!document.hidden) refreshUser()
     }
-
-    const handleFocus = () => {
-      refreshUser()
-    }
-
+    const handleFocus = () => refreshUser()
     document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('focus', handleFocus)
-
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('focus', handleFocus)
@@ -83,7 +76,7 @@ export default function DashboardLayout() {
   return (
     <div className="min-h-screen bg-background">
       {/* Mobile Top Bar */}
-      <header className="fixed top-0 inset-x-0 z-40 h-14 flex items-center justify-between px-4 bg-background/90 backdrop-blur-md border-b border-border lg:hidden">
+      <header className="fixed top-0 inset-x-0 z-40 h-14 flex items-center justify-between px-4 bg-background/90 backdrop-blur-md border-b border-border/50 lg:hidden">
         <button
           onClick={() => setIsSidebarOpen(true)}
           className="p-2 rounded-lg hover:bg-accent transition-colors touch-target-sm"
@@ -103,19 +96,24 @@ export default function DashboardLayout() {
       {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed left-0 top-0 h-full w-60 glass-sidebar px-3 py-4 z-50 flex flex-col transition-transform duration-300 ${
-        isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      }`}>
+      <aside
+        className={`fixed left-0 top-0 h-full w-60 glass-sidebar px-3 py-4 z-50 flex flex-col transition-transform duration-300 ease-out ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
+      >
+        {/* Gradient header glow band */}
+        <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-primary/8 to-transparent pointer-events-none" />
+
         {/* Close button — mobile only */}
         <button
           onClick={() => setIsSidebarOpen(false)}
-          className="absolute top-3 right-3 lg:hidden p-1.5 rounded-lg hover:bg-sidebar-accent/80 transition-colors"
+          className="absolute top-3 right-3 lg:hidden p-1.5 rounded-lg hover:bg-sidebar-accent/80 transition-colors z-10"
           aria-label="Close menu"
         >
           <X className="w-4 h-4 text-muted-foreground" />
@@ -123,19 +121,23 @@ export default function DashboardLayout() {
 
         {/* Logo */}
         <div
-          className="flex items-center gap-3 mb-6 px-1 cursor-pointer shrink-0 group"
+          className="relative flex items-center gap-3 mb-6 px-1 cursor-pointer shrink-0 group z-10"
           onClick={() => navigate('/dashboard')}
         >
-          <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shrink-0
-                          shadow-md shadow-primary/30 ring-1 ring-primary/20
-                          group-hover:shadow-lg group-hover:shadow-primary/40 transition-all duration-200">
-            <AcIcon className="w-5 h-5 text-primary-foreground" />
+          <div className="relative w-9 h-9 shrink-0">
+            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center
+                            shadow-md shadow-primary/40 ring-1 ring-primary/30
+                            group-hover:shadow-lg group-hover:shadow-primary/50
+                            group-hover:ring-primary/50 transition-all duration-300">
+              <AcIcon className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <div className="absolute inset-0 rounded-xl animate-pulse-glow opacity-0 dark:opacity-100 pointer-events-none" />
           </div>
           <div className="min-w-0">
-            <span className="text-sidebar-foreground font-semibold text-base tracking-tight leading-tight block truncate">
+            <span className="text-sidebar-foreground font-bold text-base tracking-tight leading-tight block truncate">
               {t('app_name')}
             </span>
-            <span className="text-muted-foreground text-[10px] tracking-wider uppercase">
+            <span className="text-muted-foreground/60 text-[10px] tracking-widest uppercase font-medium">
               AC Management
             </span>
           </div>
@@ -161,7 +163,7 @@ export default function DashboardLayout() {
           )}
           {!isAdmin && (
             <NavItem
-              icon={Package}
+              icon={Box}
               label={t('nav.inventory')}
               active={location.pathname === '/inventory'}
               onClick={() => handleNavClick('/inventory')}
@@ -177,10 +179,14 @@ export default function DashboardLayout() {
           )}
 
           {/* Database section */}
-          <div className="pt-3 mt-2 border-t border-sidebar-border/50">
-            <p className="px-3 text-[11px] text-muted-foreground/60 font-semibold uppercase tracking-widest mb-2">
-              {t('nav.database', 'Database')}
-            </p>
+          <div className="pt-3 mt-2">
+            <div className="flex items-center gap-2 px-2 mb-2">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-sidebar-border/60 to-transparent" />
+              <p className="text-[10px] text-muted-foreground/40 font-semibold uppercase tracking-widest shrink-0">
+                {t('nav.database', 'Database')}
+              </p>
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-sidebar-border/60 to-transparent" />
+            </div>
             <NavItem
               icon={Snowflake}
               label={t('nav.air_conditioners')}
@@ -188,7 +194,7 @@ export default function DashboardLayout() {
               onClick={() => handleNavClick('/air-conditioners')}
             />
             <NavItem
-              icon={AlertCircle}
+              icon={AlertTriangle}
               label={t('nav.error_codes', 'Error Codes')}
               active={location.pathname === '/error-codes'}
               onClick={() => handleNavClick('/error-codes')}
@@ -197,10 +203,14 @@ export default function DashboardLayout() {
 
           {/* Admin section */}
           {isAdmin && (
-            <div className="pt-3 mt-2 border-t border-sidebar-border/50">
-              <p className="px-3 text-[11px] text-muted-foreground/60 font-semibold uppercase tracking-widest mb-2">
-                {t('nav.admin', 'Admin')}
-              </p>
+            <div className="pt-3 mt-2">
+              <div className="flex items-center gap-2 px-2 mb-2">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-sidebar-border/60 to-transparent" />
+                <p className="text-[10px] text-muted-foreground/40 font-semibold uppercase tracking-widest shrink-0">
+                  {t('nav.admin', 'Admin')}
+                </p>
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-sidebar-border/60 to-transparent" />
+              </div>
               <NavItem
                 icon={Building2}
                 label={t('nav.companies', 'Companies')}
@@ -208,7 +218,7 @@ export default function DashboardLayout() {
                 onClick={() => handleNavClick('/companies')}
               />
               <NavItem
-                icon={MessageSquareWarning}
+                icon={MessageSquare}
                 label={t('nav.reported_problems', 'Reported Problems')}
                 active={location.pathname === '/reported-problems'}
                 onClick={() => handleNavClick('/reported-problems')}
@@ -217,7 +227,8 @@ export default function DashboardLayout() {
           )}
 
           {/* Settings */}
-          <div className="pt-3 mt-2 border-t border-sidebar-border/50">
+          <div className="pt-3 mt-2">
+            <div className="h-px bg-gradient-to-r from-transparent via-sidebar-border/60 to-transparent mb-2" />
             <NavItem
               icon={Settings}
               label={t('common.settings')}
@@ -230,22 +241,28 @@ export default function DashboardLayout() {
         {/* Bottom section — always visible */}
         <div className="mt-3 space-y-2 shrink-0">
           {/* User info */}
-          <div className="p-3 rounded-xl border border-sidebar-border/50 bg-sidebar-accent/30
-                          backdrop-blur-sm transition-colors hover:bg-sidebar-accent/50">
+          <div className="glass-card-elevated p-3 rounded-xl">
             <div className="flex items-center gap-2.5 mb-2">
-              <Avatar className="h-8 w-8 shrink-0">
-                <AvatarFallback className="text-[11px] font-semibold bg-primary/20 text-primary">
-                  {user?.full_name ? getInitials(user.full_name) : '?'}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative shrink-0">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="text-[11px] font-bold bg-gradient-to-br from-primary/30 to-primary/10 text-primary">
+                    {user?.full_name ? getInitials(user.full_name) : '?'}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-sidebar" />
+              </div>
               <div className="min-w-0">
-                <p className="text-sidebar-foreground font-medium text-sm truncate">{user?.full_name}</p>
+                <p className="text-sidebar-foreground font-semibold text-sm truncate">{user?.full_name}</p>
                 <p className="text-muted-foreground text-[11px] truncate">{user?.email}</p>
               </div>
             </div>
             <div className="flex gap-1 flex-wrap">
               {user?.roles.map(role => (
-                <Badge key={role} variant="secondary" className="text-[10px] px-1.5 h-4 rounded font-medium bg-sidebar-accent text-sidebar-foreground hover:bg-sidebar-accent/80">
+                <Badge
+                  key={role}
+                  variant="secondary"
+                  className="text-[10px] px-1.5 h-4 rounded font-semibold bg-primary/10 text-primary border border-primary/20"
+                >
                   {role}
                 </Badge>
               ))}
@@ -254,28 +271,27 @@ export default function DashboardLayout() {
 
           {/* Report Problem */}
           {!isAdmin && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-start text-muted-foreground hover:text-orange-500 hover:border-orange-500/50 rounded-lg h-8 text-xs"
+            <button
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-muted-foreground
+                         border border-border/50 hover:text-orange-500 hover:border-orange-500/40
+                         hover:bg-orange-500/5 transition-all duration-200"
               onClick={() => setIsReportModalOpen(true)}
             >
-              <Bug className="w-3.5 h-3.5 mr-2 shrink-0" />
+              <Bug className="w-3.5 h-3.5 shrink-0" />
               {t('problem_reports.report_problem')}
-            </Button>
+            </button>
           )}
 
           {/* Logout + theme + language */}
           <div className="flex items-center gap-1.5">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex-1 justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg h-8 text-xs"
+            <button
+              className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-muted-foreground
+                         hover:text-destructive hover:bg-destructive/8 transition-all duration-200"
               onClick={handleLogout}
             >
-              <LogOut className="w-3.5 h-3.5 mr-2 shrink-0" />
+              <LogOut className="w-3.5 h-3.5 shrink-0" />
               {t('common.logout')}
-            </Button>
+            </button>
             <ModeToggle />
             <LanguageSwitcher />
           </div>
@@ -296,25 +312,35 @@ export default function DashboardLayout() {
 }
 
 interface NavItemProps {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  active?: boolean;
-  onClick: () => void;
+  icon: LucideIcon
+  label: string
+  active?: boolean
+  onClick: () => void
 }
 
 function NavItem({ icon: Icon, label, active = false, onClick }: NavItemProps) {
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-2.5 py-2 rounded-lg transition-all duration-200 group text-sm
-        border-l-2 pl-[10px] pr-3 ${
+      className={`w-full flex items-center gap-2.5 py-2.5 px-3 rounded-xl transition-all duration-200 group text-sm ${
         active
-          ? 'bg-primary/10 text-primary font-semibold border-primary'
-          : 'text-muted-foreground hover:bg-sidebar-accent/80 hover:text-sidebar-foreground border-transparent'
+          ? 'bg-gradient-to-r from-primary/15 to-primary/5 text-primary font-semibold border border-primary/20 shadow-sm'
+          : 'text-muted-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-foreground border border-transparent hover:translate-x-0.5'
       }`}
     >
-      <Icon className={`w-4 h-4 shrink-0 transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
+      <Icon
+        className={`w-4 h-4 shrink-0 transition-all duration-200 ${
+          active
+            ? 'text-primary'
+            : 'group-hover:scale-110'
+        }`}
+        fill={active ? 'currentColor' : 'none'}
+        strokeWidth={1.5}
+      />
       <span className="truncate">{label}</span>
+      {active && (
+        <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+      )}
     </button>
   )
 }

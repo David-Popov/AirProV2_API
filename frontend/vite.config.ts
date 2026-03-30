@@ -78,4 +78,45 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  optimizeDeps: {
+    include: ['motion/react'],
+  },
+  build: {
+    chunkSizeWarningLimit: 500,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Core React runtime — changes rarely
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          // Animation library — large, isolated
+          'vendor-motion': ['motion'],
+          // Radix UI primitives
+          'vendor-radix': [
+            '@radix-ui/react-alert-dialog',
+            '@radix-ui/react-avatar',
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-label',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-select',
+            '@radix-ui/react-separator',
+            '@radix-ui/react-slot',
+            '@radix-ui/react-switch',
+          ],
+          // Charts
+          'vendor-charts': ['recharts'],
+          // Data / form utilities
+          'vendor-data': [
+            '@tanstack/react-query',
+            'react-hook-form',
+            '@hookform/resolvers',
+            'zod',
+            'date-fns',
+          ],
+          // i18n
+          'vendor-i18n': ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
+        },
+      },
+    },
+  },
 })
