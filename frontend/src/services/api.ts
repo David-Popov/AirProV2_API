@@ -87,7 +87,7 @@ class ApiClient {
   }
 
   async get<T>(endpoint: string, includeAuth: boolean = true): Promise<T> {
-    const makeRequest = async () => {
+    const makeRequest = async (): Promise<T> => {
         const response = await fetch(`${this.baseUrl}${endpoint}`, {
           method: 'GET',
           headers: this.getHeaders(includeAuth),
@@ -108,7 +108,7 @@ class ApiClient {
   }
 
   async post<T, D = unknown>(endpoint: string, data?: D, includeAuth: boolean = true): Promise<T> {
-    const makeRequest = async () => {
+    const makeRequest = async (): Promise<T> => {
         const response = await fetch(`${this.baseUrl}${endpoint}`, {
           method: 'POST',
           headers: this.getHeaders(includeAuth),
@@ -130,7 +130,7 @@ class ApiClient {
   }
 
   async put<T, D = unknown>(endpoint: string, data?: D, includeAuth: boolean = true): Promise<T> {
-    const makeRequest = async () => {
+    const makeRequest = async (): Promise<T> => {
         const response = await fetch(`${this.baseUrl}${endpoint}`, {
           method: 'PUT',
           headers: this.getHeaders(includeAuth),
@@ -153,7 +153,7 @@ class ApiClient {
   }
 
   async patch<T, D = unknown>(endpoint: string, data?: D, includeAuth: boolean = true): Promise<T> {
-    const makeRequest = async () => {
+    const makeRequest = async (): Promise<T> => {
         const response = await fetch(`${this.baseUrl}${endpoint}`, {
           method: 'PATCH',
           headers: this.getHeaders(includeAuth),
@@ -175,7 +175,7 @@ class ApiClient {
   }
 
   async delete(endpoint: string, includeAuth: boolean = true): Promise<void> {
-    const makeRequest = async () => {
+    const makeRequest = async (): Promise<void> => {
         const response = await fetch(`${this.baseUrl}${endpoint}`, {
           method: 'DELETE',
           headers: this.getHeaders(includeAuth),
@@ -212,7 +212,7 @@ class ApiClient {
       }
     }
 
-    const makeRequest = async () => {
+    const makeRequest = async (): Promise<T> => {
         const response = await fetch(`${this.baseUrl}${endpoint}`, {
           method: 'POST',
           headers,
@@ -254,7 +254,7 @@ class ApiClient {
       }
     }
 
-    const makeRequest = async () => {
+    const makeRequest = async (): Promise<T> => {
         const response = await fetch(`${this.baseUrl}${endpoint}`, {
           method: 'POST',
           headers,
