@@ -23,7 +23,9 @@ jobs:
             cd ~/AirProV2_API
 
             echo "Pulling latest code..."
-            git pull origin main
+            git fetch origin main
+            git checkout main
+            git reset --hard origin/main
 
             echo "Backing up database..."
             mkdir -p ~/backups
