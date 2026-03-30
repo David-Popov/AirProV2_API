@@ -1,6 +1,7 @@
 using API.Data;
 using API.Data.Seeds;
 using API.Infrastructure;
+using API.Middleware;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 
@@ -38,6 +39,9 @@ using (var scope = app.Services.CreateScope())
         logger.LogError(ex, "An error occurred while migrating the database.");
     }
 }
+
+// ── Global exception handling ─────────────────────────────────────────────────
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // ── Security headers ──────────────────────────────────────────────────────────
 // Applied before any other middleware so every response carries them.

@@ -5,7 +5,7 @@ namespace API.Services.AirConditioners;
 
 public interface IAirConditionerService
 {
-    Task AddAirConditionerAsync(CreateAirConditionerDto dto);
+    Task<Guid> AddAirConditionerAsync(CreateAirConditionerDto dto);
     
     Task UpdateAirConditionerAsync(Guid airConditionerId, UpdateAirConditionerDto dto);
     
@@ -15,7 +15,7 @@ public interface IAirConditionerService
     
     Task<PagedList<AirConditionerDto>> GetAirConditionersAsync(AirConditionerParameters parameters);
     
-    Task AddErrorCodeAsync(CreateErrorCodeDto dto);
+    Task<Guid> AddErrorCodeAsync(CreateErrorCodeDto dto);
     
     Task UpdateErrorCodeAsync(Guid errorCodeId, UpdateErrorCodeDto dto);
     

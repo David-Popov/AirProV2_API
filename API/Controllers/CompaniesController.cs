@@ -12,7 +12,6 @@ namespace API.Controllers;
 public class CompaniesController : ControllerBase
 {
     private readonly ICompanyService _service;
-    private readonly ILogger<CompaniesController> _logger;
     private readonly IValidator<CreateCompanyDto> _createCompanyValidator;
     private readonly IValidator<UpdateCompanyDto> _updateCompanyValidator;
     private readonly IValidator<CreateCompanyUserDto> _createCompanyUserValidator;
@@ -20,14 +19,12 @@ public class CompaniesController : ControllerBase
 
     public CompaniesController(
         ICompanyService service,
-        ILogger<CompaniesController> logger,
         IValidator<CreateCompanyDto> createCompanyValidator,
         IValidator<UpdateCompanyDto> updateCompanyValidator,
         IValidator<CreateCompanyUserDto> createCompanyUserValidator,
         IValidator<UpdateSubscriptionDto> updateSubscriptionValidator)
     {
         _service = service;
-        _logger = logger;
         _createCompanyValidator = createCompanyValidator;
         _updateCompanyValidator = updateCompanyValidator;
         _createCompanyUserValidator = createCompanyUserValidator;
@@ -42,16 +39,8 @@ public class CompaniesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<PagedList<CompanyDto>>> GetAll([FromQuery] PageParameters pageParameters)
     {
-        try
-        {
-            var result = await _service.GetAllAsync(pageParameters);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+        var result = await _service.GetAllAsync(pageParameters);
+        return Ok(result);
     }
 
     /// <summary>
@@ -62,16 +51,8 @@ public class CompaniesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<PagedList<CompanyDto>>> GetActiveCompanies([FromQuery] PageParameters pageParameters)
     {
-        try
-        {
-            var result = await _service.GetActiveCompaniesAsync(pageParameters);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+        var result = await _service.GetActiveCompaniesAsync(pageParameters);
+        return Ok(result);
     }
 
     /// <summary>
@@ -83,25 +64,17 @@ public class CompaniesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<CompanyDto>> GetById(Guid id)
     {
-        try
+        if (id == Guid.Empty)
         {
-            if (id == Guid.Empty)
-            {
-                return BadRequest("Id is required");
-            }
-            
-            var result = await _service.GetByIdAsync(id);
-            if (result == null)
-            {
-                return NotFound(new { message = "Company not found" });
-            }
-            return Ok(result);
+            return BadRequest(new { message = "Id is required" });
         }
-        catch (Exception ex)
+
+        var result = await _service.GetByIdAsync(id);
+        if (result == null)
         {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
+            return NotFound(new { message = "Company not found" });
         }
+        return Ok(result);
     }
 
     /// <summary>
@@ -113,25 +86,17 @@ public class CompaniesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<CompanyDto>> GetByBulstat(string bulstat)
     {
-        try
+        if (string.IsNullOrEmpty(bulstat))
         {
-            if (string.IsNullOrEmpty(bulstat))
-            {
-                return BadRequest("Bulstat is required");
-            }
-            
-            var result = await _service.GetByBulstatAsync(bulstat);
-            if (result == null)
-            {
-                return NotFound(new { message = "Company not found" });
-            }
-            return Ok(result);
+            return BadRequest(new { message = "Bulstat is required" });
         }
-        catch (Exception ex)
+
+        var result = await _service.GetByBulstatAsync(bulstat);
+        if (result == null)
         {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
+            return NotFound(new { message = "Company not found" });
         }
+        return Ok(result);
     }
 
     /// <summary>
@@ -143,26 +108,14 @@ public class CompaniesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<CompanyDto>> Create([FromBody] CreateCompanyDto dto)
     {
-        try
+        var validationResult = await _createCompanyValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
         {
-            var validationResult = await _createCompanyValidator.ValidateAsync(dto);
-            if (!validationResult.IsValid)
-            {
-                return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
-            }
+            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+        }
 
-            var result = await _service.AddCompanyAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+        var result = await _service.AddCompanyAsync(dto);
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
     /// <summary>
@@ -175,31 +128,19 @@ public class CompaniesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> Update(Guid id, [FromBody] UpdateCompanyDto dto)
     {
-        try
+        if (id == Guid.Empty)
         {
-            if (id == Guid.Empty)
-            {
-                return BadRequest("Id is required");
-            }
-            
-            var validationResult = await _updateCompanyValidator.ValidateAsync(dto);
-            if (!validationResult.IsValid)
-            {
-                return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
-            }
+            return BadRequest(new { message = "Id is required" });
+        }
 
-            await _service.UpdateCompanyAsync(id, dto);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
+        var validationResult = await _updateCompanyValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
         {
-            return NotFound(new { message = ex.Message });
+            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+
+        await _service.UpdateCompanyAsync(id, dto);
+        return NoContent();
     }
 
     /// <summary>
@@ -210,21 +151,13 @@ public class CompaniesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> Delete(Guid id)
     {
-        try
+        if (id == Guid.Empty)
         {
-            if (id == Guid.Empty)
-            {
-                return BadRequest("Id is required");
-            }
-            
-            await _service.DeleteCompanyAsync(id);
-            return NoContent();
+            return BadRequest(new { message = "Id is required" });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+
+        await _service.DeleteCompanyAsync(id);
+        return NoContent();
     }
 
     /// <summary>
@@ -235,21 +168,13 @@ public class CompaniesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<UserDto>>> GetCompanyUsers(Guid id)
     {
-        try
+        if (id == Guid.Empty)
         {
-            if (id == Guid.Empty)
-            {
-                return BadRequest("Id is required");
-            }
-            
-            var result = await _service.GetCompanyUsersAsync(id);
-            return Ok(result);
+            return BadRequest(new { message = "Id is required" });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+
+        var result = await _service.GetCompanyUsersAsync(id);
+        return Ok(result);
     }
 
     /// <summary>
@@ -262,31 +187,19 @@ public class CompaniesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UserDto>> CreateCompanyUser(Guid id, [FromBody] CreateCompanyUserDto dto)
     {
-        try
+        if (id == Guid.Empty)
         {
-            if (id == Guid.Empty)
-            {
-                return BadRequest("Id is required");
-            }
-            
-            var validationResult = await _createCompanyUserValidator.ValidateAsync(dto);
-            if (!validationResult.IsValid)
-            {
-                return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
-            }
+            return BadRequest(new { message = "Id is required" });
+        }
 
-            var result = await _service.CreateCompanyUserAsync(id, dto);
-            return CreatedAtAction(nameof(GetCompanyUsers), new { id }, result);
-        }
-        catch (InvalidOperationException ex)
+        var validationResult = await _createCompanyUserValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
         {
-            return BadRequest(new { message = ex.Message });
+            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+
+        var result = await _service.CreateCompanyUserAsync(id, dto);
+        return CreatedAtAction(nameof(GetCompanyUsers), new { id }, result);
     }
 
     /// <summary>
@@ -299,31 +212,19 @@ public class CompaniesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> UpdateSubscription(Guid id, [FromBody] UpdateSubscriptionDto dto)
     {
-        try
+        if (id == Guid.Empty)
         {
-            if (id == Guid.Empty)
-            {
-                return BadRequest("Id is required");
-            }
-            
-            var validationResult = await _updateSubscriptionValidator.ValidateAsync(dto);
-            if (!validationResult.IsValid)
-            {
-                return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
-            }
+            return BadRequest(new { message = "Id is required" });
+        }
 
-            await _service.UpdateSubscriptionAsync(id, dto);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
+        var validationResult = await _updateSubscriptionValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
         {
-            return NotFound(new { message = ex.Message });
+            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+
+        await _service.UpdateSubscriptionAsync(id, dto);
+        return NoContent();
     }
 
     /// <summary>
@@ -335,25 +236,13 @@ public class CompaniesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> RenewSubscription(Guid id)
     {
-        try
+        if (id == Guid.Empty)
         {
-            if (id == Guid.Empty)
-            {
-                return BadRequest("Id is required");
-            }
-            
-            await _service.RenewSubscriptionForAllUsersAsync(id);
-            return NoContent();
+            return BadRequest(new { message = "Id is required" });
         }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+
+        await _service.RenewSubscriptionForAllUsersAsync(id);
+        return NoContent();
     }
 
     /// <summary>
@@ -364,15 +253,7 @@ public class CompaniesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> CheckTrialSubscriptions()
     {
-        try
-        {
-            await _service.CheckAndExpireTrialSubscriptionsAsync();
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+        await _service.CheckAndExpireTrialSubscriptionsAsync();
+        return NoContent();
     }
 }

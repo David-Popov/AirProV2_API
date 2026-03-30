@@ -14,7 +14,6 @@ namespace API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
-    private readonly ILogger<AuthController> _logger;
     private readonly IValidator<RegisterDto> _registerValidator;
     private readonly IValidator<LoginDto> _loginValidator;
     private readonly IValidator<ChangePasswordDto> _changePasswordValidator;
@@ -22,14 +21,12 @@ public class AuthController : ControllerBase
 
     public AuthController(
         IAuthService authService,
-        ILogger<AuthController> logger,
         IValidator<RegisterDto> registerValidator,
         IValidator<LoginDto> loginValidator,
         IValidator<ChangePasswordDto> changePasswordValidator,
         IValidator<ResetPasswordDto> resetPasswordValidator)
     {
         _authService = authService;
-        _logger = logger;
         _registerValidator = registerValidator;
         _loginValidator = loginValidator;
         _changePasswordValidator = changePasswordValidator;
@@ -51,26 +48,14 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> Register([FromBody] RegisterDto dto)
     {
-        try
+        var validationResult = await _registerValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
         {
-            var validationResult = await _registerValidator.ValidateAsync(dto);
-            if (!validationResult.IsValid)
-            {
-                return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
-            }
+            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+        }
 
-            await _authService.RegisterAsync(dto);
-            return Ok(new { message = "Registration successful! Please check your email to confirm your account." });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = "An error occurred during registration" });
-        }
+        await _authService.RegisterAsync(dto);
+        return Ok(new { message = "Registration successful! Please check your email to confirm your account." });
     }
 
     /// <summary>
@@ -88,26 +73,14 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto dto)
     {
-        try
+        var validationResult = await _loginValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
         {
-            var validationResult = await _loginValidator.ValidateAsync(dto);
-            if (!validationResult.IsValid)
-            {
-                return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
-            }
+            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+        }
 
-            var result = await _authService.LoginAsync(dto);
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = "An error occurred during login" });
-        }
+        var result = await _authService.LoginAsync(dto);
+        return Ok(result);
     }
 
     /// <summary>
@@ -119,20 +92,8 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<AuthResponseDto>> RefreshToken([FromBody] RefreshTokenRequestDto dto)
     {
-        try
-        {
-            var result = await _authService.RefreshTokenAsync(dto.Token, dto.RefreshToken);
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = "An error occurred during token refresh" });
-        }
+        var result = await _authService.RefreshTokenAsync(dto.Token, dto.RefreshToken);
+        return Ok(result);
     }
 
     /// <summary>
@@ -150,27 +111,19 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<AuthUserDto>> GetCurrentUser()
     {
-        try
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { message = "User not authenticated" });
-            }
-
-            var user = await _authService.GetCurrentUserAsync(userId);
-            if (user == null)
-            {
-                return NotFound(new { message = "User not found" });
-            }
-
-            return Ok(user);
+            return Unauthorized(new { message = "User not authenticated" });
         }
-        catch (Exception ex)
+
+        var user = await _authService.GetCurrentUserAsync(userId);
+        if (user == null)
         {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = "An error occurred while retrieving user information" });
+            return NotFound(new { message = "User not found" });
         }
+
+        return Ok(user);
     }
 
     /// <summary>
@@ -200,41 +153,29 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<AuthUserDto>> UpdateProfile([FromBody] UpdateProfileDto dto)
     {
-        try
-        {
-            // Validate DTO manually since we can't easily inject a new validator into the constructor without breaking changes
-            // A better approach would be to add the validator to the constructor, but for now we'll do manual validation or rely on automatic model validation if configured
-            // However, to be consistent with other methods, let's use the injected validator
-            
-            // To avoid breaking the constructor signature for existing tests/usage, we'll retrieve the validator from request services
-            var validator = HttpContext.RequestServices.GetService<IValidator<UpdateProfileDto>>();
-            if (validator != null)
-            {
-                var validationResult = await validator.ValidateAsync(dto);
-                if (!validationResult.IsValid)
-                {
-                    return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
-                }
-            }
+        // Validate DTO manually since we can't easily inject a new validator into the constructor without breaking changes
+        // A better approach would be to add the validator to the constructor, but for now we'll do manual validation or rely on automatic model validation if configured
+        // However, to be consistent with other methods, let's use the injected validator
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
+        // To avoid breaking the constructor signature for existing tests/usage, we'll retrieve the validator from request services
+        var validator = HttpContext.RequestServices.GetService<IValidator<UpdateProfileDto>>();
+        if (validator != null)
+        {
+            var validationResult = await validator.ValidateAsync(dto);
+            if (!validationResult.IsValid)
             {
-                return Unauthorized(new { message = "User not authenticated" });
+                return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
             }
+        }
 
-            var result = await _authService.UpdateProfileAsync(userId, dto);
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
         {
-            return BadRequest(new { message = ex.Message });
+            return Unauthorized(new { message = "User not authenticated" });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = "An error occurred while updating profile" });
-        }
+
+        var result = await _authService.UpdateProfileAsync(userId, dto);
+        return Ok(result);
     }
 
     /// <summary>
@@ -245,22 +186,14 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> ConfirmEmail([FromBody] ConfirmEmailDto dto)
     {
-        try
+        var result = await _authService.ConfirmEmailAsync(dto.UserId, dto.Token);
+        if (!result.Succeeded)
         {
-            var result = await _authService.ConfirmEmailAsync(dto.UserId, dto.Token);
-            if (!result.Succeeded)
-            {
-                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                return BadRequest(new { message = errors });
-            }
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            return BadRequest(new { message = errors });
+        }
 
-            return Ok(new { message = "Email confirmed successfully." });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = "An error occurred while confirming email" });
-        }
+        return Ok(new { message = "Email confirmed successfully." });
     }
 
     /// <summary>
@@ -272,16 +205,8 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult> ResendConfirmation([FromBody] ResendConfirmationDto dto)
     {
-        try
-        {
-            await _authService.ResendConfirmationEmailAsync(dto.Email);
-            return Ok(new { message = "If an account exists with that email, a confirmation link has been sent." });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return Ok(new { message = "If an account exists with that email, a confirmation link has been sent." });
-        }
+        await _authService.ResendConfirmationEmailAsync(dto.Email);
+        return Ok(new { message = "If an account exists with that email, a confirmation link has been sent." });
     }
 
     /// <summary>
@@ -293,16 +218,8 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
     {
-        try
-        {
-            await _authService.ForgotPasswordAsync(dto.Email);
-            return Ok(new { message = "If an account exists with that email, a password reset link has been sent." });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return Ok(new { message = "If an account exists with that email, a password reset link has been sent." });
-        }
+        await _authService.ForgotPasswordAsync(dto.Email);
+        return Ok(new { message = "If an account exists with that email, a password reset link has been sent." });
     }
 
     /// <summary>
@@ -313,28 +230,20 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
     {
-        try
+        var validationResult = await _resetPasswordValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
         {
-            var validationResult = await _resetPasswordValidator.ValidateAsync(dto);
-            if (!validationResult.IsValid)
-            {
-                return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
-            }
-
-            var result = await _authService.ResetPasswordAsync(dto.Email, dto.Token, dto.NewPassword);
-            if (!result.Succeeded)
-            {
-                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                return BadRequest(new { message = errors });
-            }
-
-            return Ok(new { message = "Password reset successfully." });
+            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
         }
-        catch (Exception ex)
+
+        var result = await _authService.ResetPasswordAsync(dto.Email, dto.Token, dto.NewPassword);
+        if (!result.Succeeded)
         {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = "An error occurred while resetting password" });
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            return BadRequest(new { message = errors });
         }
+
+        return Ok(new { message = "Password reset successfully." });
     }
 
     /// <summary>
@@ -347,34 +256,26 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
     {
-        try
+        var validationResult = await _changePasswordValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
         {
-            var validationResult = await _changePasswordValidator.ValidateAsync(dto);
-            if (!validationResult.IsValid)
-            {
-                return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
-            }
-
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { message = "User not authenticated" });
-            }
-
-            var result = await _authService.ChangePasswordAsync(userId, dto.NewPassword);
-            if (!result.Succeeded)
-            {
-                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                return BadRequest(new { message = errors });
-            }
-
-            return Ok(new { message = "Password changed successfully." });
+            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
         }
-        catch (Exception ex)
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
         {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = "An error occurred while changing password" });
+            return Unauthorized(new { message = "User not authenticated" });
         }
+
+        var result = await _authService.ChangePasswordAsync(userId, dto.NewPassword);
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            return BadRequest(new { message = errors });
+        }
+
+        return Ok(new { message = "Password changed successfully." });
     }
 
     /// <summary>
@@ -387,26 +288,14 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult> RequestEmailChange([FromBody] RequestEmailChangeDto dto)
     {
-        try
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { message = "User not authenticated" });
-            }
+            return Unauthorized(new { message = "User not authenticated" });
+        }
 
-            await _authService.RequestEmailChangeAsync(userId, dto.NewEmail);
-            return Ok(new { message = "A confirmation link has been sent to your new email address." });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = "An error occurred while requesting email change" });
-        }
+        await _authService.RequestEmailChangeAsync(userId, dto.NewEmail);
+        return Ok(new { message = "A confirmation link has been sent to your new email address." });
     }
 
     /// <summary>
@@ -417,21 +306,13 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> ConfirmEmailChange([FromBody] ConfirmEmailChangeDto dto)
     {
-        try
+        var result = await _authService.ConfirmEmailChangeAsync(dto.UserId, dto.NewEmail, dto.Token);
+        if (!result.Succeeded)
         {
-            var result = await _authService.ConfirmEmailChangeAsync(dto.UserId, dto.NewEmail, dto.Token);
-            if (!result.Succeeded)
-            {
-                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                return BadRequest(new { message = errors });
-            }
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            return BadRequest(new { message = errors });
+        }
 
-            return Ok(new { message = "Email changed successfully." });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = "An error occurred while confirming email change" });
-        }
+        return Ok(new { message = "Email changed successfully." });
     }
 }

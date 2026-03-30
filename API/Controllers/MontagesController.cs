@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using API.Common;
 using API.DTOs;
 using API.Services;
@@ -10,24 +9,19 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-[ApiController]
-[Route("api/[controller]")]
 [Authorize]
-public class MontagesController : ControllerBase
+public class MontagesController : ApiControllerBase
 {
     private readonly IMontageService _service;
-    private readonly ILogger<MontagesController> _logger;
     private readonly IValidator<CreateMontageDto> _createValidator;
     private readonly IValidator<UpdateMontageDto> _updateValidator;
 
     public MontagesController(
-        IMontageService service, 
-        ILogger<MontagesController> logger,
+        IMontageService service,
         IValidator<CreateMontageDto> createValidator,
         IValidator<UpdateMontageDto> updateValidator)
     {
         _service = service;
-        _logger = logger;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
     }
@@ -40,22 +34,14 @@ public class MontagesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<PagedList<MontageDto>>> GetAll([FromQuery] MontageParameters parameters)
     {
-        try
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
         {
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
+            return BadRequest(new { message = "User is not associated with a company" });
+        }
 
-            var result = await _service.GetByCompanyIdAsync(companyId.Value, parameters);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+        var result = await _service.GetByCompanyIdAsync(companyId.Value, parameters);
+        return Ok(result);
     }
 
     /// <summary>
@@ -67,31 +53,23 @@ public class MontagesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<MontageDto>> GetById(Guid id)
     {
-        try
+        if (id == Guid.Empty)
         {
-            if (id == Guid.Empty)
-            {
-                return BadRequest("Id is required");
-            }
-
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
-
-            var result = await _service.GetByIdAsync(id);
-            if (result == null || result.CompanyId != companyId)
-            {
-                return NotFound(new { message = "Montage not found" });
-            }
-            return Ok(result);
+            return BadRequest(new { message = "Id is required" });
         }
-        catch (Exception ex)
+
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
         {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
+            return BadRequest(new { message = "User is not associated with a company" });
         }
+
+        var result = await _service.GetByIdAsync(id);
+        if (result == null || result.CompanyId != companyId)
+        {
+            return NotFound(new { message = "Montage not found" });
+        }
+        return Ok(result);
     }
 
     /// <summary>
@@ -103,20 +81,12 @@ public class MontagesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<MontageDto>> GetByIdWithAirConditioner(Guid id)
     {
-        try
+        var result = await _service.GetByIdWithAirConditionerAsync(id);
+        if (result == null)
         {
-            var result = await _service.GetByIdWithAirConditionerAsync(id);
-            if (result == null)
-            {
-                return NotFound(new { message = "Montage not found" });
-            }
-            return Ok(result);
+            return NotFound(new { message = "Montage not found" });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+        return Ok(result);
     }
 
     /// <summary>
@@ -127,16 +97,8 @@ public class MontagesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<PagedList<MontageDto>>> GetByCompanyId(Guid companyId, [FromQuery] MontageParameters parameters)
     {
-        try
-        {
-            var result = await _service.GetByCompanyIdAsync(companyId, parameters);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+        var result = await _service.GetByCompanyIdAsync(companyId, parameters);
+        return Ok(result);
     }
 
     /// <summary>
@@ -147,16 +109,8 @@ public class MontagesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<PagedList<MontageDto>>> GetByUserId(string userId, [FromQuery] PageParameters pageParameters)
     {
-        try
-        {
-            var result = await _service.GetByUserIdAsync(userId, pageParameters);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+        var result = await _service.GetByUserIdAsync(userId, pageParameters);
+        return Ok(result);
     }
 
     /// <summary>
@@ -167,16 +121,8 @@ public class MontagesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<PagedList<MontageDto>>> GetByCompanyAndUserId(Guid companyId, string userId, [FromQuery] PageParameters pageParameters)
     {
-        try
-        {
-            var result = await _service.GetByCompanyAndUserIdAsync(companyId, userId, pageParameters);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+        var result = await _service.GetByCompanyAndUserIdAsync(companyId, userId, pageParameters);
+        return Ok(result);
     }
 
     /// <summary>
@@ -187,16 +133,8 @@ public class MontagesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<PagedList<MontageDto>>> GetByStatus(string status, [FromQuery] PageParameters pageParameters)
     {
-        try
-        {
-            var result = await _service.GetByStatusAsync(status, pageParameters);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+        var result = await _service.GetByStatusAsync(status, pageParameters);
+        return Ok(result);
     }
 
     /// <summary>
@@ -206,20 +144,12 @@ public class MontagesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<PagedList<MontageDto>>> GetByDateRange(
-        [FromQuery] DateOnly startDate, 
-        [FromQuery] DateOnly endDate, 
+        [FromQuery] DateOnly startDate,
+        [FromQuery] DateOnly endDate,
         [FromQuery] PageParameters pageParameters)
     {
-        try
-        {
-            var result = await _service.GetByInstallationDateRangeAsync(startDate, endDate, pageParameters);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
-        }
+        var result = await _service.GetByInstallationDateRangeAsync(startDate, endDate, pageParameters);
+        return Ok(result);
     }
 
     /// <summary>
@@ -231,38 +161,30 @@ public class MontagesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> Create([FromBody] CreateMontageDto dto)
     {
-        try
+        var validationResult = await _createValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
         {
-            var validationResult = await _createValidator.ValidateAsync(dto);
-            if (!validationResult.IsValid)
-            {
-                return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
-            }
-
-            // Populate CompanyId and UserId from JWT token
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
-
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return BadRequest(new { message = "User ID not found" });
-            }
-
-            dto.CompanyId = companyId.Value;
-            dto.UserId = userId;
-
-            await _service.AddMontageAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = Guid.NewGuid() }, dto);
+            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
         }
-        catch (Exception ex)
+
+        // Populate CompanyId and UserId from JWT token
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
         {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
+            return BadRequest(new { message = "User is not associated with a company" });
         }
+
+        var userId = GetCurrentUserId();
+        if (string.IsNullOrEmpty(userId))
+        {
+            return BadRequest(new { message = "User ID not found" });
+        }
+
+        dto.CompanyId = companyId.Value;
+        dto.UserId = userId;
+
+        var id = await _service.AddMontageAsync(dto);
+        return CreatedAtAction(nameof(GetById), new { id }, dto);
     }
 
     /// <summary>
@@ -275,39 +197,27 @@ public class MontagesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> Update(Guid id, [FromBody] UpdateMontageDto dto)
     {
-        try
+        var validationResult = await _updateValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
         {
-            var validationResult = await _updateValidator.ValidateAsync(dto);
-            if (!validationResult.IsValid)
-            {
-                return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
-            }
-
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
-
-            // Check if montage belongs to user's company
-            var existing = await _service.GetByIdAsync(id);
-            if (existing == null || existing.CompanyId != companyId)
-            {
-                return NotFound(new { message = "Montage not found" });
-            }
-
-            await _service.UpdateMontageAsync(id, dto);
-            return NoContent();
+            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
         }
-        catch (InvalidOperationException ex)
+
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
         {
-            return NotFound(new { message = ex.Message });
+            return BadRequest(new { message = "User is not associated with a company" });
         }
-        catch (Exception ex)
+
+        // Check if montage belongs to user's company
+        var existing = await _service.GetByIdAsync(id);
+        if (existing == null || existing.CompanyId != companyId)
         {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
+            return NotFound(new { message = "Montage not found" });
         }
+
+        await _service.UpdateMontageAsync(id, dto);
+        return NoContent();
     }
 
     /// <summary>
@@ -320,38 +230,26 @@ public class MontagesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> UpdateStatus(Guid id, [FromBody] UpdateMontageStatusDto dto)
     {
-        try
+        if (string.IsNullOrWhiteSpace(dto.Status))
         {
-            if (string.IsNullOrWhiteSpace(dto.Status))
-            {
-                return BadRequest(new { message = "Status is required" });
-            }
-
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
-
-            // Check if montage belongs to user's company
-            var existing = await _service.GetByIdAsync(id);
-            if (existing == null || existing.CompanyId != companyId)
-            {
-                return NotFound(new { message = "Montage not found" });
-            }
-
-            await _service.UpdateMontageStatusAsync(id, dto.Status);
-            return NoContent();
+            return BadRequest(new { message = "Status is required" });
         }
-        catch (InvalidOperationException ex)
+
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
         {
-            return NotFound(new { message = ex.Message });
+            return BadRequest(new { message = "User is not associated with a company" });
         }
-        catch (Exception ex)
+
+        // Check if montage belongs to user's company
+        var existing = await _service.GetByIdAsync(id);
+        if (existing == null || existing.CompanyId != companyId)
         {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
+            return NotFound(new { message = "Montage not found" });
         }
+
+        await _service.UpdateMontageStatusAsync(id, dto.Status);
+        return NoContent();
     }
 
     /// <summary>
@@ -364,38 +262,26 @@ public class MontagesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> UpdatePaymentStatus(Guid id, [FromBody] UpdatePaymentStatusDto dto)
     {
-        try
+        if (string.IsNullOrWhiteSpace(dto.PaymentStatus))
         {
-            if (string.IsNullOrWhiteSpace(dto.PaymentStatus))
-            {
-                return BadRequest(new { message = "Payment status is required" });
-            }
-
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
-
-            // Check if montage belongs to user's company
-            var existing = await _service.GetByIdAsync(id);
-            if (existing == null || existing.CompanyId != companyId)
-            {
-                return NotFound(new { message = "Montage not found" });
-            }
-
-            await _service.UpdatePaymentStatusAsync(id, dto.PaymentStatus, dto.PaidAmount);
-            return NoContent();
+            return BadRequest(new { message = "Payment status is required" });
         }
-        catch (InvalidOperationException ex)
+
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
         {
-            return NotFound(new { message = ex.Message });
+            return BadRequest(new { message = "User is not associated with a company" });
         }
-        catch (Exception ex)
+
+        // Check if montage belongs to user's company
+        var existing = await _service.GetByIdAsync(id);
+        if (existing == null || existing.CompanyId != companyId)
         {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
+            return NotFound(new { message = "Montage not found" });
         }
+
+        await _service.UpdatePaymentStatusAsync(id, dto.PaymentStatus, dto.PaidAmount);
+        return NoContent();
     }
 
     /// <summary>
@@ -406,38 +292,21 @@ public class MontagesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> Delete(Guid id)
     {
-        try
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
         {
-            var companyId = GetCurrentUserCompanyId();
-            if (companyId == null)
-            {
-                return BadRequest(new { message = "User is not associated with a company" });
-            }
-
-            // Check if montage belongs to user's company
-            var existing = await _service.GetByIdAsync(id);
-            if (existing == null || existing.CompanyId != companyId)
-            {
-                return NotFound(new { message = "Montage not found" });
-            }
-
-            await _service.DeleteMontageAsync(id);
-            return NoContent();
+            return BadRequest(new { message = "User is not associated with a company" });
         }
-        catch (Exception ex)
+
+        // Check if montage belongs to user's company
+        var existing = await _service.GetByIdAsync(id);
+        if (existing == null || existing.CompanyId != companyId)
         {
-            _logger.LogError(ex, ex.Message);
-            return StatusCode(500, new { message = ex.Message });
+            return NotFound(new { message = "Montage not found" });
         }
+
+        await _service.DeleteMontageAsync(id);
+        return NoContent();
     }
 
-    private Guid? GetCurrentUserCompanyId()
-    {
-        var companyIdClaim = User.FindFirstValue("company_id");
-        if (string.IsNullOrEmpty(companyIdClaim))
-        {
-            return null;
-        }
-        return Guid.TryParse(companyIdClaim, out var companyId) ? companyId : null;
-    }
 }

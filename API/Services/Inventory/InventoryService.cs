@@ -27,7 +27,7 @@ public class InventoryService : IInventoryService
         _auditService = auditService;
     }
 
-    public async Task AddAsync(CreateInventoryItemDto dto)
+    public async Task<Guid> AddAsync(CreateInventoryItemDto dto)
     {
         try
         {
@@ -60,11 +60,13 @@ public class InventoryService : IInventoryService
                 CompanyId = item.CompanyId,
                 InventoryItemId = item.Id,
                 Action = "Created",
-                UserId = dto.UserId, // Assuming we add UserId to CreateInventoryItemDto
+                UserId = dto.UserId,
                 QuantityAfter = item.Quantity,
                 QuantityChanged = item.Quantity,
                 Reason = "Initial creation"
             });
+
+            return item.Id;
         }
         catch (Exception e)
         {
@@ -80,7 +82,7 @@ public class InventoryService : IInventoryService
             var item = await _repository.GetByIdAsync(itemId);
             if (item == null)
             {
-                throw new InvalidOperationException("Inventory item not found");
+                throw new NotFoundException("Inventory item not found");
             }
 
 
@@ -334,7 +336,7 @@ public class InventoryService : IInventoryService
             var item = await _repository.GetByIdAsync(itemId);
             if (item == null)
             {
-                throw new InvalidOperationException("Inventory item not found");
+                throw new NotFoundException("Inventory item not found");
             }
 
             var newQuantity = item.Quantity + dto.AdjustmentAmount;
@@ -439,7 +441,7 @@ public class InventoryService : IInventoryService
             var item = await _repository.GetByIdAsync(itemId);
             if (item == null)
             {
-                throw new InvalidOperationException("Inventory item not found");
+                throw new NotFoundException("Inventory item not found");
             }
 
             item.IsActive = isActive;
