@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(xargs ls -lh)",
-      "Bash(npm install -D vite-plugin-pwa @vite-pwa/assets-generator)",
-      "Bash(npm run generate-pwa-assets)"
-    ]
-  }
-}
