@@ -62,7 +62,4 @@ public class RegisterDto
     
     [JsonPropertyName("company_email")]
     public string? CompanyEmail { get; set; }
-    
-    [JsonPropertyName("warranty_default_months")]
-    public int? WarrantyDefaultMonths { get; set; }
 }

@@ -1,3 +1,4 @@
+using ValidationException = FluentValidation.ValidationException;
 using API.Common;
 using API.Data;
 using API.Data.Entities;
@@ -40,13 +41,13 @@ public class MontagePhotoService : IMontagePhotoService
         var (canAdd, countError) = await CanAddPhotoAsync(montageId);
         if (!canAdd)
         {
-            throw new InvalidOperationException(countError);
+            throw new ValidationException(countError);
         }
 
         var (isValid, fileError) = ValidateFile(file);
         if (!isValid)
         {
-            throw new InvalidOperationException(fileError);
+            throw new ValidationException(fileError);
         }
 
         await EnsureBucketExistsAsync();

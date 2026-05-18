@@ -14,6 +14,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using ValidationException = FluentValidation.ValidationException;
 
 namespace API.Services.Auth;
 
@@ -55,7 +56,7 @@ public class AuthService : IAuthService
             var existingUser = await _userManager.FindByEmailAsync(dto.Email);
             if (existingUser != null)
             {
-                throw new InvalidOperationException("A user with this email already exists");
+                throw new ValidationException("A user with this email already exists");
             }
 
             // Create company first
@@ -74,7 +75,6 @@ public class AuthService : IAuthService
                 Phone = dto.CompanyPhone,
                 Email = dto.CompanyEmail,
                 IsCompanyOwner = true, // User registering is the company owner
-                WarrantyDefaultMonths = dto.WarrantyDefaultMonths ?? 12,
                 SubscriptionPlan = SubscriptionPlan.Free,  // Start with Free plan (2 employees)
                 SubscriptionStatus = SubscriptionStatus.Active,  // Free plan is active by default
                 TrialStartDate = null,  // No trial yet
@@ -106,7 +106,7 @@ public class AuthService : IAuthService
             if (!result.Succeeded)
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                throw new InvalidOperationException($"Failed to create user: {errors}");
+                throw new ValidationException($"Failed to create user: {errors}");
             }
 
             // Add Manager role - user who self-registers is the company owner/manager
@@ -145,7 +145,7 @@ public class AuthService : IAuthService
             var user = await _userManager.FindByEmailAsync(dto.Email);
             if (user == null)
             {
-                throw new InvalidOperationException("Invalid email or password");
+                throw new ValidationException("Invalid email or password");
             }
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, lockoutOnFailure: true);
@@ -154,24 +154,24 @@ public class AuthService : IAuthService
             {
                 // Reveal lockout state so the user knows to wait or use forgot-password.
                 // We do NOT reveal how many attempts remain to avoid aiding brute-force calibration.
-                throw new InvalidOperationException(
+                throw new ValidationException(
                     "Your account has been temporarily locked due to too many failed login attempts. " +
                     "Please wait 15 minutes or reset your password to unlock it immediately.");
             }
 
             if (!result.Succeeded)
             {
-                throw new InvalidOperationException("Invalid email or password");
+                throw new ValidationException("Invalid email or password");
             }
 
             if (!user.EmailConfirmed)
             {
-                throw new InvalidOperationException("Please confirm your email address before logging in.");
+                throw new ValidationException("Please confirm your email address before logging in.");
             }
 
             if (!user.IsActive)
             {
-                throw new InvalidOperationException("Your account has been deactivated. Please contact your manager.");
+                throw new ValidationException("Your account has been deactivated. Please contact your manager.");
             }
 
             var company = user.CompanyId.HasValue 
@@ -282,7 +282,7 @@ public class AuthService : IAuthService
             if (!result.Succeeded)
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                throw new InvalidOperationException($"Failed to update profile: {errors}");
+                throw new ValidationException($"Failed to update profile: {errors}");
             }
 
             var company = user.CompanyId.HasValue 
@@ -320,7 +320,7 @@ public class AuthService : IAuthService
         var principal = GetPrincipalFromExpiredToken(token);
         if (principal == null)
         {
-            throw new InvalidOperationException("Invalid token");
+            throw new ValidationException("Invalid token");
         }
 
         var expiryDateUnix    = long.Parse(principal.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Exp).Value);
@@ -329,7 +329,7 @@ public class AuthService : IAuthService
         // C-2: Only allow refresh of genuinely expired tokens (allow 30 s clock skew).
         if (expiryDateTimeUtc > DateTime.UtcNow.AddSeconds(30))
         {
-            throw new InvalidOperationException("This token has not expired yet.");
+            throw new ValidationException("This token has not expired yet.");
         }
 
         var jti = principal.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Jti).Value;
@@ -347,7 +347,7 @@ public class AuthService : IAuthService
 
         if (affected == 0)
         {
-            throw new InvalidOperationException("Refresh token is invalid, expired, already used, or does not match this JWT.");
+            throw new ValidationException("Refresh token is invalid, expired, already used, or does not match this JWT.");
         }
 
         var storedRefreshToken = await _context.RefreshTokens
@@ -362,14 +362,20 @@ public class AuthService : IAuthService
             throw new NotFoundException("User not found");
         }
 
+        if (!user.IsActive)
+        {
+            // Same parity as LoginAsync — a deactivated user cannot mint new access tokens.
+            throw new ForbiddenException("Your account has been deactivated. Please contact your manager.");
+        }
+
         var newToken = await GenerateJwtTokenAsync(user);
         var newRefreshToken = await GenerateRefreshTokenAsync(user, newToken.Id);
-        
+
         // Return roles and other info
         var roles = await _userManager.GetRolesAsync(user);
-        
+
         // Load company again to populate DTO
-        var company = user.CompanyId.HasValue 
+        var company = user.CompanyId.HasValue
             ? await _context.Companies.FindAsync(user.CompanyId.Value)
             : null;
 
@@ -504,7 +510,7 @@ public class AuthService : IAuthService
             var existingUser = await _userManager.FindByEmailAsync(dto.Email);
             if (existingUser != null)
             {
-                throw new InvalidOperationException("A user with this email already exists");
+                throw new ValidationException("A user with this email already exists");
             }
 
             var company = await _context.Companies.FindAsync(companyId);
@@ -528,7 +534,7 @@ public class AuthService : IAuthService
                     await emailService.SendEmployeeLimitReachedEmailAsync(limitCompany, limitCount, limitMax);
                 });
 
-                throw new InvalidOperationException(
+                throw new ValidationException(
                     $"Employee limit reached. Your current plan allows {maxEmployees} employees. " +
                     $"Please upgrade your subscription to add more employees.");
             }
@@ -551,7 +557,7 @@ public class AuthService : IAuthService
             if (!result.Succeeded)
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                throw new InvalidOperationException($"Failed to create employee: {errors}");
+                throw new ValidationException($"Failed to create employee: {errors}");
             }
 
             await _userManager.AddToRoleAsync(user, AppRoles.User);
@@ -685,7 +691,7 @@ public class AuthService : IAuthService
 
             if (await IsManagerAsync(employeeId))
             {
-                throw new InvalidOperationException("Cannot delete a Manager. Transfer ownership first.");
+                throw new ValidationException("Cannot delete a Manager. Transfer ownership first.");
             }
 
             user.FirstName = "DELETED_USER";
@@ -725,7 +731,7 @@ public class AuthService : IAuthService
                 var existingUser = await _userManager.FindByEmailAsync(dto.Email);
                 if (existingUser != null)
                 {
-                    throw new InvalidOperationException("A user with this email already exists");
+                    throw new ValidationException("A user with this email already exists");
                 }
                 user.Email = dto.Email;
                 user.UserName = dto.Email;
@@ -741,7 +747,7 @@ public class AuthService : IAuthService
             if (!result.Succeeded)
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                throw new InvalidOperationException($"Failed to update employee: {errors}");
+                throw new ValidationException($"Failed to update employee: {errors}");
             }
 
             if (!string.IsNullOrEmpty(dto.Password))
@@ -751,7 +757,7 @@ public class AuthService : IAuthService
                 if (!passwordResult.Succeeded)
                 {
                     var errors = string.Join(", ", passwordResult.Errors.Select(e => e.Description));
-                    throw new InvalidOperationException($"Failed to update password: {errors}");
+                    throw new ValidationException($"Failed to update password: {errors}");
                 }
             }
 
@@ -852,7 +858,7 @@ public class AuthService : IAuthService
 
             if (activeCount >= maxEmployees)
             {
-                throw new InvalidOperationException(
+                throw new ValidationException(
                     $"Cannot activate more employees. Current plan allows {maxEmployees} active employees.");
             }
 
@@ -864,7 +870,7 @@ public class AuthService : IAuthService
 
             if (await IsManagerAsync(employeeId))
             {
-                throw new InvalidOperationException("Cannot activate a Manager");
+                throw new ValidationException("Cannot activate a Manager");
             }
 
             employee.IsActive = true;
@@ -889,7 +895,7 @@ public class AuthService : IAuthService
 
             if (await IsManagerAsync(employeeId))
             {
-                throw new InvalidOperationException("Cannot deactivate a Manager");
+                throw new ValidationException("Cannot deactivate a Manager");
             }
 
             employee.IsActive = false;
@@ -914,13 +920,13 @@ public class AuthService : IAuthService
 
             if (company.HasUsedTrial)
             {
-                throw new InvalidOperationException(
+                throw new ValidationException(
                     "Trial period has already been used for this company. Please upgrade to Premium plan.");
             }
 
             if (company.SubscriptionPlan != SubscriptionPlan.Free)
             {
-                throw new InvalidOperationException(
+                throw new ValidationException(
                     $"Trial can only be activated from Free plan. Current plan: {company.SubscriptionPlan}");
             }
 
@@ -1177,7 +1183,7 @@ public class AuthService : IAuthService
         var existingUser = await _userManager.FindByEmailAsync(newEmail);
         if (existingUser != null)
         {
-            throw new InvalidOperationException("A user with this email already exists.");
+            throw new ValidationException("A user with this email already exists.");
         }
 
         var changeToken = await _userManager.GenerateChangeEmailTokenAsync(user, newEmail);

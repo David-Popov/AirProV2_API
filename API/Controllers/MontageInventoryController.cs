@@ -6,10 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-[ApiController]
-[Route("api/[controller]")]
 [Authorize]
-public class MontageInventoryController : ControllerBase
+public class MontageInventoryController : ApiControllerBase
 {
     private readonly IMontageInventoryService _service;
 
@@ -24,7 +22,7 @@ public class MontageInventoryController : ControllerBase
     [HttpPost("{montageId}/materials")]
     public async Task<ActionResult<List<MontageInventoryItemDto>>> AddMaterials(Guid montageId, [FromBody] AddMaterialsToMontageRequest request)
     {
-        request.UserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        request.UserId = GetCurrentUserId();
         var result = await _service.AddMaterialsAsync(montageId, request);
         return Ok(result);
     }

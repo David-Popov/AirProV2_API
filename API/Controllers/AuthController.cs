@@ -1,3 +1,5 @@
+using ValidationException = FluentValidation.ValidationException;
+using API.Common;
 using System.Security.Claims;
 using API.DTOs;
 using API.DTOs.Auth;
@@ -9,28 +11,29 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace API.Controllers;
 
-[ApiController]
-[Route("api/[controller]")]
-public class AuthController : ControllerBase
+public class AuthController : ApiControllerBase
 {
     private readonly IAuthService _authService;
     private readonly IValidator<RegisterDto> _registerValidator;
     private readonly IValidator<LoginDto> _loginValidator;
     private readonly IValidator<ChangePasswordDto> _changePasswordValidator;
     private readonly IValidator<ResetPasswordDto> _resetPasswordValidator;
+    private readonly IValidator<UpdateProfileDto> _updateProfileValidator;
 
     public AuthController(
         IAuthService authService,
         IValidator<RegisterDto> registerValidator,
         IValidator<LoginDto> loginValidator,
         IValidator<ChangePasswordDto> changePasswordValidator,
-        IValidator<ResetPasswordDto> resetPasswordValidator)
+        IValidator<ResetPasswordDto> resetPasswordValidator,
+        IValidator<UpdateProfileDto> updateProfileValidator)
     {
         _authService = authService;
         _registerValidator = registerValidator;
         _loginValidator = loginValidator;
         _changePasswordValidator = changePasswordValidator;
         _resetPasswordValidator = resetPasswordValidator;
+        _updateProfileValidator = updateProfileValidator;
     }
 
     /// <summary>
@@ -51,7 +54,7 @@ public class AuthController : ControllerBase
         var validationResult = await _registerValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
         {
-            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            throw new ValidationException(validationResult.Errors);
         }
 
         await _authService.RegisterAsync(dto);
@@ -76,7 +79,7 @@ public class AuthController : ControllerBase
         var validationResult = await _loginValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
         {
-            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            throw new ValidationException(validationResult.Errors);
         }
 
         var result = await _authService.LoginAsync(dto);
@@ -114,13 +117,13 @@ public class AuthController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId))
         {
-            return Unauthorized(new { message = "User not authenticated" });
+            throw new ForbiddenException("User not authenticated");
         }
 
         var user = await _authService.GetCurrentUserAsync(userId);
         if (user == null)
         {
-            return NotFound(new { message = "User not found" });
+            throw new NotFoundException("User not found");
         }
 
         return Ok(user);
@@ -135,7 +138,7 @@ public class AuthController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(email))
         {
-            return BadRequest(new { message = "Email is required" });
+            throw new ValidationException("Email is required");
         }
 
         var exists = await _authService.UserExistsAsync(email);
@@ -153,26 +156,14 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<AuthUserDto>> UpdateProfile([FromBody] UpdateProfileDto dto)
     {
-        // Validate DTO manually since we can't easily inject a new validator into the constructor without breaking changes
-        // A better approach would be to add the validator to the constructor, but for now we'll do manual validation or rely on automatic model validation if configured
-        // However, to be consistent with other methods, let's use the injected validator
-
-        // To avoid breaking the constructor signature for existing tests/usage, we'll retrieve the validator from request services
-        var validator = HttpContext.RequestServices.GetService<IValidator<UpdateProfileDto>>();
-        if (validator != null)
+        var validationResult = await _updateProfileValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
         {
-            var validationResult = await validator.ValidateAsync(dto);
-            if (!validationResult.IsValid)
-            {
-                return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
-            }
+            throw new ValidationException(validationResult.Errors);
         }
 
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userId))
-        {
-            return Unauthorized(new { message = "User not authenticated" });
-        }
+        var userId = GetCurrentUserId()
+            ?? throw new ForbiddenException("User not authenticated.");
 
         var result = await _authService.UpdateProfileAsync(userId, dto);
         return Ok(result);
@@ -190,7 +181,7 @@ public class AuthController : ControllerBase
         if (!result.Succeeded)
         {
             var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-            return BadRequest(new { message = errors });
+            throw new ValidationException(errors);
         }
 
         return Ok(new { message = "Email confirmed successfully." });
@@ -233,14 +224,14 @@ public class AuthController : ControllerBase
         var validationResult = await _resetPasswordValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
         {
-            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            throw new ValidationException(validationResult.Errors);
         }
 
         var result = await _authService.ResetPasswordAsync(dto.Email, dto.Token, dto.NewPassword);
         if (!result.Succeeded)
         {
             var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-            return BadRequest(new { message = errors });
+            throw new ValidationException(errors);
         }
 
         return Ok(new { message = "Password reset successfully." });
@@ -259,20 +250,20 @@ public class AuthController : ControllerBase
         var validationResult = await _changePasswordValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
         {
-            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            throw new ValidationException(validationResult.Errors);
         }
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId))
         {
-            return Unauthorized(new { message = "User not authenticated" });
+            throw new ForbiddenException("User not authenticated");
         }
 
         var result = await _authService.ChangePasswordAsync(userId, dto.NewPassword);
         if (!result.Succeeded)
         {
             var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-            return BadRequest(new { message = errors });
+            throw new ValidationException(errors);
         }
 
         return Ok(new { message = "Password changed successfully." });
@@ -291,7 +282,7 @@ public class AuthController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId))
         {
-            return Unauthorized(new { message = "User not authenticated" });
+            throw new ForbiddenException("User not authenticated");
         }
 
         await _authService.RequestEmailChangeAsync(userId, dto.NewEmail);
@@ -310,7 +301,7 @@ public class AuthController : ControllerBase
         if (!result.Succeeded)
         {
             var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-            return BadRequest(new { message = errors });
+            throw new ValidationException(errors);
         }
 
         return Ok(new { message = "Email changed successfully." });

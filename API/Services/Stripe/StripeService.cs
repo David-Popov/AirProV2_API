@@ -1,11 +1,16 @@
+using API.Common;
+using API.Constants;
 using API.Data;
 using API.Data.Entities;
+using API.DTOs.Stripe;
 using API.Models;
 using API.Services.Email;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Stripe;
 using Stripe.Checkout;
+using ValidationException = FluentValidation.ValidationException;
 
 namespace API.Services.Stripe;
 
@@ -15,24 +20,53 @@ public class StripeService : IStripeService
     private readonly StripeSettings _stripeSettings;
     private readonly ILogger<StripeService> _logger;
     private readonly IBackgroundEmailQueue _backgroundEmailQueue;
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public StripeService(
         ApplicationDbContext context,
         IOptions<StripeSettings> stripeSettings,
         ILogger<StripeService> logger,
-        IBackgroundEmailQueue backgroundEmailQueue)
+        IBackgroundEmailQueue backgroundEmailQueue,
+        UserManager<ApplicationUser> userManager)
     {
         _context = context;
         _stripeSettings = stripeSettings.Value;
         _logger = logger;
         _backgroundEmailQueue = backgroundEmailQueue;
+        _userManager = userManager;
 
         StripeConfiguration.ApiKey = _stripeSettings.SecretKey;
     }
 
-    public async Task<string> CreateCheckoutSessionAsync(Company company, string priceId, string successUrl, string cancelUrl)
+    public StripeConfigDto GetConfig() => new()
     {
-        // Ensure company has Stripe customer
+        PublishableKey = _stripeSettings.PublishableKey
+    };
+
+    public StripePlanDto GetPremiumPlan()
+    {
+        var plan = _stripeSettings.PremiumPlan;
+        return new StripePlanDto
+        {
+            Id = plan.Id,
+            Name = plan.Name,
+            PriceId = _stripeSettings.PremiumPriceId,
+            Price = plan.Price,
+            Currency = plan.Currency,
+            Interval = plan.Interval,
+            Features = plan.Features
+        };
+    }
+
+    public async Task<CheckoutSessionResponseDto> CreateCheckoutSessionForUserAsync(string userId, string successUrl, string cancelUrl)
+    {
+        var company = await GetCallerCompanyAsync(userId);
+
+        if (string.IsNullOrEmpty(_stripeSettings.PremiumPriceId))
+        {
+            throw new ValidationException("Premium plan is not configured.");
+        }
+
         await GetOrCreateStripeCustomerAsync(company);
 
         var options = new SessionCreateOptions
@@ -41,98 +75,128 @@ public class StripeService : IStripeService
             PaymentMethodTypes = new List<string> { "card" },
             LineItems = new List<SessionLineItemOptions>
             {
-                new SessionLineItemOptions
-                {
-                    Price = priceId,
-                    Quantity = 1,
-                }
+                new() { Price = _stripeSettings.PremiumPriceId, Quantity = 1 }
             },
             Mode = "subscription",
             SuccessUrl = successUrl,
             CancelUrl = cancelUrl,
-            // IMPORTANT: Add metadata to link back to our company
-            Metadata = new Dictionary<string, string>
-            {
-                { "companyId", company.Id.ToString() }
-            },
-            // Also add to subscription metadata
+            Metadata = new Dictionary<string, string> { { "companyId", company.Id.ToString() } },
             SubscriptionData = new SessionSubscriptionDataOptions
             {
-                Metadata = new Dictionary<string, string>
-                {
-                    { "companyId", company.Id.ToString() }
-                }
+                Metadata = new Dictionary<string, string> { { "companyId", company.Id.ToString() } }
             }
         };
 
-        var service = new SessionService();
-        var session = await service.CreateAsync(options);
-
-        return session.Url!;
+        var session = await new SessionService().CreateAsync(options);
+        return new CheckoutSessionResponseDto { Url = session.Url! };
     }
 
-    public async Task<string> CreateCustomerPortalSessionAsync(Company company, string returnUrl)
+    public async Task<CheckoutSessionResponseDto> CreatePortalSessionForUserAsync(string userId, string returnUrl)
     {
+        var company = await GetCallerCompanyAsync(userId);
+
         if (string.IsNullOrEmpty(company.StripeCustomerId))
         {
-            throw new InvalidOperationException("Company does not have a Stripe customer ID");
+            throw new ValidationException("No subscription found. Please subscribe first.");
         }
 
         var options = new global::Stripe.BillingPortal.SessionCreateOptions
         {
             Customer = company.StripeCustomerId,
-            ReturnUrl = returnUrl,
+            ReturnUrl = returnUrl
         };
 
-        var service = new global::Stripe.BillingPortal.SessionService();
-        var session = await service.CreateAsync(options);
-
-        return session.Url;
+        var session = await new global::Stripe.BillingPortal.SessionService().CreateAsync(options);
+        return new CheckoutSessionResponseDto { Url = session.Url };
     }
 
-    public async Task<Company?> GetOrCreateStripeCustomerAsync(Company company)
+    public async Task<SubscriptionStatusDto> GetSubscriptionStatusForUserAsync(string userId)
     {
-        if (!string.IsNullOrEmpty(company.StripeCustomerId))
+        var company = await GetCallerCompanyAsync(userId);
+
+        return new SubscriptionStatusDto
         {
-            return company;
+            Plan = company.SubscriptionPlan.ToString(),
+            Status = company.SubscriptionStatus.ToString(),
+            IsActive = company.IsSubscriptionActive ?? false,
+            CurrentPeriodEnd = company.SubscriptionCurrentPeriodEnd,
+            TrialEndDate = company.TrialEndDate,
+            HasStripeSubscription = !string.IsNullOrEmpty(company.StripeSubscriptionId)
+        };
+    }
+
+    public async Task<MessageResponseDto> ReturnCompanyToFreePlanAsync(string userId)
+    {
+        var company = await GetCallerCompanyAsync(userId, trackForUpdate: true);
+
+        if (company.SubscriptionStatus != SubscriptionStatus.Expired &&
+            company.SubscriptionStatus != SubscriptionStatus.Cancelled)
+        {
+            throw new ValidationException("This action is only available when subscription is expired or cancelled.");
         }
 
-        var customerOptions = new CustomerCreateOptions
-        {
-            Email = company.Email,
-            Name = company.CompanyName,
-            Metadata = new Dictionary<string, string>
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+
+        // Batch-load all company users + their roles via JOIN (EF Core rule #3).
+        var employeesWithRoles = await (
+            from user in _context.Users
+            where user.CompanyId == company.Id
+            join userRole in _context.UserRoles on user.Id equals userRole.UserId into urj
+            from ur in urj.DefaultIfEmpty()
+            join role in _context.Roles on ur.RoleId equals role.Id into rj
+            from r in rj.DefaultIfEmpty()
+            select new { User = user, RoleName = r != null ? r.Name : null }
+        ).ToListAsync();
+
+        var perUser = employeesWithRoles
+            .GroupBy(x => x.User.Id)
+            .Select(g => new
             {
-                { "companyId", company.Id.ToString() }
+                User = g.First().User,
+                Roles = g.Select(x => x.RoleName).Where(n => n != null).ToHashSet()
+            })
+            .ToList();
+
+        var deactivatedCount = 0;
+        foreach (var entry in perUser)
+        {
+            if (entry.Roles.Contains(AppRoles.Manager) || entry.Roles.Contains(AppRoles.Admin))
+            {
+                continue;
             }
-        };
 
-        var customerService = new CustomerService();
-        var customer = await customerService.CreateAsync(customerOptions);
+            entry.User.IsActive = false;
+            deactivatedCount++;
+        }
 
-        company.StripeCustomerId = customer.Id;
+        company.SubscriptionPlan = SubscriptionPlan.Free;
+        company.SubscriptionStatus = SubscriptionStatus.Active;
+        company.IsSubscriptionActive = true;
         company.UpdatedAt = DateTime.UtcNow;
-        
+
         await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
 
-        _logger.LogInformation("Created Stripe customer {CustomerId} for company {CompanyId}", 
-            customer.Id, company.Id);
+        _logger.LogInformation(
+            "Company {CompanyId} returned to Free plan. Deactivated {Count} employee(s).",
+            company.Id, deactivatedCount);
 
-        return company;
+        return new MessageResponseDto
+        {
+            Message = "Successfully returned to Free plan. All non-manager employees have been deactivated."
+        };
     }
 
     public async Task HandleWebhookEventAsync(string json, string signature)
     {
         Event stripeEvent;
-
         try
         {
             stripeEvent = EventUtility.ConstructEvent(
                 json,
                 signature,
                 _stripeSettings.WebhookSecret,
-                throwOnApiVersionMismatch: false  // Allow different API versions
-            );
+                throwOnApiVersionMismatch: false);
         }
         catch (StripeException e)
         {
@@ -140,57 +204,125 @@ public class StripeService : IStripeService
             throw;
         }
 
-        _logger.LogInformation("Processing Stripe event: {EventType}", stripeEvent.Type);
+        // Idempotency: dedupe by Stripe event id. PK on EventId guarantees a single SQL UPSERT
+        // races resolve to a single processed row.
+        var alreadyProcessed = await _context.ProcessedStripeEvents
+            .AsNoTracking()
+            .AnyAsync(e => e.EventId == stripeEvent.Id);
 
-        switch (stripeEvent.Type)
+        if (alreadyProcessed)
         {
-            case "checkout.session.completed":
-                await HandleCheckoutSessionCompleted(stripeEvent);
-                break;
-                
-            case "customer.subscription.created":
-            case "customer.subscription.updated":
-                await HandleSubscriptionUpdated(stripeEvent);
-                break;
-                
-            case "customer.subscription.deleted":
-                await HandleSubscriptionDeleted(stripeEvent);
-                break;
-                
-            case "invoice.payment_succeeded":
-                await HandleInvoicePaymentSucceeded(stripeEvent);
-                break;
-                
-            case "invoice.payment_failed":
-                await HandleInvoicePaymentFailed(stripeEvent);
-                break;
-                
-            case "charge.refunded":
-                await HandleChargeRefunded(stripeEvent);
-                break;
-                
-            default:
-                _logger.LogInformation("Unhandled Stripe event type: {EventType}", stripeEvent.Type);
-                break;
+            _logger.LogInformation("Skipping already-processed Stripe event {EventId} ({EventType})",
+                stripeEvent.Id, stripeEvent.Type);
+            return;
+        }
+
+        _logger.LogInformation("Processing Stripe event {EventId} ({EventType})", stripeEvent.Id, stripeEvent.Type);
+
+        try
+        {
+            switch (stripeEvent.Type)
+            {
+                case "checkout.session.completed":
+                    await HandleCheckoutSessionCompleted(stripeEvent);
+                    break;
+
+                case "customer.subscription.created":
+                case "customer.subscription.updated":
+                    await HandleSubscriptionUpdated(stripeEvent);
+                    break;
+
+                case "customer.subscription.deleted":
+                    await HandleSubscriptionDeleted(stripeEvent);
+                    break;
+
+                case "invoice.payment_succeeded":
+                    await HandleInvoicePaymentSucceeded(stripeEvent);
+                    break;
+
+                case "invoice.payment_failed":
+                    await HandleInvoicePaymentFailed(stripeEvent);
+                    break;
+
+                case "charge.refunded":
+                    await HandleChargeRefunded(stripeEvent);
+                    break;
+
+                default:
+                    _logger.LogInformation("Unhandled Stripe event type: {EventType}", stripeEvent.Type);
+                    break;
+            }
+
+            _context.ProcessedStripeEvents.Add(new ProcessedStripeEvent
+            {
+                EventId = stripeEvent.Id,
+                EventType = stripeEvent.Type,
+                ProcessedAt = DateTime.UtcNow
+            });
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+        {
+            // Concurrent delivery of the same event won the race; safe to drop.
+            _logger.LogInformation("Concurrent duplicate detected for Stripe event {EventId}", stripeEvent.Id);
         }
     }
 
-    public string GetPriceIdForPlan(string plan)
+    private static bool IsUniqueViolation(DbUpdateException ex)
     {
-        // We only have Premium now
-        return _stripeSettings.PremiumPriceId;
+        return ex.InnerException is Npgsql.PostgresException pg && pg.SqlState == "23505";
     }
 
-    private SubscriptionPlan GetPlanFromPriceId(string priceId)
+    private async Task<Company> GetCallerCompanyAsync(string userId, bool trackForUpdate = false)
     {
-        // Only Premium plan available
-        return SubscriptionPlan.Premium;
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new ForbiddenException("User is not authenticated.");
+        }
+
+        var query = _context.Users.Include(u => u.Company).AsQueryable();
+        if (!trackForUpdate)
+        {
+            query = query.AsNoTracking();
+        }
+
+        var user = await query.FirstOrDefaultAsync(u => u.Id == userId)
+                   ?? throw new NotFoundException("User not found.");
+
+        if (user.Company == null)
+        {
+            throw new ValidationException("User does not belong to a company.");
+        }
+
+        return user.Company;
     }
+
+    private async Task GetOrCreateStripeCustomerAsync(Company company)
+    {
+        if (!string.IsNullOrEmpty(company.StripeCustomerId))
+        {
+            return;
+        }
+
+        var customer = await new CustomerService().CreateAsync(new CustomerCreateOptions
+        {
+            Email = company.Email,
+            Name = company.CompanyName,
+            Metadata = new Dictionary<string, string> { { "companyId", company.Id.ToString() } }
+        });
+
+        company.StripeCustomerId = customer.Id;
+        company.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Created Stripe customer {CustomerId} for company {CompanyId}", customer.Id, company.Id);
+    }
+
+    private SubscriptionPlan GetPlanFromPriceId(string priceId) => SubscriptionPlan.Premium;
 
     private async Task HandleCheckoutSessionCompleted(Event stripeEvent)
     {
-        var session = stripeEvent.Data.Object as Session;
-        if (session == null) return;
+        if (stripeEvent.Data.Object is not Session session) return;
 
         var companyIdStr = session.Metadata?.GetValueOrDefault("companyId");
         if (string.IsNullOrEmpty(companyIdStr) || !Guid.TryParse(companyIdStr, out var companyId))
@@ -207,14 +339,11 @@ public class StripeService : IStripeService
         }
 
         company.StripeSubscriptionId = session.SubscriptionId;
-        company.SubscriptionPlan = SubscriptionPlan.Premium; // We only have Premium plan
+        company.SubscriptionPlan = SubscriptionPlan.Premium;
         company.SubscriptionStatus = SubscriptionStatus.Active;
         company.IsSubscriptionActive = true;
         company.UpdatedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync();
-
-        // Queue subscription purchased email (non-blocking)
         var purchasedCompany = company;
         _backgroundEmailQueue.QueueEmail(async sp =>
         {
@@ -228,34 +357,30 @@ public class StripeService : IStripeService
 
     private async Task HandleSubscriptionUpdated(Event stripeEvent)
     {
-        var subscription = stripeEvent.Data.Object as Subscription;
-        if (subscription == null) return;
+        if (stripeEvent.Data.Object is not Subscription subscription) return;
 
         var companyIdStr = subscription.Metadata?.GetValueOrDefault("companyId");
-        if (string.IsNullOrEmpty(companyIdStr) || !Guid.TryParse(companyIdStr, out var companyId))
+        Company? targetCompany = null;
+
+        if (!string.IsNullOrEmpty(companyIdStr) && Guid.TryParse(companyIdStr, out var companyId))
         {
-            // Try to find by customer ID
-            var company = await _context.Companies
-                .FirstOrDefaultAsync(c => c.StripeCustomerId == subscription.CustomerId);
-            
-            if (company == null)
-            {
-                _logger.LogWarning("Could not find company for subscription {SubscriptionId}", subscription.Id);
-                return;
-            }
-            
-            companyId = company.Id;
+            targetCompany = await _context.Companies.FindAsync(companyId);
         }
 
-        var targetCompany = await _context.Companies.FindAsync(companyId);
-        if (targetCompany == null) return;
+        targetCompany ??= await _context.Companies
+            .FirstOrDefaultAsync(c => c.StripeCustomerId == subscription.CustomerId);
+
+        if (targetCompany == null)
+        {
+            _logger.LogWarning("Could not find company for subscription {SubscriptionId}", subscription.Id);
+            return;
+        }
 
         var previousStatus = targetCompany.SubscriptionStatus.ToString();
 
         targetCompany.StripeSubscriptionId = subscription.Id;
         targetCompany.SubscriptionCurrentPeriodEnd = subscription.CurrentPeriodEnd;
 
-        // Update subscription status based on Stripe status
         targetCompany.SubscriptionStatus = subscription.Status switch
         {
             "active" => SubscriptionStatus.Active,
@@ -266,44 +391,39 @@ public class StripeService : IStripeService
             _ => targetCompany.SubscriptionStatus
         };
 
-        targetCompany.IsSubscriptionActive = subscription.Status == "active" || subscription.Status == "trialing";
+        targetCompany.IsSubscriptionActive = subscription.Status is "active" or "trialing";
 
-        // Determine plan from price
         if (subscription.Items?.Data?.Any() == true)
         {
-            var priceId = subscription.Items.Data[0].Price.Id;
-            targetCompany.SubscriptionPlan = GetPlanFromPriceId(priceId);
+            targetCompany.SubscriptionPlan = GetPlanFromPriceId(subscription.Items.Data[0].Price.Id);
         }
 
         targetCompany.UpdatedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
 
-        // Send status change email if status actually changed
         var newStatus = targetCompany.SubscriptionStatus.ToString();
         if (previousStatus != newStatus)
         {
             var statusCompany = targetCompany;
-            var prevStatus = previousStatus;
-            var curStatus = newStatus;
+            var prev = previousStatus;
+            var cur = newStatus;
             _backgroundEmailQueue.QueueEmail(async sp =>
             {
                 var emailService = sp.GetRequiredService<IEmailService>();
-                await emailService.SendSubscriptionStatusChangedEmailAsync(statusCompany, prevStatus, curStatus);
+                await emailService.SendSubscriptionStatusChangedEmailAsync(statusCompany, prev, cur);
             });
         }
 
         _logger.LogInformation("Subscription updated for company {CompanyId}: Status={Status}",
-            companyId, subscription.Status);
+            targetCompany.Id, subscription.Status);
     }
 
     private async Task HandleSubscriptionDeleted(Event stripeEvent)
     {
-        var subscription = stripeEvent.Data.Object as Subscription;
-        if (subscription == null) return;
+        if (stripeEvent.Data.Object is not Subscription subscription) return;
 
         var company = await _context.Companies
             .FirstOrDefaultAsync(c => c.StripeSubscriptionId == subscription.Id);
-        
+
         if (company == null)
         {
             _logger.LogWarning("Could not find company for deleted subscription {SubscriptionId}", subscription.Id);
@@ -311,20 +431,16 @@ public class StripeService : IStripeService
         }
 
         var previousStatus = company.SubscriptionStatus.ToString();
-
         company.SubscriptionStatus = SubscriptionStatus.Cancelled;
         company.IsSubscriptionActive = false;
         company.UpdatedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync();
-
-        // Queue cancellation email (non-blocking)
         var cancelCompany = company;
-        var cancelPrevStatus = previousStatus;
+        var prev = previousStatus;
         _backgroundEmailQueue.QueueEmail(async sp =>
         {
             var emailService = sp.GetRequiredService<IEmailService>();
-            await emailService.SendSubscriptionStatusChangedEmailAsync(cancelCompany, cancelPrevStatus, "Cancelled");
+            await emailService.SendSubscriptionStatusChangedEmailAsync(cancelCompany, prev, "Cancelled");
         });
 
         _logger.LogInformation("Subscription cancelled for company {CompanyId}", company.Id);
@@ -332,67 +448,54 @@ public class StripeService : IStripeService
 
     private async Task HandleInvoicePaymentSucceeded(Event stripeEvent)
     {
-        var invoice = stripeEvent.Data.Object as Invoice;
-        if (invoice == null || string.IsNullOrEmpty(invoice.SubscriptionId)) return;
+        if (stripeEvent.Data.Object is not Invoice invoice || string.IsNullOrEmpty(invoice.SubscriptionId))
+            return;
 
         var company = await _context.Companies
             .FirstOrDefaultAsync(c => c.StripeSubscriptionId == invoice.SubscriptionId);
-        
         if (company == null) return;
 
         company.SubscriptionStatus = SubscriptionStatus.Active;
         company.IsSubscriptionActive = true;
         company.UpdatedAt = DateTime.UtcNow;
-        
-        await _context.SaveChangesAsync();
-        
+
         _logger.LogInformation("Payment succeeded for company {CompanyId}", company.Id);
     }
 
     private async Task HandleInvoicePaymentFailed(Event stripeEvent)
     {
-        var invoice = stripeEvent.Data.Object as Invoice;
-        if (invoice == null || string.IsNullOrEmpty(invoice.SubscriptionId)) return;
+        if (stripeEvent.Data.Object is not Invoice invoice || string.IsNullOrEmpty(invoice.SubscriptionId))
+            return;
 
         var company = await _context.Companies
             .FirstOrDefaultAsync(c => c.StripeSubscriptionId == invoice.SubscriptionId);
-        
         if (company == null) return;
 
         company.SubscriptionStatus = SubscriptionStatus.Suspended;
         company.UpdatedAt = DateTime.UtcNow;
-        
-        await _context.SaveChangesAsync();
-        
+
         _logger.LogWarning("Payment failed for company {CompanyId}", company.Id);
     }
 
     private async Task HandleChargeRefunded(Event stripeEvent)
     {
-        var charge = stripeEvent.Data.Object as Charge;
-        if (charge == null || !charge.Refunded) return;
+        if (stripeEvent.Data.Object is not Charge charge || !charge.Refunded) return;
 
-        // Find company by customer ID
         var company = await _context.Companies
             .FirstOrDefaultAsync(c => c.StripeCustomerId == charge.CustomerId);
-        
         if (company == null)
         {
             _logger.LogWarning("Company not found for refunded charge {ChargeId}", charge.Id);
             return;
         }
 
-        // If fully refunded, cancel the subscription
         if (charge.AmountRefunded >= charge.Amount)
         {
             company.SubscriptionStatus = SubscriptionStatus.Cancelled;
             company.IsSubscriptionActive = false;
             company.UpdatedAt = DateTime.UtcNow;
-            
-            await _context.SaveChangesAsync();
-            
-            _logger.LogInformation("Full refund processed for company {CompanyId}, subscription cancelled", 
-                company.Id);
+
+            _logger.LogInformation("Full refund processed for company {CompanyId}; subscription cancelled", company.Id);
         }
         else
         {

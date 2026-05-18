@@ -59,9 +59,6 @@ public class Company
     [Column("is_company_owner")]
     public bool IsCompanyOwner { get; set; }
 
-    [Column("warranty_default_months")]
-    public int? WarrantyDefaultMonths { get; set; } = 12;
-
     [Column("subscription_plan")]
     public SubscriptionPlan SubscriptionPlan { get; set; } = SubscriptionPlan.FreeTrial;
 

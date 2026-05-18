@@ -45,10 +45,6 @@ public class UpdateCompanyDtoValidator : AbstractValidator<UpdateCompanyDto>
         RuleFor(x => x.PostalCode)
             .MaximumLength(15).When(x => !string.IsNullOrEmpty(x.PostalCode))
             .WithMessage("Postal code cannot exceed 15 characters");
-
-        RuleFor(x => x.WarrantyDefaultMonths)
-            .GreaterThan(0).When(x => x.WarrantyDefaultMonths.HasValue)
-            .WithMessage("Warranty months must be greater than 0");
     }
 
     private bool BeValidCompanyType(string companyType)

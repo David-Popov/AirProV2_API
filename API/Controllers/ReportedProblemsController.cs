@@ -1,4 +1,5 @@
-using System.Security.Claims;
+using ValidationException = FluentValidation.ValidationException;
+using API.Common;
 using API.DTOs.ReportedProblems;
 using API.Models;
 using API.Services.ReportedProblems;
@@ -7,10 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-[ApiController]
-[Route("api/[controller]")]
 [Authorize]
-public class ReportedProblemsController : ControllerBase
+public class ReportedProblemsController : ApiControllerBase
 {
     private readonly IReportedProblemService _service;
     private readonly ILogger<ReportedProblemsController> _logger;
@@ -32,20 +31,17 @@ public class ReportedProblemsController : ControllerBase
         [FromForm] string description,
         IFormFile? screenshot)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userId))
-        {
-            return Unauthorized();
-        }
+        var userId = GetCurrentUserId()
+            ?? throw new ForbiddenException("User is not authenticated.");
 
         if (string.IsNullOrWhiteSpace(description))
         {
-            return BadRequest(new { message = "Description is required" });
+            throw new ValidationException("Description is required");
         }
 
         if (description.Length > 2000)
         {
-            return BadRequest(new { message = "Description cannot exceed 2000 characters" });
+            throw new ValidationException("Description cannot exceed 2000 characters");
         }
 
         var result = await _service.CreateAsync(userId, category, description, screenshot);
@@ -75,7 +71,7 @@ public class ReportedProblemsController : ControllerBase
         var problem = await _service.GetByIdAsync(id);
         if (problem == null)
         {
-            return NotFound(new { message = "Problem report not found" });
+            throw new NotFoundException("Problem report not found");
         }
 
         return Ok(problem);
@@ -91,7 +87,7 @@ public class ReportedProblemsController : ControllerBase
         var result = await _service.GetScreenshotStreamAsync(id);
         if (result == null)
         {
-            return NotFound(new { message = "Screenshot not found" });
+            throw new NotFoundException("Screenshot not found");
         }
 
         var (stream, contentType, fileName) = result.Value;
@@ -108,7 +104,7 @@ public class ReportedProblemsController : ControllerBase
         var result = await _service.MarkAsReviewedAsync(id);
         if (!result)
         {
-            return NotFound(new { message = "Problem report not found" });
+            throw new NotFoundException("Problem report not found");
         }
 
         _logger.LogInformation("Problem report {Id} marked as reviewed and deleted", id);

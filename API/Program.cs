@@ -17,6 +17,9 @@ builder.Services.AddValidators();
 
 var app = builder.Build();
 
+// Fail fast on missing/short secrets before serving any traffic.
+StartupValidator.ValidateConfiguration(app.Services, app.Environment);
+
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;

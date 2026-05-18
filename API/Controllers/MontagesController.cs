@@ -1,3 +1,4 @@
+using ValidationException = FluentValidation.ValidationException;
 using API.Common;
 using API.DTOs;
 using API.Services;
@@ -37,7 +38,7 @@ public class MontagesController : ApiControllerBase
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         var result = await _service.GetByCompanyIdAsync(companyId.Value, parameters);
@@ -55,19 +56,19 @@ public class MontagesController : ApiControllerBase
     {
         if (id == Guid.Empty)
         {
-            return BadRequest(new { message = "Id is required" });
+            throw new ValidationException("Id is required");
         }
 
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         var result = await _service.GetByIdAsync(id);
         if (result == null || result.CompanyId != companyId)
         {
-            return NotFound(new { message = "Montage not found" });
+            throw new NotFoundException("Montage not found");
         }
         return Ok(result);
     }
@@ -84,7 +85,7 @@ public class MontagesController : ApiControllerBase
         var result = await _service.GetByIdWithAirConditionerAsync(id);
         if (result == null)
         {
-            return NotFound(new { message = "Montage not found" });
+            throw new NotFoundException("Montage not found");
         }
         return Ok(result);
     }
@@ -164,20 +165,20 @@ public class MontagesController : ApiControllerBase
         var validationResult = await _createValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
         {
-            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            throw new ValidationException(validationResult.Errors);
         }
 
         // Populate CompanyId and UserId from JWT token
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         var userId = GetCurrentUserId();
         if (string.IsNullOrEmpty(userId))
         {
-            return BadRequest(new { message = "User ID not found" });
+            throw new ValidationException("User ID not found");
         }
 
         dto.CompanyId = companyId.Value;
@@ -200,20 +201,20 @@ public class MontagesController : ApiControllerBase
         var validationResult = await _updateValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
         {
-            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            throw new ValidationException(validationResult.Errors);
         }
 
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         // Check if montage belongs to user's company
         var existing = await _service.GetByIdAsync(id);
         if (existing == null || existing.CompanyId != companyId)
         {
-            return NotFound(new { message = "Montage not found" });
+            throw new NotFoundException("Montage not found");
         }
 
         await _service.UpdateMontageAsync(id, dto);
@@ -232,20 +233,20 @@ public class MontagesController : ApiControllerBase
     {
         if (string.IsNullOrWhiteSpace(dto.Status))
         {
-            return BadRequest(new { message = "Status is required" });
+            throw new ValidationException("Status is required");
         }
 
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         // Check if montage belongs to user's company
         var existing = await _service.GetByIdAsync(id);
         if (existing == null || existing.CompanyId != companyId)
         {
-            return NotFound(new { message = "Montage not found" });
+            throw new NotFoundException("Montage not found");
         }
 
         await _service.UpdateMontageStatusAsync(id, dto.Status);
@@ -264,20 +265,20 @@ public class MontagesController : ApiControllerBase
     {
         if (string.IsNullOrWhiteSpace(dto.PaymentStatus))
         {
-            return BadRequest(new { message = "Payment status is required" });
+            throw new ValidationException("Payment status is required");
         }
 
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         // Check if montage belongs to user's company
         var existing = await _service.GetByIdAsync(id);
         if (existing == null || existing.CompanyId != companyId)
         {
-            return NotFound(new { message = "Montage not found" });
+            throw new NotFoundException("Montage not found");
         }
 
         await _service.UpdatePaymentStatusAsync(id, dto.PaymentStatus, dto.PaidAmount);
@@ -295,14 +296,14 @@ public class MontagesController : ApiControllerBase
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         // Check if montage belongs to user's company
         var existing = await _service.GetByIdAsync(id);
         if (existing == null || existing.CompanyId != companyId)
         {
-            return NotFound(new { message = "Montage not found" });
+            throw new NotFoundException("Montage not found");
         }
 
         await _service.DeleteMontageAsync(id);
