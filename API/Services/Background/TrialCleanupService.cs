@@ -32,9 +32,7 @@ public class TrialCleanupService : BackgroundService
                 _logger.LogError(ex, "Error occurred while processing expired trials");
             }
 
-            // Run every 24 hours
-            // await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
-            await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
+            await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
         }
     }
 

@@ -33,10 +33,7 @@ public class UpdateCompanyDto
     
     [JsonPropertyName("email")]
     public string? Email { get; set; }
-    
-    [JsonPropertyName("warranty_default_months")]
-    public int? WarrantyDefaultMonths { get; set; }
-    
+
     [JsonPropertyName("is_active")]
     public bool? IsActive { get; set; }
 }

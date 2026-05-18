@@ -87,12 +87,6 @@ public class RegisterDtoValidator : AbstractValidator<RegisterDto>
             .WithMessage("Invalid company email format")
             .MaximumLength(50).When(x => !string.IsNullOrEmpty(x.CompanyEmail))
             .WithMessage("Company email cannot exceed 50 characters");
-
-        RuleFor(x => x.WarrantyDefaultMonths)
-            .GreaterThanOrEqualTo(0).When(x => x.WarrantyDefaultMonths.HasValue)
-            .WithMessage("Warranty default months must be greater than or equal to 0")
-            .LessThanOrEqualTo(120).When(x => x.WarrantyDefaultMonths.HasValue)
-            .WithMessage("Warranty default months cannot exceed 120");
     }
 
     private static bool BeValidCompanyType(string companyType)

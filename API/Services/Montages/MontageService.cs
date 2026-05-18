@@ -1,3 +1,4 @@
+using ValidationException = FluentValidation.ValidationException;
 using API.Common;
 using API.Data;
 using API.Data.Entities;
@@ -38,7 +39,7 @@ public class MontageService : IMontageService
 
             if (existing != null)
             {
-                throw new InvalidOperationException("A montage with the same company, client email, installation date, and air conditioner already exists.");
+                throw new ValidationException("A montage with the same company, client email, installation date, and air conditioner already exists.");
             }
 
             var montage = new Montage
@@ -132,7 +133,7 @@ public class MontageService : IMontageService
                 var validation = MontageStatusValidator.CanSetStatusToCompleted(montage);
                 if (!validation.IsValid)
                 {
-                    throw new InvalidOperationException(string.Join("; ", validation.Errors));
+                    throw new ValidationException(string.Join("; ", validation.Errors));
                 }
             }
 
@@ -247,9 +248,6 @@ public class MontageService : IMontageService
         {
             var query = _context.Montages
                 .AsNoTracking()
-                .Include(m => m.AirConditioner)
-                .Include(m => m.UsedMaterials)
-                    .ThenInclude(um => um.InventoryItem)
                 .AsQueryable();
 
             if (parameters.StartDate.HasValue)
@@ -264,32 +262,23 @@ public class MontageService : IMontageService
                 query = query.Where(m => m.InstallationDate <= endDate);
             }
 
-            if (!string.IsNullOrWhiteSpace(parameters.Status))
+            if (!string.IsNullOrWhiteSpace(parameters.Status)
+                && Enum.TryParse<MontageStatus>(parameters.Status, true, out var statusEnum))
             {
-                // Try parse enum or search by string if stored as string? Database stores int usually if enum.
-                // Assuming Status is stored as string or int. 
-                // In AddMontageAsync it uses Enum to parse.
-                // Let's check Entity configuration. Usually Enums are ints by default unless configured.
-                // But let's check how GetByStatusAsync does it: .Where(m => m.Status.ToString().ToLower() == status.ToLower())
-                // That suggests EF Core translation might be tricky or it's evaluated client side? No, EF Core can translate ToString() in some versions but generally it's better to parse before query.
-                
-                if (Enum.TryParse<MontageStatus>(parameters.Status, true, out var statusEnum))
-                {
-                   query = query.Where(m => m.Status == statusEnum);
-                }
+                query = query.Where(m => m.Status == statusEnum);
             }
 
-            // ClientName and ClientPhone are encrypted columns ([EncryptColumn]),
-            // so they cannot be filtered at the SQL level. We need to:
-            // 1. Load entities (EF Core decrypts on materialization)
-            // 2. Filter encrypted fields in memory
-            // 3. Paginate the filtered results
+            // ClientName/ClientPhone are EncryptColumn — can't be SQL-filtered.
+            // For this branch only we must materialize matching rows to decrypt; then filter + paginate in memory.
             var needsInMemoryFilter = !string.IsNullOrWhiteSpace(parameters.ClientName)
                                    || !string.IsNullOrWhiteSpace(parameters.ClientPhone);
 
             if (needsInMemoryFilter)
             {
                 var allItems = await query
+                    .Include(m => m.AirConditioner)
+                    .Include(m => m.UsedMaterials)
+                        .ThenInclude(um => um.InventoryItem)
                     .OrderByDescending(m => m.InstallationDate)
                     .ToListAsync();
 
@@ -310,12 +299,14 @@ public class MontageService : IMontageService
                 var pagedItems = filteredList
                     .Skip((parameters.PageNumber - 1) * parameters.PageSize)
                     .Take(parameters.PageSize)
-                    .Select(m => ToDto(m))
+                    .Select(ToDto)
                     .ToList();
 
                 return new PagedList<MontageDto>(pagedItems, parameters.PageNumber, parameters.PageSize, totalCount);
             }
 
+            // SQL-paginated path: project directly to DTO so EF Core issues LIMIT/OFFSET in SQL
+            // and the AirConditioner JOIN is part of the same single query (no client materialization).
             var dtoQuery = query
                 .OrderByDescending(m => m.InstallationDate)
                 .Select(m => new MontageDto

@@ -1,11 +1,16 @@
+using ValidationException = FluentValidation.ValidationException;
+using API.Common;
 using API.DTOs;
+using API.DTOs.MontagePhotos;
 using API.Models;
 using API.Services.MontagePhotos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class MontagePhotosController : ControllerBase
 {
@@ -34,14 +39,14 @@ public class MontagePhotosController : ControllerBase
         var (isValid, fileError) = _photoService.ValidateFile(file);
         if (!isValid)
         {
-            return BadRequest(new { message = fileError });
+            throw new ValidationException(fileError);
         }
 
         // Check if can add more photos
         var (canAdd, countError) = await _photoService.CanAddPhotoAsync(montageId);
         if (!canAdd)
         {
-            return BadRequest(new { message = countError });
+            throw new ValidationException(countError);
         }
 
         var result = await _photoService.UploadPhotoAsync(montageId, file, description, displayOrder);
@@ -68,9 +73,8 @@ public class MontagePhotosController : ControllerBase
         if (totalAfterUpload > ImageValidationConstants.MaxPhotosPerMontage)
         {
             var remaining = ImageValidationConstants.MaxPhotosPerMontage - currentCount;
-            return BadRequest(new {
-                message = $"Cannot upload {files.Count} photos. Only {remaining} more photo(s) can be added (max {ImageValidationConstants.MaxPhotosPerMontage} per montage)"
-            });
+            throw new ValidationException(
+                $"Cannot upload {files.Count} photos. Only {remaining} more photo(s) can be added (max {ImageValidationConstants.MaxPhotosPerMontage} per montage)");
         }
 
         // Validate each file
@@ -79,7 +83,7 @@ public class MontagePhotosController : ControllerBase
             var (isValid, fileError) = _photoService.ValidateFile(file);
             if (!isValid)
             {
-                return BadRequest(new { message = $"File '{file.FileName}': {fileError}" });
+                throw new ValidationException($"File '{file.FileName}': {fileError}");
             }
         }
 
@@ -119,7 +123,7 @@ public class MontagePhotosController : ControllerBase
         var photo = await _photoService.GetPhotoByIdAsync(id);
         if (photo == null)
         {
-            return NotFound(new { message = "Photo not found" });
+            throw new NotFoundException("Photo not found");
         }
         return Ok(photo);
     }
@@ -136,7 +140,7 @@ public class MontagePhotosController : ControllerBase
         var result = await _photoService.GetPhotoStreamAsync(id);
         if (result == null)
         {
-            return NotFound(new { message = "Photo not found" });
+            throw new NotFoundException("Photo not found");
         }
 
         var (stream, contentType, fileName) = result.Value;
@@ -157,7 +161,7 @@ public class MontagePhotosController : ControllerBase
         var result = await _photoService.UpdatePhotoMetadataAsync(id, dto.Description, dto.DisplayOrder);
         if (result == null)
         {
-            return NotFound(new { message = "Photo not found" });
+            throw new NotFoundException("Photo not found");
         }
         return Ok(result);
     }
@@ -166,6 +170,7 @@ public class MontagePhotosController : ControllerBase
     /// Delete a photo
     /// </summary>
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Manager,Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -174,7 +179,7 @@ public class MontagePhotosController : ControllerBase
         var result = await _photoService.DeletePhotoAsync(id);
         if (!result)
         {
-            return NotFound(new { message = "Photo not found" });
+            throw new NotFoundException("Photo not found");
         }
         return NoContent();
     }
@@ -195,10 +200,4 @@ public class MontagePhotosController : ControllerBase
             allowedExtensions = ImageValidationConstants.AllowedExtensions
         });
     }
-}
-
-public class UpdateMontagePhotoMetadataDto
-{
-    public string? Description { get; set; }
-    public int DisplayOrder { get; set; }
 }

@@ -1,3 +1,4 @@
+using ValidationException = FluentValidation.ValidationException;
 using API.Common;
 using API.DTOs;
 using API.Services.Inventory;
@@ -38,7 +39,7 @@ public class InventoryController : ApiControllerBase
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         var result = await _service.GetByCompanyIdAsync(companyId.Value, pageParameters);
@@ -56,7 +57,7 @@ public class InventoryController : ApiControllerBase
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         var result = await _service.GetLowStockByCompanyIdAsync(companyId.Value, pageParameters);
@@ -74,19 +75,19 @@ public class InventoryController : ApiControllerBase
     {
         if (id == Guid.Empty)
         {
-            return BadRequest(new { message = "Id is required" });
+            throw new ValidationException("Id is required");
         }
 
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         var result = await _service.GetByIdAsync(id);
         if (result == null || result.CompanyId != companyId)
         {
-            return NotFound(new { message = "Inventory item not found" });
+            throw new NotFoundException("Inventory item not found");
         }
         return Ok(result);
     }
@@ -128,7 +129,7 @@ public class InventoryController : ApiControllerBase
     {
         if (string.IsNullOrWhiteSpace(searchTerm))
         {
-            return BadRequest(new { message = "Search term is required" });
+            throw new ValidationException("Search term is required");
         }
 
         var userCompanyId = GetCurrentUserCompanyId();
@@ -153,7 +154,7 @@ public class InventoryController : ApiControllerBase
         var result = await _service.GetBySkuAndCompanyIdAsync(sku, companyId);
         if (result == null)
         {
-            return NotFound(new { message = "Inventory item not found" });
+            throw new NotFoundException("Inventory item not found");
         }
         return Ok(result);
     }
@@ -170,15 +171,15 @@ public class InventoryController : ApiControllerBase
         var validationResult = await _createValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
         {
-            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            throw new ValidationException(validationResult.Errors);
         }
 
         dto.UserId = GetCurrentUserId();
 
-        var companyIdClaim = User.FindFirst("company_id")?.Value;
-        if (!string.IsNullOrEmpty(companyIdClaim) && Guid.TryParse(companyIdClaim, out var companyId))
+        var callerCompanyId = GetCurrentUserCompanyId();
+        if (callerCompanyId.HasValue)
         {
-            dto.CompanyId = companyId;
+            dto.CompanyId = callerCompanyId.Value;
         }
 
         var id = await _service.AddAsync(dto);
@@ -198,18 +199,18 @@ public class InventoryController : ApiControllerBase
         var validationResult = await _updateValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
         {
-            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            throw new ValidationException(validationResult.Errors);
         }
 
         dto.UserId = GetCurrentUserId();
 
-        var companyIdClaim = User.FindFirst("company_id")?.Value;
-        if (!string.IsNullOrEmpty(companyIdClaim) && Guid.TryParse(companyIdClaim, out var companyId))
+        var callerCompanyId = GetCurrentUserCompanyId();
+        if (callerCompanyId.HasValue)
         {
             var existingItem = await _service.GetByIdAsync(id);
-            if (existingItem != null && existingItem.CompanyId != companyId)
+            if (existingItem != null && existingItem.CompanyId != callerCompanyId.Value)
             {
-                return NotFound(new { message = "Inventory item not found" });
+                throw new NotFoundException("Inventory item not found");
             }
         }
 
@@ -234,19 +235,19 @@ public class InventoryController : ApiControllerBase
         var validationResult = await _adjustValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
         {
-            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            throw new ValidationException(validationResult.Errors);
         }
 
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         var existing = await _service.GetByIdAsync(id);
         if (existing == null || existing.CompanyId != companyId)
         {
-            return NotFound(new { message = "Inventory item not found" });
+            throw new NotFoundException("Inventory item not found");
         }
 
         dto.UserId = GetCurrentUserId();
@@ -266,13 +267,13 @@ public class InventoryController : ApiControllerBase
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         var existing = await _service.GetByIdAsync(id);
         if (existing == null || existing.CompanyId != companyId)
         {
-            return NotFound(new { message = "Inventory item not found" });
+            throw new NotFoundException("Inventory item not found");
         }
 
         await _service.UpdateStatusAsync(id, request.IsActive);
@@ -302,19 +303,19 @@ public class InventoryController : ApiControllerBase
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         var existing = await _service.GetByIdAsync(id);
         if (existing == null || existing.CompanyId != companyId)
         {
-            return NotFound(new { message = "Inventory item not found" });
+            throw new NotFoundException("Inventory item not found");
         }
 
         var canDelete = await _service.CanDeleteAsync(id);
         if (!canDelete)
         {
-            return BadRequest(new { message = "Cannot delete this item. It has been used in montages or is older than 30 days. You can deactivate it instead." });
+            throw new ValidationException("Cannot delete this item. It has been used in montages or is older than 30 days. You can deactivate it instead.");
         }
 
         await _service.DeleteAsync(id);

@@ -32,6 +32,7 @@ public static class ValidatorExtensions
         services.AddScoped<IValidator<CreateEmployeeDto>, CreateEmployeeDtoValidator>();
         services.AddScoped<IValidator<ChangePasswordDto>, ChangePasswordDtoValidator>();
         services.AddScoped<IValidator<ResetPasswordDto>, ResetPasswordDtoValidator>();
+        services.AddScoped<IValidator<UpdateProfileDto>, UpdateProfileDtoValidator>();
 
         services.AddValidatorsFromAssemblyContaining<CreateCompanyDtoValidator>();
 

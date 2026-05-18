@@ -1,3 +1,4 @@
+using ValidationException = FluentValidation.ValidationException;
 using API.Data;
 using API.Data.Entities;
 using API.DTOs;
@@ -77,12 +78,12 @@ public class MontageInventoryService : IMontageInventoryService
                 // Get inventory item and check stock
                 if (!inventoryItemsMap.TryGetValue(material.InventoryItemId, out var inventoryItem))
                 {
-                    throw new InvalidOperationException($"Inventory item {material.InventoryItemId} not found");
+                    throw new ValidationException($"Inventory item {material.InventoryItemId} not found");
                 }
 
                 if (inventoryItem.Quantity < material.QuantityUsed)
                 {
-                    throw new InvalidOperationException($"Insufficient stock for {inventoryItem.Name}. Available: {inventoryItem.Quantity}, Requested: {material.QuantityUsed}");
+                    throw new ValidationException($"Insufficient stock for {inventoryItem.Name}. Available: {inventoryItem.Quantity}, Requested: {material.QuantityUsed}");
                 }
 
                 // Deduct from inventory
@@ -208,7 +209,7 @@ public class MontageInventoryService : IMontageInventoryService
                  // Need more stock
                  if (montageItem.InventoryItem.Quantity < diff)
                  {
-                      throw new InvalidOperationException($"Insufficient stock. Available: {montageItem.InventoryItem.Quantity}, Needed additional: {diff}");
+                      throw new ValidationException($"Insufficient stock. Available: {montageItem.InventoryItem.Quantity}, Needed additional: {diff}");
                  }
                  montageItem.InventoryItem.Quantity -= diff;
             }

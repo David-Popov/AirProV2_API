@@ -1,3 +1,4 @@
+using ValidationException = FluentValidation.ValidationException;
 using API.Common;
 using API.Data;
 using API.Data.Entities;
@@ -46,7 +47,7 @@ public class ReportedProblemService : IReportedProblemService
             var (isValid, error) = ValidateScreenshot(screenshot);
             if (!isValid)
             {
-                throw new InvalidOperationException(error);
+                throw new ValidationException(error);
             }
 
             await EnsureBucketExistsAsync();

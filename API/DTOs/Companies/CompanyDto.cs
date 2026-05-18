@@ -39,10 +39,7 @@ public class CompanyDto
     
     [JsonPropertyName("is_company_owner")]
     public bool IsCompanyOwner { get; set; }
-    
-    [JsonPropertyName("warranty_default_months")]
-    public int? WarrantyDefaultMonths { get; set; }
-    
+
     [JsonPropertyName("subscription_plan")]
     public string SubscriptionPlan { get; set; } = string.Empty;
     
