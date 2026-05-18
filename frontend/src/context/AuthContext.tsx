@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { authService } from '@/services';
+import { safeStorage } from '@/lib/safe-storage';
 import type { AuthUser, LoginRequest, RegisterRequest, AuthResponse, MessageResponse } from '@/types';
 
 interface AuthContextType {
@@ -39,7 +40,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           } else {
             const fetchedUser = await authService.getCurrentUser();
             setUser(fetchedUser);
-            localStorage.setItem('user', JSON.stringify(fetchedUser));
+            safeStorage.set('user', JSON.stringify(fetchedUser));
           }
         }
       } catch (error) {
@@ -78,7 +79,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const fetchedUser = await authService.getCurrentUser();
       setUser(fetchedUser);
-      localStorage.setItem('user', JSON.stringify(fetchedUser));
+      safeStorage.set('user', JSON.stringify(fetchedUser));
     } catch (error) {
       console.error('Failed to refresh user:', error instanceof Error ? error.message : String(error));
       logout();

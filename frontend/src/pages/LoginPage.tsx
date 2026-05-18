@@ -7,6 +7,7 @@ import { ArrowRight } from 'lucide-react'
 import { motion } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
 import { AuthLayout } from '@/components/layout'
 import { useAuth } from '@/context'
@@ -192,18 +193,15 @@ export default function LoginPage() {
                 {t('auth.forgot_password', 'Forgot password?')}
               </Link>
             </div>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
-                className="pl-10 h-11 bg-background border-border focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-shadow"
-              />
-            </div>
+            <PasswordInput
+              id="password"
+              placeholder="••••••••"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              required
+              leadingIcon={<Lock className="w-4 h-4" />}
+              className="h-11 bg-background border-border focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-shadow"
+            />
           </motion.div>
 
           <motion.div variants={fadeUp}>

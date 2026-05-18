@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
 import {
   Dialog,
@@ -495,9 +496,8 @@ export default function EmployeeDetailsPage() {
           <form onSubmit={handlePasswordReset} className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="newPassword">{t('employees.new_password', 'New Password')}</Label>
-              <Input
+              <PasswordInput
                 id="newPassword"
-                type="password"
                 value={passwordForm.password}
                 onChange={(e) => setPasswordForm({ ...passwordForm, password: e.target.value })}
                 className="bg-background border-input"
@@ -510,9 +510,8 @@ export default function EmployeeDetailsPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="confirmPassword">{t('employees.confirm_password', 'Confirm Password')}</Label>
-              <Input
+              <PasswordInput
                 id="confirmPassword"
-                type="password"
                 value={passwordForm.confirmPassword}
                 onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                 className="bg-background border-input"

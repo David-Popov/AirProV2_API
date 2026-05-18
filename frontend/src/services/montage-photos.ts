@@ -62,10 +62,23 @@ export const montagePhotoService = {
   },
 
   /**
-   * Get the download URL for a photo
+   * Get the full download URL for a photo (kept for cases where an absolute
+   * URL is required — note that the endpoint is JWT-protected, so direct
+   * `<img src>` / `<a href>` against this URL will fail; use
+   * `getPhotoDownloadPath` with `AuthenticatedImage` or `apiClient.getBlob`.
    */
   getPhotoDownloadUrl(photoId: string): string {
     return `${apiClient.getBaseUrl()}${BASE_URL}/${photoId}/download`;
+  },
+
+  /**
+   * Get the relative endpoint path for a photo download. Use this with
+   * `AuthenticatedImage` or `apiClient.getBlob` — both go through the JWT
+   * pipeline and the React Query cache, so a single download is shared
+   * between thumbnail, lightbox, and the download button.
+   */
+  getPhotoDownloadPath(photoId: string): string {
+    return `${BASE_URL}/${photoId}/download`;
   },
 
   /**

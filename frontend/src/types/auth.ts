@@ -28,7 +28,6 @@ export interface RegisterRequest {
   company_postal_code?: string | null;
   company_phone?: string | null;
   company_email?: string | null;
-  warranty_default_months?: number | null;
 }
 
 export interface AuthResponse {

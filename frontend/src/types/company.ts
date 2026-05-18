@@ -13,7 +13,6 @@ export interface Company {
   postal_code?: string | null;
   phone?: string | null;
   email?: string | null;
-  warranty_default_months?: number | null;
   subscription_plan?: string | null;
   subscription_status?: string | null;
   trial_end_date?: string | null;
@@ -47,7 +46,6 @@ export interface CreateCompanyRequest {
   postal_code?: string | null;
   phone?: string | null;
   email?: string | null;
-  warranty_default_months?: number | null;
 }
 
 export interface UpdateCompanyRequest extends Partial<CreateCompanyRequest> {}

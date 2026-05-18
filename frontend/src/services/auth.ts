@@ -1,4 +1,5 @@
 import { apiClient } from './api';
+import { safeStorage } from '@/lib/safe-storage';
 import type {
   LoginRequest,
   RegisterRequest,
@@ -13,12 +14,12 @@ export const authService = {
    */
   async login(data: LoginRequest): Promise<AuthResponse> {
     const response = await apiClient.post<AuthResponse>('/auth/login', data, false);
-    
-    localStorage.setItem('token', response.token);
-    localStorage.setItem('refresh_token', response.refresh_token);
-    localStorage.setItem('token_expiration', response.token_expiration);
-    localStorage.setItem('user', JSON.stringify(response.user));
-    
+
+    safeStorage.set('token', response.token);
+    safeStorage.set('refresh_token', response.refresh_token);
+    safeStorage.set('token_expiration', response.token_expiration);
+    safeStorage.set('user', JSON.stringify(response.user));
+
     return response;
   },
 
@@ -44,12 +45,12 @@ export const authService = {
       token,
       refresh_token: refreshToken
     }, false);
-    
-    localStorage.setItem('token', response.token);
-    localStorage.setItem('refresh_token', response.refresh_token);
-    localStorage.setItem('token_expiration', response.token_expiration);
-    localStorage.setItem('user', JSON.stringify(response.user));
-    
+
+    safeStorage.set('token', response.token);
+    safeStorage.set('refresh_token', response.refresh_token);
+    safeStorage.set('token_expiration', response.token_expiration);
+    safeStorage.set('user', JSON.stringify(response.user));
+
     return response;
   },
 
@@ -139,29 +140,29 @@ export const authService = {
    * Logout - clear local storage
    */
   logout(): void {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('token_expiration');
-    localStorage.removeItem('user');
+    safeStorage.remove('token');
+    safeStorage.remove('refresh_token');
+    safeStorage.remove('token_expiration');
+    safeStorage.remove('user');
   },
 
   /**
    * Check if user is authenticated
    */
   isAuthenticated(): boolean {
-    const token = localStorage.getItem('token');
-    const expiration = localStorage.getItem('token_expiration');
-    
+    const token = safeStorage.get('token');
+    const expiration = safeStorage.get('token_expiration');
+
     if (!token || !expiration) {
       return false;
     }
-    
+
     const expirationDate = new Date(expiration);
     if (expirationDate <= new Date()) {
       this.logout();
       return false;
     }
-    
+
     return true;
   },
 
@@ -169,11 +170,11 @@ export const authService = {
    * Get stored user from localStorage
    */
   getStoredUser(): AuthUser | null {
-    const userJson = localStorage.getItem('user');
+    const userJson = safeStorage.get('user');
     if (!userJson) {
       return null;
     }
-    
+
     try {
       return JSON.parse(userJson) as AuthUser;
     } catch {
@@ -185,13 +186,13 @@ export const authService = {
    * Get stored token
    */
   getToken(): string | null {
-    return localStorage.getItem('token');
+    return safeStorage.get('token');
   },
 
   /**
    * Get stored refresh token
    */
   getRefreshToken(): string | null {
-    return localStorage.getItem('refresh_token');
+    return safeStorage.get('refresh_token');
   },
 };

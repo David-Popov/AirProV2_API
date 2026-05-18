@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { formatChartMonth } from '@/lib/formatters'
 import type { Montage } from '@/types'
 
 interface MonthDataPoint {
@@ -58,8 +59,9 @@ export function useDashboardData(
 
   return useMemo(() => {
     const months = getMonthsBetween(startDate, endDate)
-    const useShortMonth = months.length > 3
     const locale = i18n.language === 'bg' ? 'bg-BG' : 'en-US'
+    const monthLabel = (date: Date) =>
+      formatChartMonth(date, { totalMonths: months.length, locale })
 
     const filteredMontages = montages.filter(m => {
       const d = new Date(m.created_at)
@@ -80,10 +82,7 @@ export function useDashboardData(
       })
       const revenue = monthMontages.reduce((sum, m) => sum + (m.paid_amount || m.total_price || 0), 0)
       return {
-        month: date.toLocaleDateString(locale, {
-          month: useShortMonth ? 'short' : 'long',
-          year: months.length > 12 ? '2-digit' : undefined,
-        }),
+        month: monthLabel(date),
         revenue,
       }
     })
@@ -109,10 +108,7 @@ export function useDashboardData(
         return d.getFullYear() === year && d.getMonth() === month
       })
       return {
-        month: date.toLocaleDateString(locale, {
-          month: useShortMonth ? 'short' : 'long',
-          year: months.length > 12 ? '2-digit' : undefined,
-        }),
+        month: monthLabel(date),
         NotPaid: monthMontages.filter(m => m.payment_status === 'NotPaid' || !m.payment_status).length,
         PartiallyPaid: monthMontages.filter(m => m.payment_status === 'PartiallyPaid').length,
         Paid: monthMontages.filter(m => m.payment_status === 'Paid').length,
@@ -136,10 +132,7 @@ export function useDashboardData(
         return d.getFullYear() === year && d.getMonth() === month
       }).length
       return {
-        month: date.toLocaleDateString(locale, {
-          month: useShortMonth ? 'short' : 'long',
-          year: months.length > 12 ? '2-digit' : undefined,
-        }),
+        month: monthLabel(date),
         created,
         completed,
       }
