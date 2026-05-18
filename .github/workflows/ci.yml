@@ -1,12 +1,12 @@
-name: CI – Build Check
+name: CI – Test & Build
 
 on:
   pull_request:
     branches: [main, dev]
 
 jobs:
-  build-backend:
-    name: Build .NET API
+  test-and-build-backend:
+    name: Test & Build .NET API
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,11 +16,36 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
-      - name: Restore dependencies
-        run: dotnet restore API/API.csproj
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
-      - name: Build
-        run: dotnet build API/API.csproj --no-restore --configuration Release
+      - name: Restore solution
+        run: dotnet restore AirProV2_API.sln
+
+      - name: Build solution
+        run: dotnet build AirProV2_API.sln --no-restore --configuration Release
+
+      - name: Run tests
+        run: |
+          dotnet test API.Tests/API.Tests.csproj \
+            --no-build \
+            --configuration Release \
+            --verbosity normal \
+            --logger "trx;LogFileName=test-results.trx" \
+            --logger "console;verbosity=detailed"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: API.Tests/TestResults/test-results.trx
+          if-no-files-found: warn
 
   build-frontend:
     name: Build React Frontend
