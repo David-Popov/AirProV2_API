@@ -2,6 +2,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5209/api';
 
 import { extractErrorMessage } from '../lib/utils';
+import { safeStorage } from '../lib/safe-storage';
 
 // C-4: Module-level promise ensures only one token refresh is in-flight at a time.
 // All concurrent 401 responses share the same refresh attempt instead of each
@@ -16,7 +17,7 @@ class ApiClient {
   }
 
   private getAuthToken(): string | null {
-    return localStorage.getItem('token');
+    return safeStorage.get('token');
   }
 
   private getHeaders(includeAuth: boolean = true): HeadersInit {
@@ -36,8 +37,8 @@ class ApiClient {
 
   private async handleErrorResponse<T>(response: Response, retryOriginalRequest: () => Promise<T>): Promise<T> {
     if (response.status === 401) {
-      const token        = localStorage.getItem('token');
-      const refreshToken = localStorage.getItem('refresh_token');
+      const token        = safeStorage.get('token');
+      const refreshToken = safeStorage.get('refresh_token');
 
       if (token && refreshToken) {
         try {
@@ -184,6 +185,28 @@ class ApiClient {
         if (!response.ok) {
           return this.handleErrorResponse(response, makeRequest);
         }
+    };
+
+    return makeRequest();
+  }
+
+  /**
+   * Fetch an endpoint as a Blob (for authenticated image/file downloads where
+   * `<img src="...">` can't supply the Authorization header). Reuses the same
+   * 401 → refresh-token retry flow as the other verbs.
+   */
+  async getBlob(endpoint: string, includeAuth: boolean = true): Promise<Blob> {
+    const makeRequest = async (): Promise<Blob> => {
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        method: 'GET',
+        headers: this.getHeaders(includeAuth),
+      });
+
+      if (!response.ok) {
+        return this.handleErrorResponse(response, makeRequest);
+      }
+
+      return response.blob();
     };
 
     return makeRequest();

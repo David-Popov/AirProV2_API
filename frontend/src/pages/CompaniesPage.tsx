@@ -75,9 +75,8 @@ export default function CompaniesPage() {
     postal_code: '',
     phone: '',
     email: '',
-    warranty_default_months: 24
   })
-  
+
   const [subscriptionForm, setSubscriptionForm] = useState({
     subscription_plan: 'Basic',
     subscription_status: 'Active',
@@ -200,7 +199,6 @@ export default function CompaniesPage() {
       postal_code: company.postal_code || '',
       phone: company.phone || '',
       email: company.email || '',
-      warranty_default_months: company.warranty_default_months || 24
     })
     setIsEditDialogOpen(true)
   }
@@ -228,7 +226,6 @@ export default function CompaniesPage() {
       postal_code: '',
       phone: '',
       email: '',
-      warranty_default_months: 24
     })
     setSelectedCompany(null)
   }
@@ -595,15 +592,6 @@ export default function CompaniesPage() {
                   placeholder="company@example.com"
                 />
               </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">{t('companies.warranty_months', 'Default Warranty (months)')}</label>
-              <Input
-                type="number"
-                value={formData.warranty_default_months || ''}
-                onChange={(e) => setFormData({...formData, warranty_default_months: parseInt(e.target.value) || null})}
-                placeholder="24"
-              />
             </div>
           </div>
           <DialogFooter>

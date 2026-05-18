@@ -25,6 +25,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
@@ -69,7 +70,6 @@ export default function SettingsPage() {
     city: '',
     phone: '',
     email: '',
-    warranty_default_months: 24
   })
 
   const [notifications, setNotifications] = useState({
@@ -168,7 +168,6 @@ export default function SettingsPage() {
         city: data.city || '',
         phone: data.phone || '',
         email: data.email || '',
-        warranty_default_months: data.warranty_default_months || 24
       })
     } catch {
       console.error('Failed to load company')
@@ -190,7 +189,6 @@ export default function SettingsPage() {
         city: companyForm.city || null,
         phone: companyForm.phone || null,
         email: companyForm.email || null,
-        warranty_default_months: companyForm.warranty_default_months
       })
       toast.success(t('settings.company_updated', 'Company information updated successfully'))
       setIsEditing(false)
@@ -214,7 +212,6 @@ export default function SettingsPage() {
         city: company.city || '',
         phone: company.phone || '',
         email: company.email || '',
-        warranty_default_months: company.warranty_default_months || 24
       })
     }
     setIsEditing(false)
@@ -463,22 +460,22 @@ export default function SettingsPage() {
                       <div className="space-y-3 pl-6">
                         <div>
                           <Label className="text-sm">{t('auth.new_password', 'New Password')}</Label>
-                          <Input
-                            type="password"
+                          <PasswordInput
                             placeholder={t('auth.new_password_placeholder', 'Enter new password')}
                             value={passwordForm.newPassword}
                             onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                             className="mt-1"
+                            containerClassName="mt-1"
                           />
                         </div>
                         <div>
                           <Label className="text-sm">{t('auth.confirm_password', 'Confirm Password')}</Label>
-                          <Input
-                            type="password"
+                          <PasswordInput
                             placeholder={t('auth.confirm_password_placeholder', 'Confirm new password')}
                             value={passwordForm.confirmPassword}
                             onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                             className="mt-1"
+                            containerClassName="mt-1"
                           />
                         </div>
                         <div className="flex gap-2">
@@ -708,17 +705,7 @@ export default function SettingsPage() {
                         />
                       </div>
                     </div>
-                    <div>
-                      <Label className="text-sm text-muted-foreground">{t('settings.warranty', 'Default Warranty (months)')}</Label>
-                      <Input 
-                        type="number"
-                        value={isEditing ? companyForm.warranty_default_months : (company.warranty_default_months || 24)} 
-                        onChange={(e) => setCompanyForm({...companyForm, warranty_default_months: parseInt(e.target.value) || 24})}
-                        disabled={!isEditing} 
-                        className={`mt-1 ${!isEditing ? 'bg-muted/20' : ''} w-32`}
-                      />
-                    </div>
-                    
+
                     {/* Save/Cancel buttons when editing */}
                     {isEditing && (
                       <div className="flex gap-3 pt-4 border-t border-border/50">
@@ -881,26 +868,36 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
               
-              {/* Notifications - Hidden from Admin */}
+              {/* Notifications - Hidden from Admin. M4: marked Coming Soon — all switches
+                  disabled, body dimmed + pointer-events-none so the toggles can't be clicked. */}
               {!isAdmin && (
                 <Card className="glass-card">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                      <Bell className="w-5 h-5 text-primary" />
-                      {t('settings.notifications', 'Notifications')}
-                    </CardTitle>
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                        <Bell className="w-5 h-5 text-primary" />
+                        {t('settings.notifications', 'Notifications')}
+                      </CardTitle>
+                      <Badge variant="secondary">
+                        {t('settings.notifications_coming_soon', 'Coming Soon')}
+                      </Badge>
+                    </div>
                     <CardDescription className="text-sm">
                       {t('settings.notifications_desc', 'Manage your notification preferences')}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent
+                    className="space-y-4 opacity-60 pointer-events-none select-none"
+                    aria-disabled="true"
+                  >
                     <div className="flex items-center justify-between py-2 gap-4">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-foreground">{t('settings.email_montages', 'Montage updates')}</p>
                         <p className="text-xs sm:text-sm text-muted-foreground">{t('settings.email_montages_desc', 'Get notified about montage status changes')}</p>
                       </div>
-                      <Switch 
-                        checked={notifications.emailMontages} 
+                      <Switch
+                        disabled
+                        checked={notifications.emailMontages}
                         onCheckedChange={(checked) => setNotifications({...notifications, emailMontages: checked})}
                       />
                     </div>
@@ -909,8 +906,9 @@ export default function SettingsPage() {
                         <p className="font-medium text-foreground">{t('settings.email_low_stock', 'Low stock alerts')}</p>
                         <p className="text-xs sm:text-sm text-muted-foreground">{t('settings.email_low_stock_desc', 'Get notified when inventory is low')}</p>
                       </div>
-                      <Switch 
-                        checked={notifications.emailLowStock} 
+                      <Switch
+                        disabled
+                        checked={notifications.emailLowStock}
                         onCheckedChange={(checked) => setNotifications({...notifications, emailLowStock: checked})}
                       />
                     </div>
@@ -919,8 +917,9 @@ export default function SettingsPage() {
                         <p className="font-medium text-foreground">{t('settings.email_subscription', 'Subscription reminders')}</p>
                         <p className="text-xs sm:text-sm text-muted-foreground">{t('settings.email_subscription_desc', 'Get notified before subscription expires')}</p>
                       </div>
-                      <Switch 
-                        checked={notifications.emailSubscription} 
+                      <Switch
+                        disabled
+                        checked={notifications.emailSubscription}
                         onCheckedChange={(checked) => setNotifications({...notifications, emailSubscription: checked})}
                       />
                     </div>

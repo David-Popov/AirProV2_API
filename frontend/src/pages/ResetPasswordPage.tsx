@@ -3,7 +3,7 @@ import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AuthLayout } from '@/components/layout/AuthLayout';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { authService } from '@/services';
 import { toast } from 'sonner';
@@ -82,9 +82,8 @@ export default function ResetPasswordPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="newPassword">{t('auth.new_password', 'New Password')}</Label>
-            <Input
+            <PasswordInput
               id="newPassword"
-              type="password"
               placeholder={t('auth.new_password_placeholder', 'Enter new password')}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
@@ -95,9 +94,8 @@ export default function ResetPasswordPage() {
 
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">{t('auth.confirm_password', 'Confirm Password')}</Label>
-            <Input
+            <PasswordInput
               id="confirmPassword"
-              type="password"
               placeholder={t('auth.confirm_password_placeholder', 'Confirm new password')}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}

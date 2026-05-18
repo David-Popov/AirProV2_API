@@ -13,6 +13,7 @@ import {
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -484,7 +485,7 @@ export default function EmployeesPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">{t('auth.password')}</Label>
-              <Input id="password" type="password" value={newEmployee.password} onChange={(e) => setNewEmployee({ ...newEmployee, password: e.target.value })} className="bg-background border-input" required />
+              <PasswordInput id="password" value={newEmployee.password} onChange={(e) => setNewEmployee({ ...newEmployee, password: e.target.value })} className="bg-background border-input" required />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="phone">{t('auth.phone')}</Label>

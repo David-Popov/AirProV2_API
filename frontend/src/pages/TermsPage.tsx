@@ -91,7 +91,6 @@ const en = {
     { title: 'Track progress', desc: 'Each job has a clear status: Planned, In Progress, Completed, or Cancelled. Both the manager and the technician can update it.' },
     { title: 'Payment tracking', desc: 'Mark each job as Unpaid, Partially Paid, or Paid so you always know what has been collected and what is outstanding.' },
     { title: 'Assign to technicians', desc: "Each job is assigned to one team member. Technicians only see their own jobs; the manager sees everything." },
-    { title: 'Warranty', desc: 'Set a warranty period for each job. You can also set a company-wide default warranty in your settings.' },
     { title: 'Notes', desc: 'Add any extra details — client preferences, access instructions, or a summary of work done.' },
   ],
   s4_title: '4. Photo Documentation',

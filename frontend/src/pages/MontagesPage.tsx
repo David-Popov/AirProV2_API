@@ -130,7 +130,55 @@ export default function MontagesPage() {
   }
 
   const [formData, setFormData] = useState<MontageFormState>(initialFormState)
-  
+
+  // M2: Auto-set montage status from completion_date.
+  // Rules:
+  //   - completion_date set + status is still default 'Planned' → flip to 'Completed'
+  //   - completion_date cleared in CREATE mode while status==='Completed' → revert to 'Planned'
+  //   - never override 'InProgress' / 'Canceled' / 'Overdue' (user picked them deliberately)
+  //   - never auto-revert in EDIT mode (user may be doing data cleanup on an existing record)
+  // Returning the same `prev` reference when no change is needed is load-bearing —
+  // React bails on the update and the effect doesn't re-fire, preventing infinite loops.
+  useEffect(() => {
+    setFormData(prev => {
+      const hasDate = !!prev.completion_date
+      if (hasDate && prev.status === 'Planned') {
+        return { ...prev, status: 'Completed' }
+      }
+      if (!isEditing && !hasDate && prev.status === 'Completed') {
+        return { ...prev, status: 'Planned' }
+      }
+      return prev
+    })
+  }, [formData.completion_date, isEditing])
+
+  // M2: Live-derive payment_status from paid_amount vs total_price as the
+  // user types. The payment status is fully a function of the two amounts —
+  // any previous selection (including 'Overdue') is overridden so the badge
+  // always reflects reality.
+  //   - paid >= total (with total > 0) → 'Paid'
+  //   - 0 < paid < total                → 'PartiallyPaid'
+  //   - paid === 0                      → 'NotPaid'
+  //   - total === 0 (not entered yet)   → leave alone, nothing to compare
+  // Returning the same `prev` reference when the status didn't actually change
+  // is load-bearing — React bails on the update and the effect doesn't re-fire.
+  useEffect(() => {
+    setFormData(prev => {
+      const paid = prev.paid_amount ?? 0
+      const total = prev.total_price ?? 0
+
+      if (total <= 0) return prev
+
+      const next: typeof prev.payment_status =
+        paid >= total ? 'Paid' :
+        paid > 0      ? 'PartiallyPaid' :
+                        'NotPaid'
+
+      if (next === prev.payment_status) return prev
+      return { ...prev, payment_status: next }
+    })
+  }, [formData.paid_amount, formData.total_price])
+
   const [searchTerm, setSearchTerm] = useState('')
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [activeFilters, setActiveFilters] = useState<MontageFilters>({})

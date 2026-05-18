@@ -29,7 +29,7 @@ export function useMontage(id: string) {
 
 export function useMontageWithAC(id: string) {
   return useQuery({
-    queryKey: queryKeys.montages.detail(id),
+    queryKey: queryKeys.montages.detailWithAC(id),
     queryFn: () => montageService.getByIdWithAC(id),
     enabled: !!id,
   })
