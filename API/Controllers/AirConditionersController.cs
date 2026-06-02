@@ -1,3 +1,4 @@
+using ValidationException = FluentValidation.ValidationException;
 using API.Common;
 using API.DTOs;
 using API.Services;
@@ -70,7 +71,7 @@ public class AirConditionersController : ControllerBase
         var validationResult = await _createAirConditionerValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
         {
-            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            throw new ValidationException(validationResult.Errors);
         }
 
         var id = await _service.AddAirConditionerAsync(dto);
@@ -91,7 +92,7 @@ public class AirConditionersController : ControllerBase
         var validationResult = await _updateAirConditionerValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
         {
-            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            throw new ValidationException(validationResult.Errors);
         }
 
         await _service.UpdateAirConditionerAsync(id, dto);
@@ -162,7 +163,7 @@ public class AirConditionersController : ControllerBase
         var validationResult = await _createErrorCodeValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
         {
-            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            throw new ValidationException(validationResult.Errors);
         }
 
         var errorCodeId = await _service.AddErrorCodeAsync(dto);
@@ -183,7 +184,7 @@ public class AirConditionersController : ControllerBase
         var validationResult = await _updateErrorCodeValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
         {
-            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            throw new ValidationException(validationResult.Errors);
         }
 
         await _service.UpdateErrorCodeAsync(errorCodeId, dto);

@@ -1,0 +1,63 @@
+name: CD – Deploy Staging to Pi
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Raspberry Pi (Staging)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install cloudflared
+        run: |
+          curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 \
+            -o cloudflared
+          chmod +x cloudflared
+          sudo mv cloudflared /usr/local/bin/
+          cloudflared --version
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PI_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          cat >> ~/.ssh/config <<EOF
+          Host pi-ssh
+            HostName ssh.airprobg.com
+            User didicko
+            IdentityFile ~/.ssh/id_rsa
+            ProxyCommand cloudflared access ssh --hostname %h
+            StrictHostKeyChecking no
+            ServerAliveInterval 60
+            ServerAliveCountMax 10
+          EOF
+
+      - name: Deploy via SSH through Cloudflare Tunnel
+        run: |
+          ssh pi-ssh << 'DEPLOY'
+            set -e
+
+            cd ~/AirProV2_API
+
+            echo "==> Pulling latest dev branch..."
+            git fetch origin dev
+            git checkout dev
+            git reset --hard origin/dev
+
+            echo "==> Building staging images..."
+            docker compose -f docker-compose.staging.yml -f docker-compose.pi-staging.yml \
+              --env-file .env.staging build
+
+            echo "==> Restarting staging containers..."
+            docker compose -f docker-compose.staging.yml -f docker-compose.pi-staging.yml \
+              --env-file .env.staging up -d
+
+            echo "==> Cleaning up unused images..."
+            docker image prune -f
+
+            echo "==> Staging deploy to Pi complete."
+          DEPLOY

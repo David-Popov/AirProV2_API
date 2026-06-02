@@ -1,3 +1,4 @@
+using ValidationException = FluentValidation.ValidationException;
 using API.Common;
 using API.Data;
 using API.Data.Entities;
@@ -34,7 +35,7 @@ public class AirConditionerService : IAirConditionerService
 
             if (existing != null)
             {
-                throw new InvalidOperationException($"An air conditioner with brand '{dto.Brand}' and model '{dto.Model}' already exists.");
+                throw new ValidationException($"An air conditioner with brand '{dto.Brand}' and model '{dto.Model}' already exists.");
             }
 
             var airConditioner = new AirConditioner
@@ -235,7 +236,7 @@ public class AirConditionerService : IAirConditionerService
 
             if (existing != null)
             {
-                throw new InvalidOperationException($"An error code '{dto.Code}' already exists for this air conditioner.");
+                throw new ValidationException($"An error code '{dto.Code}' already exists for this air conditioner.");
             }
 
             var errorCode = new ErrorCode

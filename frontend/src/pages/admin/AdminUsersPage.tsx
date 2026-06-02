@@ -7,6 +7,7 @@ import type { AdminUser, AdminUserFilter, AdminUpdateUser, AdminChangePassword, 
 import { ROLE_OPTIONS } from '@/types/admin'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
@@ -298,7 +299,7 @@ export default function AdminUsersPage() {
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>{t('admin.change_password')}</DialogTitle><DialogDescription>{selectedUser?.email}</DialogDescription></DialogHeader>
           <div className="space-y-4">
-            <div><Label>{t('admin.new_password')}</Label><Input type="password" value={passwordForm.newPassword} onChange={(e) => setPasswordForm(f => ({ ...f, newPassword: e.target.value }))} /></div>
+            <div><Label>{t('admin.new_password')}</Label><PasswordInput value={passwordForm.newPassword} onChange={(e) => setPasswordForm(f => ({ ...f, newPassword: e.target.value }))} /></div>
             <div className="flex items-center space-x-2"><Switch checked={passwordForm.sendEmailNotification} onCheckedChange={(checked) => setPasswordForm(f => ({ ...f, sendEmailNotification: checked }))} /><Label>{t('admin.send_email_notification')}</Label></div>
           </div>
           <DialogFooter><Button variant="outline" onClick={() => setIsPasswordOpen(false)}>{t('common.cancel')}</Button><Button onClick={handleChangePassword}>{t('common.save')}</Button></DialogFooter>

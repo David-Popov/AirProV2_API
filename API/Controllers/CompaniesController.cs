@@ -1,15 +1,17 @@
 using API.Common;
+using API.Constants;
 using API.DTOs;
-using API.Services;
 using API.Services.Companies;
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
-public class CompaniesController : ControllerBase
+public class CompaniesController : ApiControllerBase
 {
     private readonly ICompanyService _service;
     private readonly IValidator<CreateCompanyDto> _createCompanyValidator;
@@ -32,11 +34,11 @@ public class CompaniesController : ControllerBase
     }
 
     /// <summary>
-    /// Get all companies with pagination
+    /// Get all companies with pagination (Admin only)
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [Authorize(Roles = AppRoles.Admin)]
+    [ProducesResponseType(typeof(PagedList<CompanyDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedList<CompanyDto>>> GetAll([FromQuery] PageParameters pageParameters)
     {
         var result = await _service.GetAllAsync(pageParameters);
@@ -44,11 +46,11 @@ public class CompaniesController : ControllerBase
     }
 
     /// <summary>
-    /// Get active companies with pagination
+    /// Get active companies with pagination (Admin only)
     /// </summary>
     [HttpGet("active")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [Authorize(Roles = AppRoles.Admin)]
+    [ProducesResponseType(typeof(PagedList<CompanyDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedList<CompanyDto>>> GetActiveCompanies([FromQuery] PageParameters pageParameters)
     {
         var result = await _service.GetActiveCompaniesAsync(pageParameters);
@@ -56,62 +58,64 @@ public class CompaniesController : ControllerBase
     }
 
     /// <summary>
-    /// Get company by ID
+    /// Get company by ID — caller must be Admin OR a member of the requested company
     /// </summary>
     [HttpGet("{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(CompanyDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<CompanyDto>> GetById(Guid id)
     {
         if (id == Guid.Empty)
         {
-            return BadRequest(new { message = "Id is required" });
+            throw new ValidationException("Id is required");
         }
+
+        EnsureCanAccessCompany(id);
 
         var result = await _service.GetByIdAsync(id);
         if (result == null)
         {
-            return NotFound(new { message = "Company not found" });
+            throw new NotFoundException("Company not found");
         }
         return Ok(result);
     }
 
     /// <summary>
-    /// Get company by BULSTAT
+    /// Get company by BULSTAT — Admin only (lookup endpoint; cannot enforce per-company scoping pre-fetch)
     /// </summary>
     [HttpGet("bulstat/{bulstat}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [Authorize(Roles = AppRoles.Admin)]
+    [ProducesResponseType(typeof(CompanyDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<CompanyDto>> GetByBulstat(string bulstat)
     {
         if (string.IsNullOrEmpty(bulstat))
         {
-            return BadRequest(new { message = "Bulstat is required" });
+            throw new ValidationException("Bulstat is required");
         }
 
         var result = await _service.GetByBulstatAsync(bulstat);
         if (result == null)
         {
-            return NotFound(new { message = "Company not found" });
+            throw new NotFoundException("Company not found");
         }
         return Ok(result);
     }
 
     /// <summary>
-    /// Create new company
+    /// Create new company (Admin only)
     /// </summary>
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status201Created)]
+    [Authorize(Roles = AppRoles.Admin)]
+    [ProducesResponseType(typeof(CompanyDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<CompanyDto>> Create([FromBody] CreateCompanyDto dto)
     {
         var validationResult = await _createCompanyValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
         {
-            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            throw new ValidationException(validationResult.Errors);
         }
 
         var result = await _service.AddCompanyAsync(dto);
@@ -119,24 +123,24 @@ public class CompaniesController : ControllerBase
     }
 
     /// <summary>
-    /// Update company
+    /// Update company (Admin only)
     /// </summary>
     [HttpPut("{id}")]
+    [Authorize(Roles = AppRoles.Admin)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> Update(Guid id, [FromBody] UpdateCompanyDto dto)
     {
         if (id == Guid.Empty)
         {
-            return BadRequest(new { message = "Id is required" });
+            throw new ValidationException("Id is required");
         }
 
         var validationResult = await _updateCompanyValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
         {
-            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            throw new ValidationException(validationResult.Errors);
         }
 
         await _service.UpdateCompanyAsync(id, dto);
@@ -144,16 +148,16 @@ public class CompaniesController : ControllerBase
     }
 
     /// <summary>
-    /// Delete company
+    /// Delete company (Admin only)
     /// </summary>
     [HttpDelete("{id}")]
+    [Authorize(Roles = AppRoles.Admin)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> Delete(Guid id)
     {
         if (id == Guid.Empty)
         {
-            return BadRequest(new { message = "Id is required" });
+            throw new ValidationException("Id is required");
         }
 
         await _service.DeleteCompanyAsync(id);
@@ -161,41 +165,43 @@ public class CompaniesController : ControllerBase
     }
 
     /// <summary>
-    /// Get company users
+    /// Get company users — caller must be Admin or a member of the company
     /// </summary>
     [HttpGet("{id}/users")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(IEnumerable<UserDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IEnumerable<UserDto>>> GetCompanyUsers(Guid id)
     {
         if (id == Guid.Empty)
         {
-            return BadRequest(new { message = "Id is required" });
+            throw new ValidationException("Id is required");
         }
+
+        EnsureCanAccessCompany(id);
 
         var result = await _service.GetCompanyUsersAsync(id);
         return Ok(result);
     }
 
     /// <summary>
-    /// Create user for company
+    /// Create user for company (Admin only)
     /// </summary>
     [HttpPost("{id}/users")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
+    [Authorize(Roles = AppRoles.Admin)]
+    [ProducesResponseType(typeof(UserDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UserDto>> CreateCompanyUser(Guid id, [FromBody] CreateCompanyUserDto dto)
     {
         if (id == Guid.Empty)
         {
-            return BadRequest(new { message = "Id is required" });
+            throw new ValidationException("Id is required");
         }
 
         var validationResult = await _createCompanyUserValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
         {
-            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            throw new ValidationException(validationResult.Errors);
         }
 
         var result = await _service.CreateCompanyUserAsync(id, dto);
@@ -203,24 +209,24 @@ public class CompaniesController : ControllerBase
     }
 
     /// <summary>
-    /// Update company subscription
+    /// Update company subscription (Admin only)
     /// </summary>
     [HttpPut("{id}/subscription")]
+    [Authorize(Roles = AppRoles.Admin)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> UpdateSubscription(Guid id, [FromBody] UpdateSubscriptionDto dto)
     {
         if (id == Guid.Empty)
         {
-            return BadRequest(new { message = "Id is required" });
+            throw new ValidationException("Id is required");
         }
 
         var validationResult = await _updateSubscriptionValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
         {
-            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            throw new ValidationException(validationResult.Errors);
         }
 
         await _service.UpdateSubscriptionAsync(id, dto);
@@ -228,17 +234,17 @@ public class CompaniesController : ControllerBase
     }
 
     /// <summary>
-    /// Renew subscription for company and all users
+    /// Renew subscription for company and all users (Admin only)
     /// </summary>
     [HttpPost("{id}/subscription/renew")]
+    [Authorize(Roles = AppRoles.Admin)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> RenewSubscription(Guid id)
     {
         if (id == Guid.Empty)
         {
-            return BadRequest(new { message = "Id is required" });
+            throw new ValidationException("Id is required");
         }
 
         await _service.RenewSubscriptionForAllUsersAsync(id);
@@ -246,14 +252,28 @@ public class CompaniesController : ControllerBase
     }
 
     /// <summary>
-    /// Check and expire trial subscriptions (admin endpoint)
+    /// Check and expire trial subscriptions (Admin only)
     /// </summary>
     [HttpPost("subscriptions/check-trials")]
+    [Authorize(Roles = AppRoles.Admin)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> CheckTrialSubscriptions()
     {
         await _service.CheckAndExpireTrialSubscriptionsAsync();
         return NoContent();
+    }
+
+    private void EnsureCanAccessCompany(Guid companyId)
+    {
+        if (User.IsInRole(AppRoles.Admin))
+        {
+            return;
+        }
+
+        var callerCompanyId = GetCurrentUserCompanyId();
+        if (callerCompanyId != companyId)
+        {
+            throw new ForbiddenException("You do not have access to this company.");
+        }
     }
 }

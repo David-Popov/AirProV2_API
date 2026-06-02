@@ -1,3 +1,4 @@
+using ValidationException = FluentValidation.ValidationException;
 using API.Common;
 using API.Data;
 using API.Data.Entities;
@@ -45,12 +46,12 @@ public class CompanyService : ICompanyService
 
             if (existing != null)
             {
-                throw new InvalidOperationException("A company with the same VAT number or Bulstat already exists.");
+                throw new ValidationException("A company with the same VAT number or Bulstat already exists.");
             }
 
             if (!Enum.TryParse<CompanyType>(dto.CompanyType, out var companyType))
             {
-                throw new InvalidOperationException("Invalid company type");
+                throw new ValidationException("Invalid company type");
             }
 
             var subscriptionPlan = string.IsNullOrEmpty(dto.SubscriptionPlan) 
@@ -70,7 +71,6 @@ public class CompanyService : ICompanyService
                 Phone = dto.Phone,
                 Email = dto.Email,
                 IsCompanyOwner = dto.IsCompanyOwner,
-                WarrantyDefaultMonths = dto.WarrantyDefaultMonths ?? 12,
                 SubscriptionPlan = subscriptionPlan,
                 IsSubscriptionActive = true,
                 IsActive = true
@@ -99,7 +99,7 @@ public class CompanyService : ICompanyService
 
             if (!Enum.TryParse<CompanyType>(dto.CompanyType, out var companyType))
             {
-                throw new InvalidOperationException("Invalid company type");
+                throw new ValidationException("Invalid company type");
             }
 
             company.CompanyName = dto.CompanyName;
@@ -112,7 +112,6 @@ public class CompanyService : ICompanyService
             company.PostalCode = dto.PostalCode;
             company.Phone = dto.Phone;
             company.Email = dto.Email;
-            company.WarrantyDefaultMonths = dto.WarrantyDefaultMonths;
             company.IsActive = dto.IsActive;
 
             await _repository.UpdateCompanyAsync(company);
@@ -191,7 +190,6 @@ public class CompanyService : ICompanyService
                     Phone = c.Phone,
                     Email = c.Email,
                     IsCompanyOwner = c.IsCompanyOwner,
-                    WarrantyDefaultMonths = c.WarrantyDefaultMonths,
                     SubscriptionPlan = c.SubscriptionPlan.ToString(),
                     IsSubscriptionActive = c.IsSubscriptionActive,
                     IsActive = c.IsActive,
@@ -231,7 +229,6 @@ public class CompanyService : ICompanyService
                     Phone = c.Phone,
                     Email = c.Email,
                     IsCompanyOwner = c.IsCompanyOwner,
-                    WarrantyDefaultMonths = c.WarrantyDefaultMonths,
                     SubscriptionPlan = c.SubscriptionPlan.ToString(),
                     IsSubscriptionActive = c.IsSubscriptionActive,
                     IsActive = c.IsActive,
@@ -275,7 +272,7 @@ public class CompanyService : ICompanyService
 
             if (company.IsSubscriptionActive != true)
             {
-                throw new InvalidOperationException("Company subscription is not active. Cannot create new users.");
+                throw new ValidationException("Company subscription is not active. Cannot create new users.");
             }
 
             var user = new ApplicationUser
@@ -294,7 +291,7 @@ public class CompanyService : ICompanyService
 
             if (!result.Succeeded)
             {
-                throw new InvalidOperationException($"Failed to create user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                throw new ValidationException($"Failed to create user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
             }
 
             return ToUserDto(user);
@@ -332,7 +329,7 @@ public class CompanyService : ICompanyService
 
             if (!Enum.TryParse<SubscriptionPlan>(dto.SubscriptionPlan, out var subscriptionPlan))
             {
-                throw new InvalidOperationException("Invalid subscription plan");
+                throw new ValidationException("Invalid subscription plan");
             }
 
             company.SubscriptionPlan = subscriptionPlan;
@@ -414,7 +411,6 @@ public class CompanyService : ICompanyService
             Phone = company.Phone,
             Email = company.Email,
             IsCompanyOwner = company.IsCompanyOwner,
-            WarrantyDefaultMonths = company.WarrantyDefaultMonths,
             SubscriptionPlan = company.SubscriptionPlan.ToString(),
             IsSubscriptionActive = company.IsSubscriptionActive,
             IsActive = company.IsActive,

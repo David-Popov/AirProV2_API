@@ -32,8 +32,11 @@ public class AdminService : IAdminService
 
     public async Task<PagedResult<AdminCompanyDto>> GetAllCompaniesAsync(AdminCompanyFilterDto filter)
     {
+        // No Include() — the Select() below projects navigation properties so EF Core
+        // generates a single JOIN/subquery per company; explicit Include would just
+        // load every user into the change tracker for no reason.
         var query = _context.Companies
-            .Include(c => c.Users)
+            .AsNoTracking()
             .AsQueryable();
 
         // Apply filters
@@ -110,6 +113,7 @@ public class AdminService : IAdminService
     public async Task<AdminCompanyDto?> GetCompanyByIdAsync(Guid id)
     {
         var company = await _context.Companies
+            .AsNoTracking()
             .Include(c => c.Users)
             .Include(c => c.Montages)
             .FirstOrDefaultAsync(c => c.Id == id);
@@ -220,14 +224,13 @@ public class AdminService : IAdminService
     public async Task<PagedResult<AdminUserDto>> GetAllUsersAsync(AdminUserFilterDto filter)
     {
         var query = _userManager.Users
-            .Include(u => u.Company)
+            .AsNoTracking()
             .AsQueryable();
 
-        // Apply filters
         if (!string.IsNullOrWhiteSpace(filter.Name))
         {
             var nameLower = filter.Name.ToLower();
-            query = query.Where(u => 
+            query = query.Where(u =>
                 u.FirstName.ToLower().Contains(nameLower) ||
                 u.LastName.ToLower().Contains(nameLower));
         }
@@ -257,49 +260,67 @@ public class AdminService : IAdminService
             query = query.Where(u => u.IsDeleted == filter.IsDeleted.Value);
         }
 
+        // Role filter pushed into SQL via subquery so it participates in pagination correctly.
+        if (!string.IsNullOrWhiteSpace(filter.Role))
+        {
+            var roleName = filter.Role;
+            var matchingUserIds =
+                from ur in _context.UserRoles
+                join r in _context.Roles on ur.RoleId equals r.Id
+                where r.Name == roleName
+                select ur.UserId;
+            query = query.Where(u => matchingUserIds.Contains(u.Id));
+        }
+
         var totalCount = await query.CountAsync();
-        var users = await query
+
+        // Project to a flat shape that includes the company name in a single JOIN at the SQL level.
+        var pagedUsers = await query
             .OrderByDescending(u => u.Id)
             .Skip((filter.Page - 1) * filter.PageSize)
             .Take(filter.PageSize)
+            .Select(u => new
+            {
+                u.Id,
+                u.Email,
+                u.PhoneNumber,
+                u.FirstName,
+                u.MiddleName,
+                u.LastName,
+                u.Address,
+                u.IsActive,
+                u.IsDeleted,
+                u.DeletedAt,
+                u.CompanyId,
+                CompanyName = u.Company != null ? u.Company.CompanyName : null
+            })
             .ToListAsync();
 
-        // Batch-load all user roles in a single query to avoid N+1
-        var userIds = users.Select(u => u.Id).ToList();
+        // Batch-load roles for the page in a single JOIN.
+        var pageUserIds = pagedUsers.Select(u => u.Id).ToList();
         var roleMap = await _context.UserRoles
-            .Where(ur => userIds.Contains(ur.UserId))
-            .Join(_context.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, r.Name })
+            .AsNoTracking()
+            .Where(ur => pageUserIds.Contains(ur.UserId))
+            .Join(_context.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, RoleName = r.Name! })
             .GroupBy(x => x.UserId)
-            .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.Name).ToList());
+            .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.RoleName).ToList());
 
-        var items = new List<AdminUserDto>();
-        foreach (var user in users)
+        var items = pagedUsers.Select(u => new AdminUserDto
         {
-            var roles = roleMap.TryGetValue(user.Id, out var userRoles) ? userRoles : [];
-
-            // Filter by role if specified
-            if (!string.IsNullOrWhiteSpace(filter.Role) && !roles.Contains(filter.Role))
-            {
-                continue;
-            }
-
-            items.Add(new AdminUserDto
-            {
-                Id = user.Id,
-                Email = user.Email ?? string.Empty,
-                PhoneNumber = user.PhoneNumber,
-                FirstName = user.FirstName,
-                MiddleName = user.MiddleName,
-                LastName = user.LastName,
-                Address = user.Address,
-                IsActive = user.IsActive,
-                IsDeleted = user.IsDeleted,
-                DeletedAt = user.DeletedAt,
-                CompanyId = user.CompanyId,
-                CompanyName = user.Company?.CompanyName,
-                Roles = roles
-            });
-        }
+            Id = u.Id,
+            Email = u.Email ?? string.Empty,
+            PhoneNumber = u.PhoneNumber,
+            FirstName = u.FirstName,
+            MiddleName = u.MiddleName,
+            LastName = u.LastName,
+            Address = u.Address,
+            IsActive = u.IsActive,
+            IsDeleted = u.IsDeleted,
+            DeletedAt = u.DeletedAt,
+            CompanyId = u.CompanyId,
+            CompanyName = u.CompanyName,
+            Roles = roleMap.TryGetValue(u.Id, out var roles) ? roles : new List<string>()
+        }).ToList();
 
         return new PagedResult<AdminUserDto>
         {

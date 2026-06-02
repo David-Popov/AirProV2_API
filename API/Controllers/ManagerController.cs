@@ -1,3 +1,4 @@
+using ValidationException = FluentValidation.ValidationException;
 using API.Common;
 using API.DTOs;
 using API.Services.Auth;
@@ -46,13 +47,13 @@ public class ManagerController : ApiControllerBase
         var validationResult = await _createEmployeeValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
         {
-            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+            throw new ValidationException(validationResult.Errors);
         }
 
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         var result = await _authService.CreateEmployeeAsync(dto, companyId.Value);
@@ -72,7 +73,7 @@ public class ManagerController : ApiControllerBase
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         var employees = await _authService.GetEmployeesByCompanyIdAsync(companyId.Value);
@@ -93,13 +94,13 @@ public class ManagerController : ApiControllerBase
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         var employee = await _authService.GetEmployeeByIdAsync(id, companyId.Value);
         if (employee == null)
         {
-            return NotFound(new { message = "Employee not found" });
+            throw new NotFoundException("Employee not found");
         }
 
         return Ok(employee);
@@ -126,13 +127,13 @@ public class ManagerController : ApiControllerBase
 
         if (errors.Any())
         {
-            return BadRequest(new { errors = errors.Select(e => e.ErrorMessage) });
+            throw new ValidationException(errors);
         }
 
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         var result = await _authService.UpdateEmployeeAsync(id, dto, companyId.Value);
@@ -154,7 +155,7 @@ public class ManagerController : ApiControllerBase
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         await _authService.ActivateEmployeeAsync(id, companyId.Value);
@@ -176,7 +177,7 @@ public class ManagerController : ApiControllerBase
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         await _authService.DeactivateEmployeeAsync(id, companyId.Value);
@@ -201,14 +202,14 @@ public class ManagerController : ApiControllerBase
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         // Prevent self-deletion
         var currentUserId = GetCurrentUserId();
         if (id == currentUserId)
         {
-            return BadRequest(new { message = "You cannot delete your own account" });
+            throw new ValidationException("You cannot delete your own account");
         }
 
         await _authService.DeleteEmployeeAsync(id, companyId.Value);
@@ -233,7 +234,7 @@ public class ManagerController : ApiControllerBase
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         var result = await _authService.ActivateTrialAsync(companyId.Value);
@@ -270,7 +271,7 @@ public class ManagerController : ApiControllerBase
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         var result = await _authService.GetEmployeeLimitsAsync(companyId.Value);
@@ -299,13 +300,13 @@ public class ManagerController : ApiControllerBase
         var companyId = GetCurrentUserCompanyId();
         if (companyId == null)
         {
-            return BadRequest(new { message = "User is not associated with a company" });
+            throw new ValidationException("User is not associated with a company");
         }
 
         var currentUserId = GetCurrentUserId();
         if (string.IsNullOrEmpty(currentUserId))
         {
-            return BadRequest(new { message = "Unable to identify current user" });
+            throw new ValidationException("Unable to identify current user");
         }
 
         var (companyEmail, companyName) = await _authService.DeleteAccountAndCompanyAsync(companyId.Value);

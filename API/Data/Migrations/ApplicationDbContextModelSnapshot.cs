@@ -355,10 +355,6 @@ namespace API.Data.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("vat_number");
 
-                    b.Property<int?>("WarrantyDefaultMonths")
-                        .HasColumnType("integer")
-                        .HasColumnName("warranty_default_months");
-
                     b.HasKey("Id");
 
                     b.HasIndex("IsActive")
@@ -798,6 +794,28 @@ namespace API.Data.Migrations
                         .HasDatabaseName("idx_montage_photos_order");
 
                     b.ToTable("montage_photos");
+                });
+
+            modelBuilder.Entity("API.Data.Entities.ProcessedStripeEvent", b =>
+                {
+                    b.Property<string>("EventId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("event_id");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("event_type");
+
+                    b.Property<DateTime>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("processed_at");
+
+                    b.HasKey("EventId");
+
+                    b.ToTable("ProcessedStripeEvents");
                 });
 
             modelBuilder.Entity("API.Data.Entities.RefreshToken", b =>

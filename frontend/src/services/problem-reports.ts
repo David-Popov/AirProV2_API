@@ -1,4 +1,5 @@
 import { apiClient } from './api';
+import { safeStorage } from '@/lib/safe-storage';
 import type { ReportedProblem, ProblemCategory } from '@/types';
 
 const BASE_URL = '/ReportedProblems';
@@ -20,7 +21,7 @@ export const problemReportsService = {
       formData.append('screenshot', screenshot);
     }
 
-    const token = localStorage.getItem('token');
+    const token = safeStorage.get('token');
     const headers: HeadersInit = {};
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -58,7 +59,7 @@ export const problemReportsService = {
    * Fetch the screenshot as a blob URL (authenticated)
    */
   async getScreenshotBlobUrl(id: string): Promise<string> {
-    const token = localStorage.getItem('token');
+    const token = safeStorage.get('token');
     const headers: HeadersInit = {};
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;

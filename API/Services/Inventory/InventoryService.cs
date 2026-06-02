@@ -1,3 +1,4 @@
+using ValidationException = FluentValidation.ValidationException;
 using API.Common;
 using API.Data;
 using API.Data.Entities;
@@ -35,7 +36,7 @@ public class InventoryService : IInventoryService
             var exists = await _repository.ExistsByNameAndCompanyIdAsync(dto.Name, dto.CompanyId);
             if (exists)
             {
-                throw new InvalidOperationException($"An inventory item with name '{dto.Name}' already exists for this company");
+                throw new ValidationException($"An inventory item with name '{dto.Name}' already exists for this company");
             }
 
             var item = new InventoryItem
@@ -90,7 +91,7 @@ public class InventoryService : IInventoryService
             var exists = await _repository.ExistsByNameAndCompanyIdAsync(dto.Name, item.CompanyId, itemId);
             if (exists)
             {
-                throw new InvalidOperationException($"An inventory item with name '{dto.Name}' already exists for this company");
+                throw new ValidationException($"An inventory item with name '{dto.Name}' already exists for this company");
             }
 
             var oldQuantity = item.Quantity;
@@ -343,7 +344,7 @@ public class InventoryService : IInventoryService
             
             if (newQuantity < 0)
             {
-                throw new InvalidOperationException($"Cannot adjust quantity. Current quantity is {item.Quantity} {item.UnitOfMeasure}, adjustment of {dto.AdjustmentAmount} would result in negative quantity.");
+                throw new ValidationException($"Cannot adjust quantity. Current quantity is {item.Quantity} {item.UnitOfMeasure}, adjustment of {dto.AdjustmentAmount} would result in negative quantity.");
             }
 
             var oldQuantity = item.Quantity;

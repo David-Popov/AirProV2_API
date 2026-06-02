@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { AuthLayout } from '@/components/layout'
@@ -62,7 +63,6 @@ export default function RegisterPage() {
     companyPostalCode: '',
     companyPhone: '',
     companyEmail: '',
-    warrantyDefaultMonths: 12,
   })
 
   // Validation rules for step 1
@@ -220,7 +220,6 @@ export default function RegisterPage() {
         company_postal_code: formData.companyPostalCode || null,
         company_phone: formData.companyPhone || null,
         company_email: formData.companyEmail || null,
-        warranty_default_months: formData.warrantyDefaultMonths,
       })
 
       navigate('/login', {
@@ -353,19 +352,16 @@ export default function RegisterPage() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="password" className="text-foreground font-medium text-sm">{t('auth.password')} *</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={(e) => handleChange('password', e.target.value, 1)}
-                    onBlur={(e) => handleBlur('password', e.target.value, 1)}
-                    aria-invalid={step1Validation.getFieldProps('password').status === 'invalid'}
-                    className="pl-10 h-11 bg-background border-border"
-                  />
-                </div>
+                <PasswordInput
+                  id="password"
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={(e) => handleChange('password', e.target.value, 1)}
+                  onBlur={(e) => handleBlur('password', e.target.value, 1)}
+                  aria-invalid={step1Validation.getFieldProps('password').status === 'invalid'}
+                  leadingIcon={<Lock className="w-4 h-4" />}
+                  className="h-11 bg-background border-border"
+                />
                 <FieldMessage {...step1Validation.getFieldProps('password')} />
                 {step1Validation.getFieldProps('password').status === 'idle' && (
                   <p className="text-xs text-muted-foreground">{t('validation.password_requirements')}</p>
@@ -374,19 +370,16 @@ export default function RegisterPage() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="confirmPassword" className="text-foreground font-medium text-sm">{t('auth.confirm_password')} *</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder="••••••••"
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleChange('confirmPassword', e.target.value, 1)}
-                    onBlur={(e) => handleBlur('confirmPassword', e.target.value, 1)}
-                    aria-invalid={step1Validation.getFieldProps('confirmPassword').status === 'invalid'}
-                    className="pl-10 h-11 bg-background border-border"
-                  />
-                </div>
+                <PasswordInput
+                  id="confirmPassword"
+                  placeholder="••••••••"
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleChange('confirmPassword', e.target.value, 1)}
+                  onBlur={(e) => handleBlur('confirmPassword', e.target.value, 1)}
+                  aria-invalid={step1Validation.getFieldProps('confirmPassword').status === 'invalid'}
+                  leadingIcon={<Lock className="w-4 h-4" />}
+                  className="h-11 bg-background border-border"
+                />
                 <FieldMessage {...step1Validation.getFieldProps('confirmPassword')} />
               </div>
             </>

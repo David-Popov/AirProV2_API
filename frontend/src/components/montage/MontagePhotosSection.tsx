@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Image as ImageIcon,
   Upload,
@@ -22,8 +23,11 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { AuthenticatedImage } from '@/components/shared';
 import { toast } from 'sonner';
 import { montagePhotoService } from '@/services/montage-photos';
+import { apiClient } from '@/services/api';
+import { queryKeys } from '@/lib/queryKeys';
 import type { MontagePhoto, PhotoValidationInfo } from '@/types';
 
 interface MontagePhotosSectionProps {
@@ -38,6 +42,7 @@ export function MontagePhotosSection({
   onPhotosChange,
 }: MontagePhotosSectionProps) {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [photos, setPhotos] = useState<MontagePhoto[]>(initialPhotos);
   const [isLoading, setIsLoading] = useState(false);
@@ -106,6 +111,13 @@ export function MontagePhotosSection({
 
   const handleUpload = async () => {
     if (selectedFiles.length === 0) return;
+    const trimmedDescription = description.trim();
+    // A2: backend requires a description — guard here so we never round-trip
+    // for a 400. UI also disables the Upload button until this is satisfied.
+    if (!trimmedDescription) {
+      toast.error(t('montages.photos.description_required'));
+      return;
+    }
 
     setIsUploading(true);
     try {
@@ -113,7 +125,7 @@ export function MontagePhotosSection({
         const newPhoto = await montagePhotoService.uploadPhoto(
           montageId,
           selectedFiles[0],
-          description || undefined,
+          trimmedDescription,
           photos.length
         );
         setPhotos([...photos, newPhoto]);
@@ -121,7 +133,7 @@ export function MontagePhotosSection({
         const newPhotos = await montagePhotoService.uploadPhotos(
           montageId,
           selectedFiles,
-          description || undefined
+          trimmedDescription
         );
         setPhotos([...photos, ...newPhotos]);
       }
@@ -141,6 +153,34 @@ export function MontagePhotosSection({
       toast.error(error instanceof Error ? error.message : t('common.unknown_error'));
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  /**
+   * Trigger an authenticated download. Reuses the cached blob from
+   * AuthenticatedImage when present (fetchQuery dedupes against the same
+   * query key), so the lightbox open + download = one network round-trip.
+   */
+  const handleDownload = async (photo: MontagePhoto) => {
+    try {
+      const endpoint = montagePhotoService.getPhotoDownloadPath(photo.id);
+      const blob = await queryClient.fetchQuery({
+        queryKey: queryKeys.montagePhotos.blob(endpoint),
+        queryFn: () => apiClient.getBlob(endpoint),
+        staleTime: 10 * 60 * 1000,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = photo.original_file_name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      // Revoke after the click has been processed so the download isn't cancelled.
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    } catch (error) {
+      console.error('Failed to download photo:', error);
+      toast.error(t('common.unknown_error'));
     }
   };
 
@@ -226,10 +266,11 @@ export function MontagePhotosSection({
                 className="relative group aspect-square rounded-lg overflow-hidden border border-border bg-muted/30 cursor-pointer"
                 onClick={() => setSelectedPhoto(photo)}
               >
-                <img
-                  src={montagePhotoService.getPhotoDownloadUrl(photo.id)}
+                <AuthenticatedImage
+                  endpoint={montagePhotoService.getPhotoDownloadPath(photo.id)}
                   alt={photo.original_file_name}
                   className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  containerClassName="w-full h-full"
                 />
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                   <Button size="icon" variant="ghost" className="text-white hover:bg-white/20">
@@ -276,7 +317,18 @@ export function MontagePhotosSection({
       </CardContent>
 
       {/* Upload Dialog */}
-      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+      <Dialog
+        open={showUploadDialog}
+        onOpenChange={(open) => {
+          setShowUploadDialog(open);
+          if (!open) {
+            // Reset transient form state on close so a fresh open isn't
+            // pre-filled with the previous attempt.
+            setDescription('');
+            setSelectedFiles([]);
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
@@ -309,13 +361,23 @@ export function MontagePhotosSection({
               ))}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">{t('common.description')}</Label>
+              <Label htmlFor="description">
+                {t('common.description')} <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder={t('montages.photos.description_placeholder')}
+                aria-invalid={!description.trim() || undefined}
+                aria-required="true"
+                required
               />
+              {!description.trim() && (
+                <p className="text-xs text-destructive">
+                  {t('montages.photos.description_required')}
+                </p>
+              )}
             </div>
           </div>
           <DialogFooter>
@@ -324,7 +386,7 @@ export function MontagePhotosSection({
             </DialogClose>
             <Button
               onClick={handleUpload}
-              disabled={isUploading || selectedFiles.length === 0}
+              disabled={isUploading || selectedFiles.length === 0 || !description.trim()}
             >
               {isUploading ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -355,10 +417,11 @@ export function MontagePhotosSection({
 
                 {/* Image container */}
                 <div className="flex items-center justify-center p-8 bg-gray-50 dark:bg-zinc-800/50 min-h-[60vh]">
-                  <img
-                    src={montagePhotoService.getPhotoDownloadUrl(selectedPhoto.id)}
+                  <AuthenticatedImage
+                    endpoint={montagePhotoService.getPhotoDownloadPath(selectedPhoto.id)}
                     alt={selectedPhoto.original_file_name}
                     className="max-w-full max-h-[75vh] object-contain"
+                    containerClassName="min-h-[60vh]"
                   />
                 </div>
 
@@ -376,15 +439,10 @@ export function MontagePhotosSection({
                     <Button
                       variant="outline"
                       size="sm"
-                      asChild
+                      onClick={() => handleDownload(selectedPhoto)}
                     >
-                      <a
-                        href={montagePhotoService.getPhotoDownloadUrl(selectedPhoto.id)}
-                        download={selectedPhoto.original_file_name}
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        {t('common.download')}
-                      </a>
+                      <Download className="w-4 h-4 mr-2" />
+                      {t('common.download')}
                     </Button>
                     <Button
                       variant="destructive"
