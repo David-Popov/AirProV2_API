@@ -57,4 +57,11 @@ public class UpdateMontageDto
     
     [JsonPropertyName("notes")]
     public string? Notes { get; set; }
+
+    /// <summary>
+    /// New set of assigned workers. Honored only for manager/admin callers
+    /// (reassignment); ignored for workers. Null = leave assignments unchanged.
+    /// </summary>
+    [JsonPropertyName("assigned_user_ids")]
+    public List<string>? AssignedUserIds { get; set; }
 }

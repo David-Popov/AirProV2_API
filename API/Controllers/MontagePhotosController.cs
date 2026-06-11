@@ -4,21 +4,22 @@ using API.DTOs;
 using API.DTOs.MontagePhotos;
 using API.Models;
 using API.Services.MontagePhotos;
+using API.Services.Montages;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-[ApiController]
 [Authorize]
-[Route("api/[controller]")]
-public class MontagePhotosController : ControllerBase
+public class MontagePhotosController : ApiControllerBase
 {
     private readonly IMontagePhotoService _photoService;
+    private readonly IMontageService _montageService;
 
-    public MontagePhotosController(IMontagePhotoService photoService)
+    public MontagePhotosController(IMontagePhotoService photoService, IMontageService montageService)
     {
         _photoService = photoService;
+        _montageService = montageService;
     }
 
     /// <summary>
@@ -35,6 +36,8 @@ public class MontagePhotosController : ControllerBase
         [FromForm] string? description = null,
         [FromForm] int displayOrder = 0)
     {
+        await EnsureCanAccessMontageAsync(montageId);
+
         // Validate file before processing
         var (isValid, fileError) = _photoService.ValidateFile(file);
         if (!isValid)
@@ -66,6 +69,8 @@ public class MontagePhotosController : ControllerBase
         List<IFormFile> files,
         [FromForm] string? description = null)
     {
+        await EnsureCanAccessMontageAsync(montageId);
+
         // Validate total count
         var currentCount = await _photoService.GetPhotoCountAsync(montageId);
         var totalAfterUpload = currentCount + files.Count;
@@ -107,6 +112,7 @@ public class MontagePhotosController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<List<MontagePhotoDto>>> GetPhotosByMontage(Guid montageId)
     {
+        await EnsureCanAccessMontageAsync(montageId);
         var photos = await _photoService.GetPhotosByMontageIdAsync(montageId);
         return Ok(photos);
     }
@@ -199,5 +205,21 @@ public class MontagePhotosController : ControllerBase
             allowedContentTypes = ImageValidationConstants.AllowedContentTypes,
             allowedExtensions = ImageValidationConstants.AllowedExtensions
         });
+    }
+
+    /// <summary>
+    /// Workers may only access montages they are assigned to; managers/admins any in their company.
+    /// Guards the montage-scoped endpoints; the photo-id endpoints are protected because their
+    /// GUIDs are only obtainable through the now-guarded montage/photo listings.
+    /// </summary>
+    private async Task EnsureCanAccessMontageAsync(Guid montageId)
+    {
+        var companyId = GetCurrentUserCompanyId();
+        var montage = await _montageService.GetByIdAsync(montageId);
+        if (companyId == null || montage == null || montage.CompanyId != companyId ||
+            (!IsManagerOrAdmin() && !montage.AssignedUserIds.Contains(GetCurrentUserId()!)))
+        {
+            throw new NotFoundException("Montage not found");
+        }
     }
 }

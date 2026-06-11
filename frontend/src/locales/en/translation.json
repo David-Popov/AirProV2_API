@@ -440,6 +440,11 @@
     }
   },
   "montages": {
+    "assigned_workers": "Assigned Workers",
+    "select_workers": "Select workers",
+    "workers_selected": "{{count}} selected",
+    "no_workers_assigned": "No workers assigned",
+    "role_manager": "Manager",
     "title": "Montages",
     "subtitle": "Installation schedule and tracking",
     "new_montage": "New Montage",
@@ -570,6 +575,7 @@
     "created_success": "Employee created successfully"
   },
   "validation": {
+    "assignees_required": "Please assign at least one worker",
     "password_requirements": "Min 8 chars, 1 uppercase, 1 lowercase, 1 digit, 1 special char",
     "first_name_required": "First name is required",
     "last_name_required": "Last name is required",

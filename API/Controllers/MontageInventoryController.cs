@@ -1,6 +1,7 @@
 using API.DTOs;
 using API.Common;
 using API.Services.MontageInventory;
+using API.Services.Montages;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,10 +11,12 @@ namespace API.Controllers;
 public class MontageInventoryController : ApiControllerBase
 {
     private readonly IMontageInventoryService _service;
+    private readonly IMontageService _montageService;
 
-    public MontageInventoryController(IMontageInventoryService service)
+    public MontageInventoryController(IMontageInventoryService service, IMontageService montageService)
     {
         _service = service;
+        _montageService = montageService;
     }
 
     /// <summary>
@@ -22,6 +25,7 @@ public class MontageInventoryController : ApiControllerBase
     [HttpPost("{montageId}/materials")]
     public async Task<ActionResult<List<MontageInventoryItemDto>>> AddMaterials(Guid montageId, [FromBody] AddMaterialsToMontageRequest request)
     {
+        await EnsureCanAccessMontageAsync(montageId);
         request.UserId = GetCurrentUserId();
         var result = await _service.AddMaterialsAsync(montageId, request);
         return Ok(result);
@@ -33,6 +37,7 @@ public class MontageInventoryController : ApiControllerBase
     [HttpGet("{montageId}/materials")]
     public async Task<ActionResult<List<MontageInventoryItemDto>>> GetMaterialsByMontage(Guid montageId)
     {
+        await EnsureCanAccessMontageAsync(montageId);
         var result = await _service.GetMaterialsByMontageIdAsync(montageId);
         return Ok(result);
     }
@@ -69,5 +74,21 @@ public class MontageInventoryController : ApiControllerBase
         var pageParams = new PageParameters { PageNumber = page, PageSize = pageSize };
         var result = await _service.GetUsageHistoryByItemIdAsync(inventoryItemId, pageParams);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Workers may only touch montages they are assigned to; managers/admins any montage in their company.
+    /// Guards the montage-scoped endpoints (the material-id mutations are protected because their
+    /// GUIDs are only discoverable through these now-guarded listing endpoints).
+    /// </summary>
+    private async Task EnsureCanAccessMontageAsync(Guid montageId)
+    {
+        var companyId = GetCurrentUserCompanyId();
+        var montage = await _montageService.GetByIdAsync(montageId);
+        if (companyId == null || montage == null || montage.CompanyId != companyId ||
+            (!IsManagerOrAdmin() && !montage.AssignedUserIds.Contains(GetCurrentUserId()!)))
+        {
+            throw new NotFoundException("Montage not found");
+        }
     }
 }

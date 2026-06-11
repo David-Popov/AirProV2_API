@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="Electron" version="30.0.2" type="device">
+  <diagram name="AirPro Context" id="airpro-context">
+    <mxGraphModel dx="1422" dy="757" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="700" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="user" value="&lt;b&gt;Потребител&lt;/b&gt;&#xa;&lt;font style=&quot;font-size: 10px&quot;&gt;[Person]&lt;/font&gt;&#xa;&lt;br&gt;Мениджър, техник&#xa;или администратор" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D5E8F0;strokeColor=#6C8EBF;fontSize=12;align=center;verticalAlign=middle;shape=mxgraph.c4.person2;align=center;pointerEvents=1;fillColor=#0E315A;strokeColor=#073B6F;fontColor=#ffffff;outlineConnect=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="280" width="100" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="cloudflare" value="&lt;b&gt;Cloudflare&lt;/b&gt;&#xa;&lt;font style=&quot;font-size: 10px&quot;&gt;[External]&lt;/font&gt;&#xa;&lt;br&gt;DNS + SSL терминиране" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="220" y="300" width="160" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="frontend" value="&lt;b&gt;AirPro Frontend&lt;/b&gt;&#xa;&lt;font style=&quot;font-size: 10px&quot;&gt;[Container: React 19 + TS]&lt;/font&gt;&#xa;&lt;br&gt;SPA с PWA поддръжка,&#xa;Vite, Tailwind CSS v4" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="440" y="290" width="180" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="backend" value="&lt;b&gt;AirPro Backend&lt;/b&gt;&#xa;&lt;font style=&quot;font-size: 10px&quot;&gt;[Container: ASP.NET Core 10]&lt;/font&gt;&#xa;&lt;br&gt;REST API, JWT auth,&#xa;EF Core, бизнес логика" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="700" y="290" width="180" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="postgres" value="&lt;b&gt;PostgreSQL 16&lt;/b&gt;&#xa;&lt;font style=&quot;font-size: 10px&quot;&gt;[Database]&lt;/font&gt;&#xa;&lt;br&gt;Релационна база" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="950" y="50" width="120" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="minio" value="&lt;b&gt;MinIO&lt;/b&gt;&#xa;&lt;font style=&quot;font-size: 10px&quot;&gt;[Object Storage]&lt;/font&gt;&#xa;&lt;br&gt;Снимки от монтажи" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="950" y="170" width="120" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="stripe" value="&lt;b&gt;Stripe&lt;/b&gt;&#xa;&lt;font style=&quot;font-size: 10px&quot;&gt;[External]&lt;/font&gt;&#xa;&lt;br&gt;Абонаменти, плащания" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="950" y="290" width="120" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mailtrap" value="&lt;b&gt;Mailtrap&lt;/b&gt;&#xa;&lt;font style=&quot;font-size: 10px&quot;&gt;[External]&lt;/font&gt;&#xa;&lt;br&gt;Транзакционни имейли" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="950" y="410" width="120" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e1" value="HTTPS" style="endArrow=classic;html=1;rounded=0;fontSize=10;" edge="1" parent="1" source="user" target="cloudflare">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="HTTPS" style="endArrow=classic;html=1;rounded=0;fontSize=10;" edge="1" parent="1" source="cloudflare" target="frontend">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="REST / JSON" style="endArrow=classic;html=1;rounded=0;fontSize=10;" edge="1" parent="1" source="frontend" target="backend">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="SQL" style="endArrow=classic;html=1;rounded=0;fontSize=10;exitX=1;exitY=0.25;exitDx=0;exitDy=0;" edge="1" parent="1" source="backend" target="postgres">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="S3 API" style="endArrow=classic;html=1;rounded=0;fontSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="backend" target="minio">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="Checkout / Webhook" style="endArrow=classic;html=1;rounded=0;fontSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="backend" target="stripe">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="REST API" style="endArrow=classic;html=1;rounded=0;fontSize=10;exitX=1;exitY=0.75;exitDx=0;exitDy=0;" edge="1" parent="1" source="backend" target="mailtrap">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

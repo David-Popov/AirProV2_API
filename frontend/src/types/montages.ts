@@ -34,10 +34,17 @@ export interface PhotoValidationInfo {
   allowedExtensions: string[];
 }
 
+export interface AssignedUser {
+  id: string;
+  full_name: string;
+}
+
 export interface Montage {
   id: string;
   company_id?: string | null;
   user_id?: string | null;
+  assigned_user_ids?: string[];
+  assigned_users?: AssignedUser[];
   air_conditioner_id?: string | null;
   custom_ac_brand?: string | null;
   custom_ac_model?: string | null;
@@ -79,6 +86,7 @@ export interface CreateMontageRequest {
   status?: string | null;
   total_price?: number | null;
   notes?: string | null;
+  assigned_user_ids?: string[];
 }
 
 export interface UpdateMontageRequest extends Partial<CreateMontageRequest> {

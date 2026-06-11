@@ -440,6 +440,11 @@
     }
   },
   "montages": {
+    "assigned_workers": "Назначени работници",
+    "select_workers": "Изберете работници",
+    "workers_selected": "избрани: {{count}}",
+    "no_workers_assigned": "Няма назначени работници",
+    "role_manager": "Мениджър",
     "title": "Монтажи",
     "subtitle": "График и проследяване на монтажи",
     "new_montage": "Нов Монтаж",
@@ -570,6 +575,7 @@
     "created_success": "Служителят е създаден успешно"
   },
   "validation": {
+    "assignees_required": "Назначете поне един работник",
     "password_requirements": "Мин 8 символа, 1 главна, 1 малка буква, 1 цифра, 1 специален символ",
     "first_name_required": "Името е задължително",
     "last_name_required": "Фамилията е задължителна",

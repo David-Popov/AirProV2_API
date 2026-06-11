@@ -3,11 +3,12 @@ import { queryKeys } from '@/lib/queryKeys'
 import { employeeService } from '@/services'
 import type { CreateEmployeeRequest } from '@/types'
 
-export function useEmployees() {
+export function useEmployees(enabled = true) {
   return useQuery({
     queryKey: queryKeys.employees.list(),
     queryFn: () => employeeService.getAll(),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled,
   })
 }
 

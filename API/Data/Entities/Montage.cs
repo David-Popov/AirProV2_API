@@ -115,4 +115,11 @@ public class Montage
     /// Photos attached to this montage (max 5)
     /// </summary>
     public virtual ICollection<MontagePhoto> Photos { get; set; } = new List<MontagePhoto>();
+
+    /// <summary>
+    /// Workers assigned to this montage. Usually two or more — these are the
+    /// employees who can see and edit the montage. <see cref="UserId"/> remains
+    /// the user who created the montage.
+    /// </summary>
+    public virtual ICollection<MontageAssignment> Assignments { get; set; } = new List<MontageAssignment>();
 }

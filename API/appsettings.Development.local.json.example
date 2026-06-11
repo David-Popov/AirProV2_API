@@ -1,0 +1,18 @@
+{
+  "_comment": "Copy this file to 'appsettings.Development.local.json' (gitignored) and fill in real values. It is auto-loaded last in Program.cs and overrides appsettings.Development.json for local dev.",
+
+  "EncryptionSettings": {
+    "Key": "AirProDev2026Key"
+  },
+  "EmailSettings": {
+    "ApiBaseUrl": "https://sandbox.api.mailtrap.io",
+    "InboxId": "<your-mailtrap-sandbox-inbox-id>",
+    "ApiToken": "<your-mailtrap-sandbox-api-token>"
+  },
+  "StripeSettings": {
+    "SecretKey": "sk_test_...",
+    "PublishableKey": "pk_test_...",
+    "WebhookSecret": "whsec_... (printed by `stripe listen`)",
+    "PremiumPriceId": "price_..."
+  }
+}

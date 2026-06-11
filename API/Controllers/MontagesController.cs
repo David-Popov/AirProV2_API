@@ -41,7 +41,9 @@ public class MontagesController : ApiControllerBase
             throw new ValidationException("User is not associated with a company");
         }
 
-        var result = await _service.GetByCompanyIdAsync(companyId.Value, parameters);
+        // Managers/admins see every montage in the company; workers see only those assigned to them.
+        var assignedToUserId = IsManagerOrAdmin() ? null : GetCurrentUserId();
+        var result = await _service.GetByCompanyIdAsync(companyId.Value, parameters, assignedToUserId);
         return Ok(result);
     }
 
@@ -66,7 +68,7 @@ public class MontagesController : ApiControllerBase
         }
 
         var result = await _service.GetByIdAsync(id);
-        if (result == null || result.CompanyId != companyId)
+        if (result == null || result.CompanyId != companyId || !CanAccessMontage(result))
         {
             throw new NotFoundException("Montage not found");
         }
@@ -82,8 +84,14 @@ public class MontagesController : ApiControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<MontageDto>> GetByIdWithAirConditioner(Guid id)
     {
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
+        {
+            throw new ValidationException("User is not associated with a company");
+        }
+
         var result = await _service.GetByIdWithAirConditionerAsync(id);
-        if (result == null)
+        if (result == null || result.CompanyId != companyId || !CanAccessMontage(result))
         {
             throw new NotFoundException("Montage not found");
         }
@@ -182,7 +190,20 @@ public class MontagesController : ApiControllerBase
         }
 
         dto.CompanyId = companyId.Value;
-        dto.UserId = userId;
+        dto.UserId = userId; // creator — kept for audit
+
+        if (IsManagerOrAdmin())
+        {
+            if (dto.AssignedUserIds == null || dto.AssignedUserIds.Count == 0)
+            {
+                throw new ValidationException("Please assign at least one worker to the montage.");
+            }
+        }
+        else
+        {
+            // A worker can only create montages assigned to themselves.
+            dto.AssignedUserIds = new List<string> { userId };
+        }
 
         var id = await _service.AddMontageAsync(dto);
         return CreatedAtAction(nameof(GetById), new { id }, dto);
@@ -210,11 +231,21 @@ public class MontagesController : ApiControllerBase
             throw new ValidationException("User is not associated with a company");
         }
 
-        // Check if montage belongs to user's company
+        // Check the montage belongs to the company and the caller may access it
         var existing = await _service.GetByIdAsync(id);
-        if (existing == null || existing.CompanyId != companyId)
+        if (existing == null || existing.CompanyId != companyId || !CanAccessMontage(existing))
         {
             throw new NotFoundException("Montage not found");
+        }
+
+        // Only managers/admins may change the set of assigned workers.
+        if (!IsManagerOrAdmin())
+        {
+            dto.AssignedUserIds = null;
+        }
+        else if (dto.AssignedUserIds is { Count: 0 })
+        {
+            dto.AssignedUserIds = null; // empty = leave assignments unchanged (a montage keeps ≥1 worker)
         }
 
         await _service.UpdateMontageAsync(id, dto);
@@ -242,9 +273,9 @@ public class MontagesController : ApiControllerBase
             throw new ValidationException("User is not associated with a company");
         }
 
-        // Check if montage belongs to user's company
+        // Check the montage belongs to the company and the caller may access it
         var existing = await _service.GetByIdAsync(id);
-        if (existing == null || existing.CompanyId != companyId)
+        if (existing == null || existing.CompanyId != companyId || !CanAccessMontage(existing))
         {
             throw new NotFoundException("Montage not found");
         }
@@ -274,9 +305,9 @@ public class MontagesController : ApiControllerBase
             throw new ValidationException("User is not associated with a company");
         }
 
-        // Check if montage belongs to user's company
+        // Check the montage belongs to the company and the caller may access it
         var existing = await _service.GetByIdAsync(id);
-        if (existing == null || existing.CompanyId != companyId)
+        if (existing == null || existing.CompanyId != companyId || !CanAccessMontage(existing))
         {
             throw new NotFoundException("Montage not found");
         }
@@ -299,9 +330,9 @@ public class MontagesController : ApiControllerBase
             throw new ValidationException("User is not associated with a company");
         }
 
-        // Check if montage belongs to user's company
+        // Check the montage belongs to the company and the caller may access it
         var existing = await _service.GetByIdAsync(id);
-        if (existing == null || existing.CompanyId != companyId)
+        if (existing == null || existing.CompanyId != companyId || !CanAccessMontage(existing))
         {
             throw new NotFoundException("Montage not found");
         }
@@ -309,5 +340,12 @@ public class MontagesController : ApiControllerBase
         await _service.DeleteMontageAsync(id);
         return NoContent();
     }
+
+    /// <summary>
+    /// Workers may only access montages they are assigned to; managers/admins access all.
+    /// (Company membership is checked separately by each caller.)
+    /// </summary>
+    private bool CanAccessMontage(MontageDto montage) =>
+        IsManagerOrAdmin() || montage.AssignedUserIds.Contains(GetCurrentUserId()!);
 
 }

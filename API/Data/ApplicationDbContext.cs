@@ -35,6 +35,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     
     public DbSet<MontagePhoto> MontagePhotos { get; set; }
 
+    public DbSet<MontageAssignment> MontageAssignments { get; set; }
+
     public DbSet<InventoryAuditLog> InventoryAuditLogs { get; set; }
 
     public DbSet<RefreshToken> RefreshTokens { get; set; }
@@ -172,6 +174,28 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasOne(e => e.Montage)
                   .WithMany(m => m.Photos)
                   .HasForeignKey(e => e.MontageId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // MontageAssignment configuration - workers assigned to a montage (many-to-many)
+        builder.Entity<MontageAssignment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+
+            entity.HasIndex(e => e.MontageId).HasDatabaseName("idx_montage_assignments_montage_id");
+            entity.HasIndex(e => e.UserId).HasDatabaseName("idx_montage_assignments_user_id");
+            entity.HasIndex(e => new { e.MontageId, e.UserId }).IsUnique().HasDatabaseName("idx_montage_assignments_montage_user_unique");
+
+            entity.HasOne(e => e.Montage)
+                  .WithMany(m => m.Assignments)
+                  .HasForeignKey(e => e.MontageId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
 

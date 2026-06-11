@@ -19,7 +19,9 @@ import {
   Info,
   Check,
   ChevronsUpDown,
-  MoreVertical
+  MoreVertical,
+  Users,
+  X
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -51,6 +53,8 @@ import {
 } from '@/components/ui/dialog'
 import { PageHeader, SearchBar, Pagination, EmptyState, ConfirmDialog, FieldMessage } from '@/components/shared'
 import { useFieldValidation } from '@/hooks'
+import { useEmployees } from '@/hooks/useEmployees'
+import { useAuth } from '@/context'
 import { required, minLength, optional, bulgarianPhone, email } from '@/lib/validation-rules'
 import {
   DropdownMenu,
@@ -126,7 +130,8 @@ export default function MontagesPage() {
     air_conditioner_id: null,
     custom_ac_brand: null,
     custom_ac_model: null,
-    custom_ac_kilowatts: null
+    custom_ac_kilowatts: null,
+    assigned_user_ids: []
   }
 
   const [formData, setFormData] = useState<MontageFormState>(initialFormState)
@@ -187,6 +192,27 @@ export default function MontagesPage() {
   const [isLoadingACs, setIsLoadingACs] = useState(false)
   const [isCustomAc, setIsCustomAc] = useState(false)
   const [acComboboxOpen, setAcComboboxOpen] = useState(false)
+  const [workerComboboxOpen, setWorkerComboboxOpen] = useState(false)
+
+  // Worker assignment: only managers/admins pick assignees; workers are auto-assigned by the backend.
+  const { user } = useAuth()
+  const isPrivileged = !!user?.roles?.some(r => r === 'Manager' || r === 'Admin')
+  const { data: employees } = useEmployees(isPrivileged)
+  const activeEmployees = useMemo(() => (employees || []).filter(e => e.is_active), [employees])
+  const employeeNameById = useMemo(() => {
+    const map: Record<string, string> = {}
+    ;(employees || []).forEach(e => { map[e.id] = e.full_name || `${e.first_name} ${e.last_name}`.trim() })
+    return map
+  }, [employees])
+
+  const toggleAssignee = useCallback((id: string) => {
+    setFormData(prev => {
+      const current = prev.assigned_user_ids || []
+      return current.includes(id)
+        ? { ...prev, assigned_user_ids: current.filter(x => x !== id) }
+        : { ...prev, assigned_user_ids: [...current, id] }
+    })
+  }, [])
 
   // Montage form validation rules
   const montageValidationRules = useMemo(() => ({
@@ -349,7 +375,8 @@ export default function MontagesPage() {
       air_conditioner_id: item.air_conditioner_id || null,
       custom_ac_brand: item.custom_ac_brand || null,
       custom_ac_model: item.custom_ac_model || null,
-      custom_ac_kilowatts: item.custom_ac_kilowatts || null
+      custom_ac_kilowatts: item.custom_ac_kilowatts || null,
+      assigned_user_ids: item.assigned_user_ids || []
     })
     montageValidation.resetAll()
     loadAirConditioners()
@@ -368,6 +395,9 @@ export default function MontagesPage() {
     }
     if (formData.total_price != null && formData.total_price < 0) {
       extraErrors.push(t('validation.price_invalid', 'Price must be 0 or greater'))
+    }
+    if (isPrivileged && (!formData.assigned_user_ids || formData.assigned_user_ids.length === 0)) {
+      extraErrors.push(t('validation.assignees_required', 'Please assign at least one worker'))
     }
 
     if (!isValid || extraErrors.length > 0) {
@@ -398,7 +428,8 @@ export default function MontagesPage() {
           air_conditioner_id: isCustomAc ? null : formData.air_conditioner_id,
           custom_ac_brand: isCustomAc ? formData.custom_ac_brand : null,
           custom_ac_model: isCustomAc ? formData.custom_ac_model : null,
-          custom_ac_kilowatts: isCustomAc ? formData.custom_ac_kilowatts : null
+          custom_ac_kilowatts: isCustomAc ? formData.custom_ac_kilowatts : null,
+          assigned_user_ids: formData.assigned_user_ids
         }
         await montageService.update(formData.id, updatePayload)
         toast.success(t('montages.updated_success', 'Montage updated successfully')) 
@@ -623,6 +654,12 @@ export default function MontagesPage() {
                     <div className="flex flex-col">
                       <span className="text-foreground font-medium">{item.client_name}</span>
                       <span className="text-xs text-muted-foreground">{item.client_phone}</span>
+                      {item.assigned_users && item.assigned_users.length > 0 && (
+                        <span className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                          <Users className="w-3 h-3 shrink-0" />
+                          <span className="truncate max-w-50">{item.assigned_users.map(u => u.full_name).join(', ')}</span>
+                        </span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-foreground/80">
@@ -768,6 +805,12 @@ export default function MontagesPage() {
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-foreground truncate">{item.client_name}</h3>
                     <p className="text-xs text-muted-foreground">{item.client_phone}</p>
+                    {item.assigned_users && item.assigned_users.length > 0 && (
+                      <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+                        <Users className="w-3 h-3 shrink-0" />
+                        {item.assigned_users.map(u => u.full_name).join(', ')}
+                      </p>
+                    )}
                   </div>
                   <Badge variant="outline" className={statusColors[item.status || 'Planned'] || statusColors['Planned']}>
                     {getStatusLabel(item.status)}
@@ -999,6 +1042,72 @@ export default function MontagesPage() {
                   </div>
                </div>
             </div>
+
+            {/* Assigned Workers — managers/admins choose; workers are auto-assigned by the backend */}
+            {isPrivileged && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">{t('montages.assigned_workers', 'Assigned Workers')} *</h3>
+                <Popover open={workerComboboxOpen} onOpenChange={setWorkerComboboxOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={workerComboboxOpen}
+                      className="w-full justify-between bg-background border-input font-normal"
+                    >
+                      {formData.assigned_user_ids && formData.assigned_user_ids.length > 0
+                        ? t('montages.workers_selected', '{{count}} selected', { count: formData.assigned_user_ids.length })
+                        : t('montages.select_workers', 'Select workers')}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder={t('common.search', 'Search...')} />
+                      <CommandList>
+                        <CommandEmpty>{t('common.no_results', 'No results found')}</CommandEmpty>
+                        <CommandGroup>
+                          {activeEmployees.map((emp) => {
+                            const selected = (formData.assigned_user_ids || []).includes(emp.id)
+                            return (
+                              <CommandItem
+                                key={emp.id}
+                                value={`${emp.full_name} ${emp.email}`}
+                                onSelect={() => toggleAssignee(emp.id)}
+                              >
+                                <Check className={cn('mr-2 h-4 w-4', selected ? 'opacity-100' : 'opacity-0')} />
+                                <span className="flex-1">{emp.full_name}</span>
+                                {emp.roles?.includes('Manager') && (
+                                  <span className="text-xs text-muted-foreground ml-2">{t('montages.role_manager', 'Manager')}</span>
+                                )}
+                              </CommandItem>
+                            )
+                          })}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+
+                {formData.assigned_user_ids && formData.assigned_user_ids.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {formData.assigned_user_ids.map((id) => (
+                      <Badge key={id} variant="secondary" className="gap-1 pr-1">
+                        {employeeNameById[id] || id}
+                        <button
+                          type="button"
+                          onClick={() => toggleAssignee(id)}
+                          className="ml-1 rounded-full p-0.5 hover:bg-muted-foreground/20"
+                          aria-label={t('common.remove', 'Remove')}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Installation Details */}
             <div className="space-y-4">
