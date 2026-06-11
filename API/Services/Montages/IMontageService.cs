@@ -22,7 +22,7 @@ public interface IMontageService
     
     Task<PagedList<MontageDto>> GetAllAsync(MontageParameters parameters);
     
-    Task<PagedList<MontageDto>> GetByCompanyIdAsync(Guid companyId, MontageParameters parameters);
+    Task<PagedList<MontageDto>> GetByCompanyIdAsync(Guid companyId, MontageParameters parameters, string? assignedToUserId = null);
     
     Task<PagedList<MontageDto>> GetByUserIdAsync(string userId, PageParameters pageParameters);
     

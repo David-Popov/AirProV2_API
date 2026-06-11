@@ -12,7 +12,15 @@ public class MontageDto
     
     [JsonPropertyName("user_id")]
     public string? UserId { get; set; }
-    
+
+    /// <summary>Ids of the workers assigned to this montage.</summary>
+    [JsonPropertyName("assigned_user_ids")]
+    public List<string> AssignedUserIds { get; set; } = new();
+
+    /// <summary>Assigned workers with display names (for the UI).</summary>
+    [JsonPropertyName("assigned_users")]
+    public List<AssignedUserDto> AssignedUsers { get; set; } = new();
+
     [JsonPropertyName("air_conditioner_id")]
     public Guid? AirConditionerId { get; set; }
     

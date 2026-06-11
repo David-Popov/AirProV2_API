@@ -9,7 +9,14 @@ public class CreateMontageDto
     
     [JsonPropertyName("user_id")]
     public string? UserId { get; set; }
-    
+
+    /// <summary>
+    /// Workers assigned to the montage. Set by the controller: chosen workers for a
+    /// manager/admin (at least one required), or the creator alone for a worker.
+    /// </summary>
+    [JsonPropertyName("assigned_user_ids")]
+    public List<string>? AssignedUserIds { get; set; }
+
     [JsonPropertyName("air_conditioner_id")]
     public Guid? AirConditionerId { get; set; }
     

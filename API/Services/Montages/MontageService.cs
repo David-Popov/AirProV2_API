@@ -42,6 +42,8 @@ public class MontageService : IMontageService
                 throw new ValidationException("A montage with the same company, client email, installation date, and air conditioner already exists.");
             }
 
+            await ValidateAssigneesAsync(dto.AssignedUserIds, dto.CompanyId);
+
             var montage = new Montage
             {
                 CompanyId = dto.CompanyId,
@@ -66,6 +68,14 @@ public class MontageService : IMontageService
                 Notes = dto.Notes
             };
 
+            if (dto.AssignedUserIds != null)
+            {
+                foreach (var assigneeId in dto.AssignedUserIds.Where(id => !string.IsNullOrEmpty(id)).Distinct())
+                {
+                    montage.Assignments.Add(new MontageAssignment { UserId = assigneeId });
+                }
+            }
+
             await _repository.AddMontageAsync(montage);
             return montage.Id;
         }
@@ -80,7 +90,8 @@ public class MontageService : IMontageService
     {
         try
         {
-            var montage = await _repository.GetByIdAsync(montageId);
+            var montage = await _context.Montages
+                .FirstOrDefaultAsync(m => m.Id == montageId);
             if (montage == null)
             {
                 throw new NotFoundException("Montage not found");
@@ -104,8 +115,38 @@ public class MontageService : IMontageService
             montage.PaidAmount = dto.PaidAmount;
             montage.PaymentStatus = Enum.TryParse(dto.PaymentStatus, out MontagePaymentStatus montagePaymentStatus) ? montagePaymentStatus : MontagePaymentStatus.NotPaid;
             montage.Notes = dto.Notes;
+            montage.UpdatedAt = DateTime.UtcNow;
 
-            await _repository.UpdateMontageAsync(montage);
+            // Reassignment — honored only when the controller passes a set (manager/admin);
+            // for workers the controller leaves this null, so assignments are left untouched.
+            // Diff against the DbSet directly so added rows INSERT and removed rows DELETE
+            // (adding to the tracked navigation can misclassify a new row as an update).
+            if (dto.AssignedUserIds != null)
+            {
+                await ValidateAssigneesAsync(dto.AssignedUserIds, montage.CompanyId);
+                var desired = dto.AssignedUserIds
+                    .Where(id => !string.IsNullOrEmpty(id))
+                    .Distinct()
+                    .ToHashSet();
+
+                var current = await _context.MontageAssignments
+                    .Where(a => a.MontageId == montageId)
+                    .ToListAsync();
+                var currentIds = current.Select(a => a.UserId).ToHashSet();
+
+                var toRemove = current.Where(a => !desired.Contains(a.UserId)).ToList();
+                if (toRemove.Count > 0)
+                {
+                    _context.MontageAssignments.RemoveRange(toRemove);
+                }
+
+                foreach (var assigneeId in desired.Where(id => !currentIds.Contains(id)))
+                {
+                    _context.MontageAssignments.Add(new MontageAssignment { MontageId = montageId, UserId = assigneeId });
+                }
+            }
+
+            await _context.SaveChangesAsync();
         }
         catch (Exception e)
         {
@@ -279,6 +320,8 @@ public class MontageService : IMontageService
                     .Include(m => m.AirConditioner)
                     .Include(m => m.UsedMaterials)
                         .ThenInclude(um => um.InventoryItem)
+                    .Include(m => m.Assignments)
+                        .ThenInclude(a => a.User)
                     .OrderByDescending(m => m.InstallationDate)
                     .ToListAsync();
 
@@ -314,6 +357,8 @@ public class MontageService : IMontageService
                     Id = m.Id,
                     CompanyId = m.CompanyId,
                     UserId = m.UserId,
+                    AssignedUserIds = m.Assignments.Select(a => a.UserId).ToList(),
+                    AssignedUsers = m.Assignments.Select(a => new AssignedUserDto { Id = a.UserId, FullName = a.User != null ? a.User.FirstName + " " + a.User.LastName : "" }).ToList(),
                     AirConditionerId = m.AirConditionerId,
                     CustomAcBrand = m.CustomAcBrand,
                     CustomAcModel = m.CustomAcModel,
@@ -358,7 +403,7 @@ public class MontageService : IMontageService
         }
     }
 
-    public async Task<PagedList<MontageDto>> GetByCompanyIdAsync(Guid companyId, MontageParameters parameters)
+    public async Task<PagedList<MontageDto>> GetByCompanyIdAsync(Guid companyId, MontageParameters parameters, string? assignedToUserId = null)
     {
         try
         {
@@ -367,8 +412,16 @@ public class MontageService : IMontageService
                 .Include(m => m.AirConditioner)
                 .Include(m => m.UsedMaterials)
                     .ThenInclude(um => um.InventoryItem)
+                .Include(m => m.Assignments)
+                    .ThenInclude(a => a.User)
                 .Where(m => m.CompanyId == companyId)
                 .AsQueryable();
+
+            // Workers see only montages they are assigned to; managers/admins pass null.
+            if (!string.IsNullOrEmpty(assignedToUserId))
+            {
+                query = query.Where(m => m.Assignments.Any(a => a.UserId == assignedToUserId));
+            }
 
             // Apply filters from MontageParameters
             if (parameters.StartDate.HasValue)
@@ -435,6 +488,8 @@ public class MontageService : IMontageService
                     Id = m.Id,
                     CompanyId = m.CompanyId,
                     UserId = m.UserId,
+                    AssignedUserIds = m.Assignments.Select(a => a.UserId).ToList(),
+                    AssignedUsers = m.Assignments.Select(a => new AssignedUserDto { Id = a.UserId, FullName = a.User != null ? a.User.FirstName + " " + a.User.LastName : "" }).ToList(),
                     AirConditionerId = m.AirConditionerId,
                     CustomAcBrand = m.CustomAcBrand,
                     CustomAcModel = m.CustomAcModel,
@@ -486,13 +541,15 @@ public class MontageService : IMontageService
                 .Include(m => m.AirConditioner)
                 .Include(m => m.UsedMaterials)
                     .ThenInclude(um => um.InventoryItem)
-                .Where(m => m.UserId == userId)
+                .Where(m => m.Assignments.Any(a => a.UserId == userId))
                 .OrderByDescending(m => m.InstallationDate)
                 .Select(m => new MontageDto
                 {
                     Id = m.Id,
                     CompanyId = m.CompanyId,
                     UserId = m.UserId,
+                    AssignedUserIds = m.Assignments.Select(a => a.UserId).ToList(),
+                    AssignedUsers = m.Assignments.Select(a => new AssignedUserDto { Id = a.UserId, FullName = a.User != null ? a.User.FirstName + " " + a.User.LastName : "" }).ToList(),
                     AirConditionerId = m.AirConditionerId,
                     CustomAcBrand = m.CustomAcBrand,
                     CustomAcModel = m.CustomAcModel,
@@ -544,13 +601,15 @@ public class MontageService : IMontageService
                 .Include(m => m.AirConditioner)
                 .Include(m => m.UsedMaterials)
                     .ThenInclude(um => um.InventoryItem)
-                .Where(m => m.CompanyId == companyId && m.UserId == userId)
+                .Where(m => m.CompanyId == companyId && m.Assignments.Any(a => a.UserId == userId))
                 .OrderByDescending(m => m.InstallationDate)
                 .Select(m => new MontageDto
                 {
                     Id = m.Id,
                     CompanyId = m.CompanyId,
                     UserId = m.UserId,
+                    AssignedUserIds = m.Assignments.Select(a => a.UserId).ToList(),
+                    AssignedUsers = m.Assignments.Select(a => new AssignedUserDto { Id = a.UserId, FullName = a.User != null ? a.User.FirstName + " " + a.User.LastName : "" }).ToList(),
                     AirConditionerId = m.AirConditionerId,
                     CustomAcBrand = m.CustomAcBrand,
                     CustomAcModel = m.CustomAcModel,
@@ -613,6 +672,8 @@ public class MontageService : IMontageService
                     Id = m.Id,
                     CompanyId = m.CompanyId,
                     UserId = m.UserId,
+                    AssignedUserIds = m.Assignments.Select(a => a.UserId).ToList(),
+                    AssignedUsers = m.Assignments.Select(a => new AssignedUserDto { Id = a.UserId, FullName = a.User != null ? a.User.FirstName + " " + a.User.LastName : "" }).ToList(),
                     AirConditionerId = m.AirConditionerId,
                     CustomAcBrand = m.CustomAcBrand,
                     CustomAcModel = m.CustomAcModel,
@@ -671,6 +732,8 @@ public class MontageService : IMontageService
                     Id = m.Id,
                     CompanyId = m.CompanyId,
                     UserId = m.UserId,
+                    AssignedUserIds = m.Assignments.Select(a => a.UserId).ToList(),
+                    AssignedUsers = m.Assignments.Select(a => new AssignedUserDto { Id = a.UserId, FullName = a.User != null ? a.User.FirstName + " " + a.User.LastName : "" }).ToList(),
                     AirConditionerId = m.AirConditionerId,
                     CustomAcBrand = m.CustomAcBrand,
                     CustomAcModel = m.CustomAcModel,
@@ -715,6 +778,34 @@ public class MontageService : IMontageService
         }
     }
     
+    /// <summary>
+    /// Ensures every supplied assignee is an active, non-deleted employee of the
+    /// given company. Batched into a single query (no N+1). Throws on mismatch.
+    /// </summary>
+    private async Task ValidateAssigneesAsync(List<string>? userIds, Guid? companyId)
+    {
+        if (userIds == null || companyId == null)
+        {
+            return;
+        }
+
+        var distinctIds = userIds.Where(id => !string.IsNullOrEmpty(id)).Distinct().ToList();
+        if (distinctIds.Count == 0)
+        {
+            return;
+        }
+
+        // ApplicationUser has a global query filter on !IsDeleted, so deleted users are excluded automatically.
+        var validCount = await _context.Users
+            .AsNoTracking()
+            .CountAsync(u => distinctIds.Contains(u.Id) && u.CompanyId == companyId && u.IsActive);
+
+        if (validCount != distinctIds.Count)
+        {
+            throw new ValidationException("One or more selected workers are not valid active employees of this company.");
+        }
+    }
+
     private static MontageDto ToDto(Montage montage)
     {
        return new MontageDto
@@ -722,6 +813,12 @@ public class MontageService : IMontageService
            Id = montage.Id,
            CompanyId = montage.CompanyId,
            UserId = montage.UserId,
+           AssignedUserIds = montage.Assignments?.Select(a => a.UserId).ToList() ?? new(),
+           AssignedUsers = montage.Assignments?.Select(a => new AssignedUserDto
+           {
+               Id = a.UserId,
+               FullName = a.User != null ? $"{a.User.FirstName} {a.User.LastName}".Trim() : ""
+           }).ToList() ?? new(),
            AirConditionerId = montage.AirConditionerId,
            CustomAcBrand = montage.CustomAcBrand,
            CustomAcModel = montage.CustomAcModel,

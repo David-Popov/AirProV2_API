@@ -7,6 +7,14 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Local-only config overrides (gitignored: appsettings.*.local.json). Holds developer
+// secrets — Mailtrap/Stripe tokens, encryption key — in a visible project file instead of
+// the hidden user-secrets store. Optional everywhere; absent in production.
+builder.Configuration.AddJsonFile(
+    $"appsettings.{builder.Environment.EnvironmentName}.local.json",
+    optional: true,
+    reloadOnChange: true);
+
 builder.Services.AddApiServices(builder.Configuration, builder.Environment);
 builder.Services.AddDatabaseServices(builder.Configuration);
 builder.Services.AddIdentityServices(builder.Configuration, builder.Environment);
@@ -28,7 +36,7 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<ApplicationDbContext>();
         context.Database.Migrate();
 
-        if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
+        if (app.Environment.IsDevelopment())
         {
             SeedDataManager.SeedAllData(services);
         }
