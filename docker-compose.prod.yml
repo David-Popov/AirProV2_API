@@ -67,6 +67,8 @@ services:
       dockerfile: Dockerfile
     container_name: prod_frontend
     restart: always
+    ports:
+      - "80:80"
     depends_on:
       - backend
     networks:

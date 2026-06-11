@@ -1,0 +1,122 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dev_postgres_container
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: "12345"
+      POSTGRES_DB: AirProV2
+    volumes:
+      - local-postgres-data:/var/lib/postgresql/data
+    networks:
+      - airpro-local-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d AirProV2"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin4_container
+    restart: unless-stopped
+    ports:
+      - "8888:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: user-name@domain-name.com
+      PGADMIN_DEFAULT_PASSWORD: password
+    volumes:
+      - local-pgadmin-data:/var/lib/pgadmin
+    networks:
+      - airpro-local-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio_container
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    volumes:
+      - local-minio-data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - airpro-local-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./API
+      dockerfile: Dockerfile
+    container_name: airpro_backend
+    restart: unless-stopped
+    ports:
+      - "5209:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=AirProV2;Username=user;Password=12345"
+      # JWT
+      JwtSettings__SecretKey: "YourSuperSecretKeyForJwtTokenGenerationThatShouldBeAtLeast32Characters!"
+      JwtSettings__Issuer: "AirProV2API"
+      JwtSettings__Audience: "AirProV2Client"
+      JwtSettings__ExpirationInMinutes: "1440"
+      # Encryption (must be exactly 16 characters)
+      EncryptionSettings__Key: "AirProDev2026Key"
+      # MinIO
+      MinioSettings__Endpoint: "minio:9000"
+      MinioSettings__AccessKey: "minioadmin"
+      MinioSettings__SecretKey: "minioadmin123"
+      MinioSettings__BucketName: "montage-photos"
+      MinioSettings__UseSSL: "false"
+      # Email confirmation / password reset links point to local frontend
+      EmailSettings__WebsiteUrl: "http://localhost:3000"
+      # Stripe — leave empty for local (Stripe is skipped)
+      StripeSettings__SecretKey: ""
+      StripeSettings__PublishableKey: ""
+      StripeSettings__WebhookSecret: ""
+      StripeSettings__PremiumPriceId: ""
+      # Seed passwords — explicit so login always works regardless of .env
+      SEED_ADMIN_PASSWORD: "Admin@Dev123!"
+      SEED_MANAGER_PASSWORD: "Manager@Dev123!"
+      SEED_USER_PASSWORD: "User@Dev123!"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - airpro-local-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NGINX_CONF: nginx.local.conf
+    container_name: airpro_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - airpro-local-network
+
+volumes:
+  local-postgres-data:
+  local-pgadmin-data:
+  local-minio-data:
+
+networks:
+  airpro-local-network:
+    driver: bridge

@@ -67,6 +67,8 @@ public class MontageRepository : IMontageRepository
                 .Include(m => m.UsedMaterials)
                     .ThenInclude(um => um.InventoryItem)
                 .Include(m => m.Photos)
+                .Include(m => m.Assignments)
+                    .ThenInclude(a => a.User)
                 .FirstOrDefaultAsync(m => m.Id == montageId);
         }
         catch (Exception e)
@@ -83,6 +85,8 @@ public class MontageRepository : IMontageRepository
             return await _context.Montages
                 .AsNoTracking()
                 .Include(m => m.AirConditioner)
+                .Include(m => m.Assignments)
+                    .ThenInclude(a => a.User)
                 .FirstOrDefaultAsync(m => m.Id == montageId);
         }
         catch (Exception e)

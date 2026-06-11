@@ -36,6 +36,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BackButton } from '@/components/shared'
 
@@ -375,6 +376,21 @@ export default function MontageDetailsPage() {
                     <Barcode className="w-3 h-3 text-muted-foreground" />
                     {montage.outdoor_unit_serial || '-'}
                 </div>
+              </div>
+              <div className="col-span-2">
+                <p className="text-muted-foreground text-sm mb-1">{t('montages.assigned_workers', 'Assigned Workers')}</p>
+                {montage.assigned_users && montage.assigned_users.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {montage.assigned_users.map((u) => (
+                      <Badge key={u.id} variant="secondary" className="gap-1">
+                        <User className="w-3 h-3" />
+                        {u.full_name}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-foreground">{t('montages.no_workers_assigned', 'No workers assigned')}</p>
+                )}
               </div>
             </div>
           </CardContent>

@@ -291,7 +291,12 @@ public class EmailService : IEmailService
             html     = htmlBody
         };
 
-        var request = new HttpRequestMessage(HttpMethod.Post, $"{_emailSettings.ApiBaseUrl}/api/send")
+        // Sandbox sends go to /api/send/{inboxId}; live sending uses /api/send.
+        var sendPath = string.IsNullOrWhiteSpace(_emailSettings.InboxId)
+            ? "/api/send"
+            : $"/api/send/{_emailSettings.InboxId}";
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{_emailSettings.ApiBaseUrl}{sendPath}")
         {
             Content = new StringContent(
                 JsonSerializer.Serialize(payload),
