@@ -137,7 +137,6 @@ public class StripeService : IStripeService
 
         await using var transaction = await _context.Database.BeginTransactionAsync();
 
-        // Batch-load all company users + their roles via JOIN (EF Core rule #3).
         var employeesWithRoles = await (
             from user in _context.Users
             where user.CompanyId == company.Id
@@ -204,8 +203,6 @@ public class StripeService : IStripeService
             throw;
         }
 
-        // Idempotency: dedupe by Stripe event id. PK on EventId guarantees a single SQL UPSERT
-        // races resolve to a single processed row.
         var alreadyProcessed = await _context.ProcessedStripeEvents
             .AsNoTracking()
             .AnyAsync(e => e.EventId == stripeEvent.Id);
@@ -263,7 +260,6 @@ public class StripeService : IStripeService
         }
         catch (DbUpdateException ex) when (IsUniqueViolation(ex))
         {
-            // Concurrent delivery of the same event won the race; safe to drop.
             _logger.LogInformation("Concurrent duplicate detected for Stripe event {EventId}", stripeEvent.Id);
         }
     }

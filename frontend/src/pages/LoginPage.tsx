@@ -101,13 +101,11 @@ export default function LoginPage() {
   return (
     <AuthLayout activePage="login">
       <motion.div variants={stagger} initial="hidden" animate="show">
-        {/* Heading */}
         <motion.div variants={fadeUp} className="mb-8">
           <h2 className="text-2xl font-bold text-foreground mb-1">{t('auth.welcome_back')}</h2>
           <p className="text-muted-foreground text-sm">{t('auth.sign_in_description')}</p>
         </motion.div>
 
-        {/* Email not confirmed banner */}
         {emailNotConfirmed && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
@@ -142,7 +140,6 @@ export default function LoginPage() {
           </motion.div>
         )}
 
-        {/* Account locked banner */}
         {accountLocked && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}

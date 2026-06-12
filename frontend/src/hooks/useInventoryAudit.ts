@@ -7,7 +7,7 @@ export function useItemAuditLog(itemId: string, page: number = 1, pageSize: numb
     queryKey: queryKeys.inventoryAudit.byItem(itemId, page, pageSize),
     queryFn: () => inventoryAuditService.getItemHistory(itemId, page, pageSize),
     enabled: !!itemId,
-    staleTime: 60 * 1000, // 1 minute
+    staleTime: 60 * 1000,
   })
 }
 
@@ -15,6 +15,6 @@ export function useRecentAuditActivity(count: number = 6) {
   return useQuery({
     queryKey: queryKeys.inventoryAudit.recent(count),
     queryFn: () => inventoryAuditService.getRecentActivity(count),
-    staleTime: 60 * 1000, // 1 minute
+    staleTime: 60 * 1000,
   })
 }

@@ -183,15 +183,12 @@ export default function EmployeeDetailsPage() {
 
   return (
     <div className="min-h-screen bg-background pt-14 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300 animate-fade-in">
-      {/* Back Button */}
       <BackButton onClick={() => navigate('/employees')} />
 
-      {/* Header */}
       <div className="mb-6 sm:mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-1">{employee.full_name}</h1>
         <p className="text-sm sm:text-base text-muted-foreground mb-4">{t('employees.details', 'Employee Details')}</p>
-        
-        {/* Action Buttons */}
+
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setIsResettingPassword(true)} className="gap-2 text-sm">
             <KeyRound className="w-4 h-4" />
@@ -209,11 +206,8 @@ export default function EmployeeDetailsPage() {
         </div>
       </div>
 
-      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Employee Info */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Personal Information */}
           <Card className="glass-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -239,7 +233,6 @@ export default function EmployeeDetailsPage() {
             </CardContent>
           </Card>
 
-          {/* Contact Information */}
           <Card className="glass-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -280,7 +273,6 @@ export default function EmployeeDetailsPage() {
             </CardContent>
           </Card>
 
-          {/* Recent Montages */}
           {employeeMontages.length > 0 && (
             <Card className="glass-card">
               <CardHeader>
@@ -320,9 +312,7 @@ export default function EmployeeDetailsPage() {
           )}
         </div>
 
-        {/* Right Column - Stats & Status */}
         <div className="space-y-6">
-          {/* Status Card */}
           <Card className="glass-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -367,7 +357,6 @@ export default function EmployeeDetailsPage() {
             </CardContent>
           </Card>
 
-          {/* Stats Card */}
           <Card className="glass-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -393,7 +382,6 @@ export default function EmployeeDetailsPage() {
         </div>
       </div>
 
-      {/* Edit Dialog */}
       <Dialog open={isEditing} onOpenChange={setIsEditing}>
         <DialogContent className="bg-card border-border text-card-foreground sm:max-w-[425px]">
           <DialogHeader>
@@ -450,7 +438,6 @@ export default function EmployeeDetailsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="bg-card border-border">
           <AlertDialogHeader>
@@ -481,7 +468,6 @@ export default function EmployeeDetailsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Password Reset Dialog */}
       <Dialog open={isResettingPassword} onOpenChange={setIsResettingPassword}>
         <DialogContent className="bg-card border-border text-card-foreground sm:max-w-[425px]">
           <DialogHeader>

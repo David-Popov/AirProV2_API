@@ -23,7 +23,6 @@ export function AuthLayout({ children }: AuthLayoutProps) {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Navbar */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="container mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
@@ -51,12 +50,9 @@ export function AuthLayout({ children }: AuthLayoutProps) {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left decorative panel — glassmorphic, no external image */}
         <div className="hidden lg:flex lg:w-1/2 relative flex-col overflow-hidden">
-          {/* Gradient background */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-violet-600/10" />
 
-          {/* Animated orbs */}
           <motion.div
             className="absolute top-1/4 -left-20 w-80 h-80 bg-primary/20 rounded-full blur-3xl pointer-events-none"
             animate={{ y: [0, -30, 0], x: [0, 15, 0] }}
@@ -73,7 +69,6 @@ export function AuthLayout({ children }: AuthLayoutProps) {
             transition={{ duration: 10, repeat: Infinity, type: "tween" as const, delay: 2 }}
           />
 
-          {/* Grid dot pattern overlay */}
           <div
             className="absolute inset-0 opacity-[0.03] dark:opacity-[0.06]"
             style={{
@@ -82,9 +77,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
             }}
           />
 
-          {/* Content */}
           <div className="relative z-10 flex flex-col justify-between h-full p-12">
-            {/* Top badge */}
             <motion.div
               initial={{ opacity: 0, y: -16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -96,7 +89,6 @@ export function AuthLayout({ children }: AuthLayoutProps) {
               </div>
             </motion.div>
 
-            {/* Main content */}
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
@@ -113,7 +105,6 @@ export function AuthLayout({ children }: AuthLayoutProps) {
                 {t('auth.hero_subtitle')}
               </p>
 
-              {/* Feature list */}
               <div className="space-y-3">
                 {[
                   { Icon: ClipboardList, text: t('auth.badge_montages') },
@@ -137,7 +128,6 @@ export function AuthLayout({ children }: AuthLayoutProps) {
               </div>
             </motion.div>
 
-            {/* Bottom stat pills */}
             <motion.div
               className="flex gap-3 flex-wrap"
               initial={{ opacity: 0, y: 16 }}
@@ -160,14 +150,12 @@ export function AuthLayout({ children }: AuthLayoutProps) {
           </div>
         </div>
 
-        {/* Right panel — form */}
         <motion.div
           className="w-full lg:w-1/2 flex items-center justify-center overflow-y-auto bg-background relative"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, type: "tween" as const }}
         >
-          {/* Subtle background glow */}
           <div className="absolute inset-0 bg-gradient-to-b from-primary/3 via-transparent to-transparent pointer-events-none" />
           <div className="relative w-full max-w-lg px-6 py-10 sm:px-10">
             {children}

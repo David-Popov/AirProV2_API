@@ -118,9 +118,7 @@ public class ManagerController : ApiControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<EmployeeDto>> UpdateEmployee(string id, [FromBody] CreateEmployeeDto dto)
     {
-        // Password is optional for updates
         var validationResult = await _createEmployeeValidator.ValidateAsync(dto);
-        // Filter out password validation errors if password is empty (optional for update)
         var errors = validationResult.Errors
             .Where(e => !e.PropertyName.Equals("Password", StringComparison.OrdinalIgnoreCase) || !string.IsNullOrEmpty(dto.Password))
             .ToList();
@@ -205,7 +203,6 @@ public class ManagerController : ApiControllerBase
             throw new ValidationException("User is not associated with a company");
         }
 
-        // Prevent self-deletion
         var currentUserId = GetCurrentUserId();
         if (id == currentUserId)
         {
@@ -239,7 +236,6 @@ public class ManagerController : ApiControllerBase
 
         var result = await _authService.ActivateTrialAsync(companyId.Value);
 
-        // Queue trial activation email (non-blocking)
         var trialCompany = result.Company;
         var trialEndDate = result.TrialEndDate;
         _backgroundEmailQueue.QueueEmail(async sp =>
@@ -311,7 +307,6 @@ public class ManagerController : ApiControllerBase
 
         var (companyEmail, companyName) = await _authService.DeleteAccountAndCompanyAsync(companyId.Value);
 
-        // Queue deletion confirmation email
         if (!string.IsNullOrEmpty(companyEmail))
         {
             _backgroundEmailQueue.QueueEmail(async sp =>

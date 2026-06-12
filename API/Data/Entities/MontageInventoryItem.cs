@@ -42,7 +42,6 @@ public class MontageInventoryItem
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    // Navigation properties
     [ForeignKey("MontageId")]
     public virtual Montage? Montage { get; set; }
 

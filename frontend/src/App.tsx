@@ -42,7 +42,6 @@ function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            {/* Public Routes */}
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
@@ -54,7 +53,6 @@ function App() {
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
 
-            {/* Protected Routes */}
             <Route 
               element={
                 <ProtectedRoute>
@@ -80,13 +78,11 @@ function App() {
               <Route path="/subscription" element={<ErrorBoundary><SubscriptionPage /></ErrorBoundary>} />
               <Route path="/subscription/success" element={<ErrorBoundary><SubscriptionSuccessPage /></ErrorBoundary>} />
               
-              {/* Admin Routes */}
               <Route path="/admin/companies" element={<ProtectedRoute roles={['Admin']}><ErrorBoundary><AdminCompaniesPage /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/admin/users" element={<ProtectedRoute roles={['Admin']}><ErrorBoundary><AdminUsersPage /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/admin/montages" element={<ProtectedRoute roles={['Admin']}><ErrorBoundary><AdminMontagesPage /></ErrorBoundary></ProtectedRoute>} />
             </Route>
 
-            {/* 404 */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
           <Toaster richColors position="bottom-right" />

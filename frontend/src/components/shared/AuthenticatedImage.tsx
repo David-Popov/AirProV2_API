@@ -43,15 +43,11 @@ export function AuthenticatedImage({
     retry: 1,
   })
 
-  // Same Blob reference is returned from the cache until invalidation, so
-  // this memo recomputes only when the underlying data changes.
   const objectUrl = useMemo(
     () => (data ? URL.createObjectURL(data) : null),
     [data]
   )
 
-  // Revoke the Object URL on unmount or when it changes, to avoid leaking
-  // blob memory across page navigations.
   useEffect(() => {
     return () => {
       if (objectUrl) URL.revokeObjectURL(objectUrl)

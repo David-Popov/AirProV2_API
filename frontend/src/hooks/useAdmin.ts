@@ -12,7 +12,6 @@ import type {
   AdminCreateMontage,
 } from '@/types/admin'
 
-// Companies
 export function useAdminCompanies(filter: AdminCompanyFilter) {
   return useQuery({
     queryKey: queryKeys.admin.companies(filter),
@@ -51,7 +50,6 @@ export function useAdminRestoreCompany() {
   })
 }
 
-// Users
 export function useAdminUsers(filter: AdminUserFilter) {
   return useQuery({
     queryKey: queryKeys.admin.users(filter),
@@ -108,7 +106,6 @@ export function useAdminRestoreUser() {
   })
 }
 
-// Montages
 export function useAdminMontages(filter: AdminMontageFilter) {
   return useQuery({
     queryKey: queryKeys.admin.montages(filter),

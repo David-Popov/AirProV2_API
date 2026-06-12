@@ -27,7 +27,6 @@ function buildQueryString(filter: object): string {
 }
 
 export const adminService = {
-  // Company endpoints
   async getCompanies(filter: AdminCompanyFilter): Promise<PagedResult<AdminCompany>> {
     const query = buildQueryString(filter);
     return apiClient.get<PagedResult<AdminCompany>>(`${BASE_URL}/companies?${query}`);
@@ -49,7 +48,6 @@ export const adminService = {
     return apiClient.post(`${BASE_URL}/companies/${id}/restore`);
   },
 
-  // User endpoints
   async getUsers(filter: AdminUserFilter): Promise<PagedResult<AdminUser>> {
     const query = buildQueryString(filter);
     return apiClient.get<PagedResult<AdminUser>>(`${BASE_URL}/users?${query}`);
@@ -79,7 +77,6 @@ export const adminService = {
     return apiClient.post(`${BASE_URL}/users/${id}/restore`);
   },
 
-  // Montage endpoints
   async getMontages(filter: AdminMontageFilter): Promise<PagedResult<AdminMontage>> {
     const query = buildQueryString(filter);
     return apiClient.get<PagedResult<AdminMontage>>(`${BASE_URL}/montages?${query}`);

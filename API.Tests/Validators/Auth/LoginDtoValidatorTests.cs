@@ -20,9 +20,9 @@ public class LoginDtoValidatorTests
     }
 
     [Theory]
-    [InlineData("")]                // empty
-    [InlineData("not-an-email")]    // no @
-    [InlineData("@nodomain.com")]   // no local part
+    [InlineData("")]
+    [InlineData("not-an-email")]
+    [InlineData("@nodomain.com")]
     public void Invalid_Email_Fails(string email)
     {
         var result = _validator.Validate(new LoginDto { Email = email, Password = "Secret123!" });

@@ -1,4 +1,3 @@
-// Admin types for frontend
 export interface AdminCompanyFilter {
   name?: string;
   ownerEmail?: string;

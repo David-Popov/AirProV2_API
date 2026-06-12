@@ -291,7 +291,6 @@ public class EmailService : IEmailService
             html     = htmlBody
         };
 
-        // Sandbox sends go to /api/send/{inboxId}; live sending uses /api/send.
         var sendPath = string.IsNullOrWhiteSpace(_emailSettings.InboxId)
             ? "/api/send"
             : $"/api/send/{_emailSettings.InboxId}";

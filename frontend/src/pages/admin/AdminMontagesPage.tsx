@@ -266,7 +266,6 @@ export default function AdminMontagesPage() {
         </CardContent>
       </Card>
 
-      {/* View Dialog */}
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>{t('admin.montage_details')}</DialogTitle></DialogHeader>
@@ -288,7 +287,6 @@ export default function AdminMontagesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit/Create Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{isCreateMode ? t('admin.create_montage') : t('admin.edit_montage')}</DialogTitle></DialogHeader>
@@ -330,7 +328,6 @@ export default function AdminMontagesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>{t('admin.confirm_delete')}</DialogTitle><DialogDescription>{t('admin.delete_montage_warning')}</DialogDescription></DialogHeader>

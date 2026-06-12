@@ -276,7 +276,6 @@ export default function AdminUsersPage() {
         </CardContent>
       </Card>
 
-      {/* Edit User Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>{t('admin.edit_user')}</DialogTitle><DialogDescription>{selectedUser?.email}</DialogDescription></DialogHeader>
@@ -294,7 +293,6 @@ export default function AdminUsersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Change Password Dialog */}
       <Dialog open={isPasswordOpen} onOpenChange={setIsPasswordOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>{t('admin.change_password')}</DialogTitle><DialogDescription>{selectedUser?.email}</DialogDescription></DialogHeader>
@@ -306,7 +304,6 @@ export default function AdminUsersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Change Role Dialog */}
       <Dialog open={isRoleOpen} onOpenChange={setIsRoleOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>{t('admin.change_role')}</DialogTitle><DialogDescription>{selectedUser?.email}</DialogDescription></DialogHeader>
@@ -323,7 +320,6 @@ export default function AdminUsersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>{t('admin.confirm_delete')}</DialogTitle><DialogDescription>{t('admin.delete_user_warning', { name: selectedUser?.fullName })}</DialogDescription></DialogHeader>

@@ -4,10 +4,8 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 export function AirConditionerDetailsSkeleton() {
   return (
     <div className="min-h-screen bg-background pt-14 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300">
-      {/* Back button */}
       <Skeleton className="h-8 w-24 mb-4" />
 
-      {/* Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-wrap items-center gap-3">
           <Skeleton className="h-8 w-56" />
@@ -15,12 +13,9 @@ export function AirConditionerDetailsSkeleton() {
         </div>
       </div>
 
-      {/* 2-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {/* Image */}
         <Skeleton className="aspect-[4/3] w-full rounded-xl" />
 
-        {/* Info Card */}
         <Card className="glass-card">
           <CardHeader>
             <Skeleton className="h-5 w-24" />
@@ -43,7 +38,6 @@ export function AirConditionerDetailsSkeleton() {
         </Card>
       </div>
 
-      {/* Technical Specifications */}
       <Card className="glass-card mb-8">
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -73,7 +67,6 @@ export function AirConditionerDetailsSkeleton() {
         </CardContent>
       </Card>
 
-      {/* Error Codes */}
       <Card className="glass-card">
         <CardHeader>
           <div className="flex items-center gap-2">

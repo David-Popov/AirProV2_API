@@ -24,9 +24,8 @@ public class CreateCompanyUserDtoValidatorTests
     [Fact]
     public void Password_Without_Special_Char_Fails()
     {
-        // This validator is stricter — also requires a special character (\W_).
         var dto = ValidDto();
-        dto.Password = "Secret123"; // missing special
+        dto.Password = "Secret123";
 
         var result = _validator.Validate(dto);
 

@@ -65,7 +65,6 @@ export default function RegisterPage() {
     companyEmail: '',
   })
 
-  // Validation rules for step 1
   const step1Rules = useMemo(() => ({
     firstName: [
       required('validation.first_name_required'),
@@ -95,7 +94,6 @@ export default function RegisterPage() {
     ],
   }), [formData.password])
 
-  // Validation rules for step 2
   const step2Rules = useMemo(() => ({
     companyName: [
       required('validation.company_name_required'),
@@ -122,8 +120,6 @@ export default function RegisterPage() {
   const step1Validation = useFieldValidation(step1Rules)
   const step2Validation = useFieldValidation(step2Rules)
 
-  // M-4: Cancel any in-flight email-check request and pending timer on unmount
-  // to prevent setState calls on an unmounted component.
   useEffect(() => {
     return () => {
       if (emailCheckRef.current)      clearTimeout(emailCheckRef.current)
@@ -139,14 +135,11 @@ export default function RegisterPage() {
     const validation = stepNum === 1 ? step1Validation : step2Validation
     validation.validateField(fieldName, value)
 
-    // Async email check after local validation passes
     if (fieldName === 'email' && value && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
       if (emailCheckRef.current)      clearTimeout(emailCheckRef.current)
       if (emailCheckAbortRef.current) emailCheckAbortRef.current.abort()
 
       emailCheckRef.current = setTimeout(async () => {
-        // M-3: Each invocation gets a fresh AbortController so we can cancel
-        // the fetch if the component unmounts or the user types again.
         const controller = new AbortController()
         emailCheckAbortRef.current = controller
 
@@ -160,7 +153,6 @@ export default function RegisterPage() {
             }
           }
         } catch {
-          // If check fails or was aborted, don't block — server will catch it on submit
         }
       }, 300)
     }
@@ -170,7 +162,6 @@ export default function RegisterPage() {
     setFormData(prev => ({ ...prev, [fieldName]: value }))
     const validation = stepNum === 1 ? step1Validation : step2Validation
     const fieldState = validation.getFieldProps(fieldName)
-    // Re-validate on change only if field has been touched
     if (fieldState.status !== 'idle') {
       validation.validateField(fieldName, value)
     }
@@ -187,7 +178,6 @@ export default function RegisterPage() {
       return
     }
 
-    // Step 2 validation
     const isValid = step2Validation.validateAll(formData as Record<string, unknown>)
 
     if (!agreedToTerms) {
@@ -241,7 +231,6 @@ export default function RegisterPage() {
           {step === 1 ? t('auth.personal_info_desc') : t('auth.company_info_desc')}
         </p>
 
-        {/* Progress indicator */}
         <div className="flex items-center gap-3 mb-8">
           <div className="flex items-center gap-2">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
@@ -508,7 +497,6 @@ export default function RegisterPage() {
                 <FieldMessage {...step2Validation.getFieldProps('companyPhone')} />
               </div>
 
-              {/* Terms of Service checkbox */}
               <div className="pt-2">
                 <label className="flex items-start gap-2 cursor-pointer">
                   <input

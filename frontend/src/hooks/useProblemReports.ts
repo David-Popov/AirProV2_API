@@ -7,7 +7,7 @@ export function useProblemReports() {
   return useQuery({
     queryKey: queryKeys.problemReports.list(),
     queryFn: () => problemReportsService.getAllProblemReports(),
-    staleTime: 5 * 60 * 1000, // M6: 5 min — reports change rarely; invalidate on create/delete
+    staleTime: 5 * 60 * 1000,
   })
 }
 
@@ -15,7 +15,7 @@ export function useProblemCategories() {
   return useQuery({
     queryKey: queryKeys.problemReports.categories(),
     queryFn: () => problemReportsService.getCategories(),
-    staleTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 30 * 60 * 1000,
   })
 }
 

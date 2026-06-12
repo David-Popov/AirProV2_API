@@ -31,20 +31,17 @@ public class AdminCompanyDto
     public string? Email { get; set; }
     public bool? IsActive { get; set; }
     public bool IsDeleted { get; set; }
-    
-    // Owner info
+
     public string? OwnerName { get; set; }
     public string? OwnerEmail { get; set; }
     public string? OwnerPhone { get; set; }
-    
-    // Subscription info
+
     public string SubscriptionPlan { get; set; } = string.Empty;
     public string SubscriptionStatus { get; set; } = string.Empty;
     public DateTime? TrialEndDate { get; set; }
     public DateTime? SubscriptionCurrentPeriodEnd { get; set; }
     public bool? IsSubscriptionActive { get; set; }
-    
-    // Stats
+
     public int UserCount { get; set; }
     public int MontageCount { get; set; }
     

@@ -4,6 +4,7 @@ using API.Data;
 using API.Data.Entities;
 using API.DTOs;
 using API.Models;
+using Mapster;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Minio;
@@ -81,7 +82,7 @@ public class MontagePhotoService : IMontagePhotoService
         _context.MontagePhotos.Add(montagePhoto);
         await _context.SaveChangesAsync();
 
-        return ToDto(montagePhoto);
+        return montagePhoto.Adapt<MontagePhotoDto>();
     }
 
     public async Task<List<MontagePhotoDto>> GetPhotosByMontageIdAsync(Guid montageId)
@@ -93,13 +94,13 @@ public class MontagePhotoService : IMontagePhotoService
             .ThenBy(p => p.CreatedAt)
             .ToListAsync();
 
-        return photos.Select(ToDto).ToList();
+        return photos.Adapt<List<MontagePhotoDto>>();
     }
 
     public async Task<MontagePhotoDto?> GetPhotoByIdAsync(Guid photoId)
     {
         var photo = await _context.MontagePhotos.FindAsync(photoId);
-        return photo == null ? null : ToDto(photo);
+        return photo?.Adapt<MontagePhotoDto>();
     }
 
     public async Task<(Stream stream, string contentType, string fileName)?> GetPhotoStreamAsync(Guid photoId)
@@ -145,7 +146,6 @@ public class MontagePhotoService : IMontagePhotoService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to delete photo from MinIO: {ObjectName}", photo.ObjectName);
-            // Continue to delete database record even if MinIO delete fails
         }
 
         _context.MontagePhotos.Remove(photo);
@@ -167,7 +167,7 @@ public class MontagePhotoService : IMontagePhotoService
 
         await _context.SaveChangesAsync();
 
-        return ToDto(photo);
+        return photo.Adapt<MontagePhotoDto>();
     }
 
     public async Task<int> GetPhotoCountAsync(Guid montageId)
@@ -235,20 +235,4 @@ public class MontagePhotoService : IMontagePhotoService
         }
     }
 
-    private MontagePhotoDto ToDto(MontagePhoto photo)
-    {
-        return new MontagePhotoDto
-        {
-            Id = photo.Id,
-            MontageId = photo.MontageId,
-            FileName = photo.FileName,
-            OriginalFileName = photo.OriginalFileName,
-            ContentType = photo.ContentType,
-            FileSize = photo.FileSize,
-            Url = $"/api/montagephotos/{photo.Id}/download",
-            Description = photo.Description,
-            DisplayOrder = photo.DisplayOrder,
-            CreatedAt = photo.CreatedAt
-        };
-    }
 }

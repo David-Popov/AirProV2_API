@@ -10,7 +10,6 @@ public static class ExternalServicesExtensions
 {
     public static IServiceCollection AddExternalServices(this IServiceCollection services, IConfiguration config)
     {
-        // MinIO
         var minioSettings = config.GetSection("MinioSettings").Get<MinioSettings>();
         if (minioSettings != null)
         {
@@ -23,11 +22,9 @@ public static class ExternalServicesExtensions
                     .Build());
         }
 
-        // Stripe
         services.Configure<StripeSettings>(config.GetSection("StripeSettings"));
         services.AddScoped<IStripeService, StripeService>();
 
-        // Email
         services.Configure<EmailSettings>(config.GetSection("EmailSettings"));
         services.AddHttpClient("Mailtrap");
         services.AddScoped<IEmailService, EmailService>();

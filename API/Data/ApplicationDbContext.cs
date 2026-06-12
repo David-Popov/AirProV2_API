@@ -70,8 +70,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                 .HasForeignKey(u => u.CompanyId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
-    
-        // AirConditioner configuration
+
         builder.Entity<AirConditioner>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -82,8 +81,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(e => e.Brand).HasDatabaseName("idx_air_conditioners_brand");
             entity.HasIndex(e => e.Model).HasDatabaseName("idx_air_conditioners_model");
         });
-    
-        // ErrorCode configuration
+
         builder.Entity<ErrorCode>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -99,8 +97,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                   .HasForeignKey(e => e.AirConditionerId)
                   .OnDelete(DeleteBehavior.SetNull);
         });
-    
-        // Montage configuration
+
         builder.Entity<Montage>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -119,8 +116,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                   .HasForeignKey(e => e.AirConditionerId)
                   .OnDelete(DeleteBehavior.SetNull);
         });
-    
-        // InventoryItem configuration
+
         builder.Entity<InventoryItem>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -140,7 +136,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // MontageInventoryItem configuration - links montages to inventory items
         builder.Entity<MontageInventoryItem>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -158,10 +153,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasOne(e => e.InventoryItem)
                   .WithMany(i => i.MontageUsages)
                   .HasForeignKey(e => e.InventoryItemId)
-                  .OnDelete(DeleteBehavior.Restrict); // Cannot delete inventory item if used in montage
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // MontagePhoto configuration - photos attached to montages
         builder.Entity<MontagePhoto>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -177,7 +171,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // MontageAssignment configuration - workers assigned to a montage (many-to-many)
         builder.Entity<MontageAssignment>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -199,7 +192,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // InventoryAuditLog configuration - tracks all inventory changes
         builder.Entity<InventoryAuditLog>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -234,7 +226,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                   .OnDelete(DeleteBehavior.SetNull);
         });
 
-        // RefreshToken configuration
         builder.Entity<RefreshToken>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -249,7 +240,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // ReportedProblem configuration - user-submitted problem reports
         builder.Entity<ReportedProblem>(entity =>
         {
             entity.HasKey(e => e.Id);

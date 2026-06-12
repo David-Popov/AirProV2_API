@@ -68,7 +68,6 @@ export interface UpdateSubscriptionRequest {
   end_date?: string | null;
 }
 
-// Subscription types
 export type SubscriptionPlan = 'FreeTrial' | 'Basic' | 'Premium' | 'Enterprise';
 export type SubscriptionStatus = 'Active' | 'Expired' | 'Cancelled' | 'Trial';
 

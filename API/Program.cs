@@ -7,9 +7,6 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Local-only config overrides (gitignored: appsettings.*.local.json). Holds developer
-// secrets — Mailtrap/Stripe tokens, encryption key — in a visible project file instead of
-// the hidden user-secrets store. Optional everywhere; absent in production.
 builder.Configuration.AddJsonFile(
     $"appsettings.{builder.Environment.EnvironmentName}.local.json",
     optional: true,
@@ -20,12 +17,12 @@ builder.Services.AddDatabaseServices(builder.Configuration);
 builder.Services.AddIdentityServices(builder.Configuration, builder.Environment);
 builder.Services.AddRepositories();
 builder.Services.AddApplicationServices();
+builder.Services.AddMapster();
 builder.Services.AddExternalServices(builder.Configuration);
 builder.Services.AddValidators();
 
 var app = builder.Build();
 
-// Fail fast on missing/short secrets before serving any traffic.
 StartupValidator.ValidateConfiguration(app.Services, app.Environment);
 
 using (var scope = app.Services.CreateScope())
@@ -41,7 +38,6 @@ using (var scope = app.Services.CreateScope())
             SeedDataManager.SeedAllData(services);
         }
 
-        // Production admin bootstrap: creates admin from env vars if no admin exists
         ProductionAdminSeed.SeedAdminIfNotExists(services);
     }
     catch (Exception ex)
@@ -51,11 +47,8 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// ── Global exception handling ─────────────────────────────────────────────────
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-// ── Security headers ──────────────────────────────────────────────────────────
-// Applied before any other middleware so every response carries them.
 app.Use(async (context, next) =>
 {
     context.Response.Headers.Append("X-Content-Type-Options",  "nosniff");
@@ -66,14 +59,12 @@ app.Use(async (context, next) =>
 
     if (!app.Environment.IsDevelopment())
     {
-        // HSTS: tell browsers to use HTTPS for 1 year (only in production)
         context.Response.Headers.Append("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
     }
 
     await next();
 });
 
-// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -89,10 +80,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Use CORS
 app.UseCors("AllowAll");
 
-// Rate limiting — must be after CORS and before auth/controllers
 app.UseRateLimiter();
 
 app.UseAuthentication();

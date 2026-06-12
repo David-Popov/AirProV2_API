@@ -91,7 +91,6 @@ export default function SubscriptionPage() {
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
-      {/* Header */}
       <div className="text-center">
         <h1 className="text-3xl font-bold text-foreground mb-4">
           {t('subscription.title')}
@@ -101,7 +100,6 @@ export default function SubscriptionPage() {
         </p>
       </div>
 
-      {/* Current subscription status */}
       {subscriptionInfo && (
         <Card className="glass-card">
           <CardHeader>
@@ -155,7 +153,6 @@ export default function SubscriptionPage() {
         </Card>
       )}
 
-      {/* Premium Plan Card */}
       {plan && (
         <div className="grid place-items-center">
           <Card className="relative overflow-hidden max-w-md w-full border-primary shadow-xl shadow-primary/10">
@@ -213,7 +210,6 @@ export default function SubscriptionPage() {
         </div>
       )}
 
-      {/* Additional info */}
       <div className="text-center">
         <p className="text-sm text-muted-foreground">
           {t('subscription.secure_payment')}

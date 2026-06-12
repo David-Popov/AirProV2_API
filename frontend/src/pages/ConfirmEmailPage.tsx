@@ -22,8 +22,6 @@ export default function ConfirmEmailPage() {
   const token  = searchParams.get('token');
 
   useEffect(() => {
-    // M-3: Use AbortController so the fetch is cancelled if the component
-    // unmounts before the response arrives (prevents setState on unmounted component).
     const controller = new AbortController();
 
     const confirmEmail = async () => {

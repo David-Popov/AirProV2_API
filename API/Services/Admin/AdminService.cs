@@ -6,6 +6,7 @@ using API.Models;
 using API.Services.Email;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Mapster;
 
 namespace API.Services.Admin;
 
@@ -32,14 +33,10 @@ public class AdminService : IAdminService
 
     public async Task<PagedResult<AdminCompanyDto>> GetAllCompaniesAsync(AdminCompanyFilterDto filter)
     {
-        // No Include() — the Select() below projects navigation properties so EF Core
-        // generates a single JOIN/subquery per company; explicit Include would just
-        // load every user into the change tracker for no reason.
         var query = _context.Companies
             .AsNoTracking()
             .AsQueryable();
 
-        // Apply filters
         if (!string.IsNullOrWhiteSpace(filter.Name))
         {
             query = query.Where(c => c.CompanyName.ToLower().Contains(filter.Name.ToLower()));
@@ -74,31 +71,7 @@ public class AdminService : IAdminService
             .OrderByDescending(c => c.CreatedAt)
             .Skip((filter.Page - 1) * filter.PageSize)
             .Take(filter.PageSize)
-            .Select(c => new AdminCompanyDto
-            {
-                Id = c.Id,
-                CompanyName = c.CompanyName,
-                CompanyType = c.CompanyType.ToString(),
-                Bulstat = c.Bulstat,
-                VatNumber = c.VatNumber,
-                Address = c.Address,
-                City = c.City,
-                Phone = c.Phone,
-                Email = c.Email,
-                IsActive = c.IsActive,
-                IsDeleted = c.IsActive == false,
-                OwnerName = c.Users.Where(u => !u.IsDeleted).Select(u => u.FirstName + " " + u.LastName).FirstOrDefault(),
-                OwnerEmail = c.Users.Where(u => !u.IsDeleted).Select(u => u.Email).FirstOrDefault(),
-                OwnerPhone = c.Users.Where(u => !u.IsDeleted).Select(u => u.PhoneNumber).FirstOrDefault(),
-                SubscriptionPlan = c.SubscriptionPlan.ToString(),
-                SubscriptionStatus = c.SubscriptionStatus.ToString(),
-                TrialEndDate = c.TrialEndDate,
-                SubscriptionCurrentPeriodEnd = c.SubscriptionCurrentPeriodEnd,
-                IsSubscriptionActive = c.IsSubscriptionActive,
-                UserCount = c.Users.Count(u => !u.IsDeleted),
-                MontageCount = c.Montages.Count,
-                CreatedAt = c.CreatedAt
-            })
+            .ProjectToType<AdminCompanyDto>()
             .ToListAsync();
 
         return new PagedResult<AdminCompanyDto>
@@ -112,39 +85,11 @@ public class AdminService : IAdminService
 
     public async Task<AdminCompanyDto?> GetCompanyByIdAsync(Guid id)
     {
-        var company = await _context.Companies
+        return await _context.Companies
             .AsNoTracking()
-            .Include(c => c.Users)
-            .Include(c => c.Montages)
-            .FirstOrDefaultAsync(c => c.Id == id);
-
-        if (company == null) return null;
-
-        return new AdminCompanyDto
-        {
-            Id = company.Id,
-            CompanyName = company.CompanyName,
-            CompanyType = company.CompanyType.ToString(),
-            Bulstat = company.Bulstat,
-            VatNumber = company.VatNumber,
-            Address = company.Address,
-            City = company.City,
-            Phone = company.Phone,
-            Email = company.Email,
-            IsActive = company.IsActive,
-            IsDeleted = company.IsActive == false,
-            OwnerName = company.Users.Where(u => !u.IsDeleted).Select(u => u.FirstName + " " + u.LastName).FirstOrDefault(),
-            OwnerEmail = company.Users.Where(u => !u.IsDeleted).Select(u => u.Email).FirstOrDefault(),
-            OwnerPhone = company.Users.Where(u => !u.IsDeleted).Select(u => u.PhoneNumber).FirstOrDefault(),
-            SubscriptionPlan = company.SubscriptionPlan.ToString(),
-            SubscriptionStatus = company.SubscriptionStatus.ToString(),
-            TrialEndDate = company.TrialEndDate,
-            SubscriptionCurrentPeriodEnd = company.SubscriptionCurrentPeriodEnd,
-            IsSubscriptionActive = company.IsSubscriptionActive,
-            UserCount = company.Users.Count(u => !u.IsDeleted),
-            MontageCount = company.Montages.Count,
-            CreatedAt = company.CreatedAt
-        };
+            .Where(c => c.Id == id)
+            .ProjectToType<AdminCompanyDto>()
+            .FirstOrDefaultAsync();
     }
 
     public async Task<AdminCompanyDto?> UpdateCompanySubscriptionAsync(Guid companyId, AdminUpdateSubscriptionDto dto)
@@ -182,7 +127,6 @@ public class AdminService : IAdminService
         company.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        // Queue email notification (non-blocking)
         var notifyCompany = company;
         var notifyPrevStatus = previousStatus;
         var notifyNewStatus = company.SubscriptionStatus.ToString();
@@ -260,7 +204,6 @@ public class AdminService : IAdminService
             query = query.Where(u => u.IsDeleted == filter.IsDeleted.Value);
         }
 
-        // Role filter pushed into SQL via subquery so it participates in pagination correctly.
         if (!string.IsNullOrWhiteSpace(filter.Role))
         {
             var roleName = filter.Role;
@@ -274,7 +217,6 @@ public class AdminService : IAdminService
 
         var totalCount = await query.CountAsync();
 
-        // Project to a flat shape that includes the company name in a single JOIN at the SQL level.
         var pagedUsers = await query
             .OrderByDescending(u => u.Id)
             .Skip((filter.Page - 1) * filter.PageSize)
@@ -296,7 +238,6 @@ public class AdminService : IAdminService
             })
             .ToListAsync();
 
-        // Batch-load roles for the page in a single JOIN.
         var pageUserIds = pagedUsers.Select(u => u.Id).ToList();
         var roleMap = await _context.UserRoles
             .AsNoTracking()
@@ -381,7 +322,6 @@ public class AdminService : IAdminService
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null) return false;
 
-        // Remove current password and set new one
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
         var result = await _userManager.ResetPasswordAsync(user, token, dto.NewPassword);
 
@@ -392,7 +332,6 @@ public class AdminService : IAdminService
             return false;
         }
 
-        // Queue email notification with new password (non-blocking)
         if (dto.SendEmailNotification && user.Company != null)
         {
             var pwUser = user;
@@ -410,7 +349,6 @@ public class AdminService : IAdminService
 
     public async Task<bool> ChangeUserRoleAsync(string userId, AdminChangeRoleDto dto)
     {
-        // Security: Only allow Manager <-> User role changes
         if (dto.NewRole != "Manager" && dto.NewRole != "User")
         {
             _logger.LogWarning("Attempted to change user {UserId} to disallowed role: {Role}", userId, dto.NewRole);
@@ -422,18 +360,15 @@ public class AdminService : IAdminService
 
         var currentRoles = await _userManager.GetRolesAsync(user);
         
-        // Don't allow changing Admin role
         if (currentRoles.Contains("Admin"))
         {
             _logger.LogWarning("Attempted to change Admin user {UserId} role", userId);
             return false;
         }
 
-        // Remove current non-Admin roles
         var rolesToRemove = currentRoles.Where(r => r != "Admin").ToList();
         await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
 
-        // Add new role
         await _userManager.AddToRoleAsync(user, dto.NewRole);
 
         return true;
@@ -472,12 +407,9 @@ public class AdminService : IAdminService
     public async Task<PagedResult<AdminMontageDto>> GetAllMontagesAsync(AdminMontageFilterDto filter)
     {
         var query = _context.Montages
-            .Include(m => m.Company)
-            .Include(m => m.User)
-            .Include(m => m.AirConditioner)
+            .AsNoTracking()
             .AsQueryable();
 
-        // Apply filters
         if (!string.IsNullOrWhiteSpace(filter.ClientName))
         {
             query = query.Where(m => m.ClientName.ToLower().Contains(filter.ClientName.ToLower()));
@@ -532,31 +464,7 @@ public class AdminService : IAdminService
             .OrderByDescending(m => m.CreatedAt)
             .Skip((filter.Page - 1) * filter.PageSize)
             .Take(filter.PageSize)
-            .Select(m => new AdminMontageDto
-            {
-                Id = m.Id,
-                ClientName = m.ClientName,
-                ClientPhone = m.ClientPhone,
-                ClientEmail = m.ClientEmail,
-                ClientAddress = m.ClientAddress,
-                ClientCity = m.ClientCity,
-                InstallationDate = m.InstallationDate,
-                CompletionDate = m.CompletionDate,
-                Status = m.Status.ToString(),
-                PaymentStatus = m.PaymentStatus.ToString(),
-                TotalPrice = m.TotalPrice,
-                PaidAmount = m.PaidAmount,
-                Notes = m.Notes,
-                UserId = m.UserId,
-                UserName = m.User != null ? m.User.FirstName + " " + m.User.LastName : null,
-                UserEmail = m.User != null ? m.User.Email : null,
-                CompanyId = m.CompanyId,
-                CompanyName = m.Company != null ? m.Company.CompanyName : null,
-                AirConditionerId = m.AirConditionerId,
-                AirConditionerBrand = m.AirConditioner != null ? m.AirConditioner.Brand : null,
-                AirConditionerModel = m.AirConditioner != null ? m.AirConditioner.Model : null,
-                CreatedAt = m.CreatedAt
-            })
+            .ProjectToType<AdminMontageDto>()
             .ToListAsync();
 
         return new PagedResult<AdminMontageDto>
@@ -570,39 +478,11 @@ public class AdminService : IAdminService
 
     public async Task<AdminMontageDto?> GetMontageByIdAsync(Guid montageId)
     {
-        var montage = await _context.Montages
-            .Include(m => m.Company)
-            .Include(m => m.User)
-            .Include(m => m.AirConditioner)
-            .FirstOrDefaultAsync(m => m.Id == montageId);
-
-        if (montage == null) return null;
-
-        return new AdminMontageDto
-        {
-            Id = montage.Id,
-            ClientName = montage.ClientName,
-            ClientPhone = montage.ClientPhone,
-            ClientEmail = montage.ClientEmail,
-            ClientAddress = montage.ClientAddress,
-            ClientCity = montage.ClientCity,
-            InstallationDate = montage.InstallationDate,
-            CompletionDate = montage.CompletionDate,
-            Status = montage.Status.ToString(),
-            PaymentStatus = montage.PaymentStatus.ToString(),
-            TotalPrice = montage.TotalPrice,
-            PaidAmount = montage.PaidAmount,
-            Notes = montage.Notes,
-            UserId = montage.UserId,
-            UserName = montage.User != null ? montage.User.FirstName + " " + montage.User.LastName : null,
-            UserEmail = montage.User?.Email,
-            CompanyId = montage.CompanyId,
-            CompanyName = montage.Company?.CompanyName,
-            AirConditionerId = montage.AirConditionerId,
-            AirConditionerBrand = montage.AirConditioner?.Brand,
-            AirConditionerModel = montage.AirConditioner?.Model,
-            CreatedAt = montage.CreatedAt
-        };
+        return await _context.Montages
+            .AsNoTracking()
+            .Where(m => m.Id == montageId)
+            .ProjectToType<AdminMontageDto>()
+            .FirstOrDefaultAsync();
     }
 
     public async Task<AdminMontageDto> CreateMontageAsync(AdminCreateMontageDto dto)

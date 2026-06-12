@@ -5,8 +5,7 @@ public class MontageStatusValidator
     public static ValidationResult CanSetStatusToCompleted(Data.Entities.Montage montage)
     {
         var errors = new List<string>();
-        
-        // Проверка за плащане
+
         if (montage.PaymentStatus != Models.MontagePaymentStatus.Paid)
         {
             errors.Add("Montage cannot be completed: Payment is not fully paid");
@@ -16,8 +15,7 @@ public class MontageStatusValidator
         {
             errors.Add($"Montage cannot be completed: Paid amount ({montage.PaidAmount}) is less than total price ({montage.TotalPrice})");
         }
-        
-        // Проверка за серийни номера
+
         if (string.IsNullOrWhiteSpace(montage.IndoorUnitSerial))
         {
             errors.Add("Montage cannot be completed: Indoor unit serial number is required");

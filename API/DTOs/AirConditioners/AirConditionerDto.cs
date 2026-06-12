@@ -69,6 +69,4 @@ public class AirConditionerDto
 
     [JsonPropertyName("image_url")]
     public string? ImageUrl { get; set; }
-
-    public HashSet<ErrorCode> ErrorCodes { get; set; } = new HashSet<ErrorCode>();
 }

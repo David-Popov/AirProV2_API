@@ -16,7 +16,7 @@ i18n
       caches: ['localStorage'],
     },
     interpolation: {
-      escapeValue: false, // not needed for react as it escapes by default
+      escapeValue: false,
     },
     resources: {
       en: {

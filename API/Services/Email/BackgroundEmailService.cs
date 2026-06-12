@@ -16,8 +16,6 @@ public class BackgroundEmailQueue : IBackgroundEmailQueue
     public BackgroundEmailQueue(ILogger<BackgroundEmailQueue> logger)
     {
         _logger = logger;
-        // Unbounded channel — never silently drops emails.
-        // Under extreme load the queue grows in memory rather than losing emails.
         _queue = Channel.CreateUnbounded<Func<IServiceProvider, Task>>();
     }
 
@@ -27,8 +25,6 @@ public class BackgroundEmailQueue : IBackgroundEmailQueue
 
         if (!_queue.Writer.TryWrite(emailWork))
         {
-            // TryWrite on an unbounded channel never returns false unless the channel
-            // is completed (i.e., app is shutting down). Log so it is visible.
             _logger.LogError("Failed to enqueue email work item — the email channel may be closed (shutdown in progress)");
         }
     }

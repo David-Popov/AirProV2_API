@@ -72,7 +72,6 @@ public class InventoryItem
     [Column("archived_by")]
     public string? ArchivedBy { get; set; }
 
-    // Navigation properties
     [ForeignKey("CompanyId")]
     public virtual Company? Company { get; set; }
 

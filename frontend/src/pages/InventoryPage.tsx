@@ -127,7 +127,6 @@ export default function InventoryPage() {
   const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Inventory form validation rules
   const inventoryValidationRules = useMemo(() => ({
     name: [
       required('validation.inventory_name_required'),
@@ -211,7 +210,6 @@ export default function InventoryPage() {
 
     const isValid = inventoryValidation.validateAll(currentItem as unknown as Record<string, unknown>)
 
-    // Additional checks not covered by the hook
     const extraErrors: string[] = []
     if (currentItem.quantity === undefined || currentItem.quantity < 0) extraErrors.push(t('validation.quantity_invalid', 'Quantity must be 0 or greater'))
     if (currentItem.min_quantity != null && currentItem.min_quantity < 0) extraErrors.push(t('validation.min_quantity_invalid', 'Min quantity must be 0 or greater'))
@@ -312,7 +310,6 @@ export default function InventoryPage() {
 
       <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder={t('inventory.search_placeholder')} />
 
-      {/* Low Stock Alerts */}
       <Card className="glass-card mb-4 sm:mb-6 border-orange-500/20">
         <CardHeader className="pb-3">
           <CardTitle className="text-foreground flex items-center gap-2 text-base sm:text-lg flex-wrap">
@@ -359,7 +356,6 @@ export default function InventoryPage() {
         </CardContent>
       </Card>
 
-      {/* Filter row */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-muted-foreground">{t('common.status')}:</span>
@@ -382,7 +378,6 @@ export default function InventoryPage() {
         )}
       </div>
 
-      {/* Table — Desktop */}
       <div className="hidden md:block glass-card rounded-xl overflow-hidden mb-4">
         <Table>
           <TableHeader className="bg-muted/30">
@@ -475,7 +470,6 @@ export default function InventoryPage() {
         </Table>
       </div>
 
-      {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
         {isLoading ? (
           <SkeletonMobileCards rows={4} />
@@ -496,7 +490,6 @@ export default function InventoryPage() {
                     <StockStatusBadge item={item} />
                   </div>
 
-                  {/* Stock Level bar on mobile */}
                   <div className="mb-3">
                     <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                       <span>Stock Level</span>
@@ -575,7 +568,6 @@ export default function InventoryPage() {
         pageLabel={t('common.page', { current: page, total: totalPages || 1 })}
       />
 
-      {/* Item Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="bg-card border-border text-card-foreground max-w-[95vw] sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>

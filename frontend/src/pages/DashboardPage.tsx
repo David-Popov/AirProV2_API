@@ -144,7 +144,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background pt-14 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300">
-      {/* Header */}
       <motion.div
         className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
         initial={{ opacity: 0, y: -12 }}
@@ -174,7 +173,6 @@ export default function DashboardPage() {
         />
       </motion.div>
 
-      {/* Trial Warning */}
       {user?.subscription_plan === 'FreeTrial' && user?.subscription_status === 'Trial' && user.trial_end_date && (
         <motion.div
           className="mb-6 sm:mb-8 p-4 bg-primary/8 border border-primary/20 rounded-xl flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4"
@@ -204,7 +202,6 @@ export default function DashboardPage() {
         </motion.div>
       )}
 
-      {/* Stat Cards */}
       <motion.div
         className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8"
         variants={containerVariants}
@@ -251,7 +248,6 @@ export default function DashboardPage() {
         />
       </motion.div>
 
-      {/* Revenue Chart */}
       <motion.div
         className="mb-6 sm:mb-8"
         variants={fadeUp}
@@ -267,7 +263,6 @@ export default function DashboardPage() {
         />
       </motion.div>
 
-      {/* Montage Status + Payment Status */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
         <motion.div
           variants={fadeUp}
@@ -288,7 +283,6 @@ export default function DashboardPage() {
         </motion.div>
       </div>
 
-      {/* Monthly Activity Chart */}
       <motion.div
         className="mb-6 sm:mb-8"
         variants={fadeUp}
@@ -300,7 +294,6 @@ export default function DashboardPage() {
         <MonthlyActivityChart data={dashboardData.activityByMonth as Array<{ month: string; created: number; completed: number }>} />
       </motion.div>
 
-      {/* Recent Activity + Inventory */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 mb-6 sm:mb-8">
         <motion.div
           className="lg:col-span-2"
@@ -376,7 +369,6 @@ export default function DashboardPage() {
         </motion.div>
       </div>
 
-      {/* Maintenance Reminders */}
       <motion.div
         variants={fadeUp}
         initial="hidden"
@@ -459,7 +451,6 @@ export default function DashboardPage() {
   )
 }
 
-// ─── Animated Number Counter ──────────────────────────────────────────────────
 function useCountUp(target: number, duration = 800) {
   const [count, setCount] = useState(0)
   const raf = useRef<number>(0)
@@ -478,7 +469,6 @@ function useCountUp(target: number, duration = 800) {
   return count
 }
 
-// ─── Stat Card ────────────────────────────────────────────────────────────────
 interface StatCardProps {
   title: string
   value: number
@@ -497,7 +487,6 @@ function StatCard({ title, value, subtitle, icon: Icon, iconColor, iconBg, trend
   return (
     <motion.div variants={variants} whileHover={{ y: -3, transition: { duration: 0.2 } }}>
       <Card className="glass-card relative overflow-hidden h-full group">
-        {/* Hover shimmer line */}
         <div className="absolute bottom-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         <CardContent className="p-4 sm:p-5">
           <div className="flex items-center justify-between mb-3">

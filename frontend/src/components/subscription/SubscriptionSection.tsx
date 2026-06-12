@@ -39,7 +39,7 @@ export default function SubscriptionSection() {
       const [planData, statusData, limitsData] = await Promise.all([
         stripeService.getPlan(),
         stripeService.getSubscriptionStatus(),
-        employeeService.getLimits().catch(() => null) // Don't fail if limits fetch fails
+        employeeService.getLimits().catch(() => null)
       ])
       setPlan(planData)
       setSubscriptionInfo(statusData)
@@ -91,7 +91,6 @@ export default function SubscriptionSection() {
 
   return (
     <div className="space-y-6">
-      {/* Current subscription status */}
       {subscriptionInfo && (
         <Card className="glass-card border-primary/20">
           <CardHeader>
@@ -145,7 +144,6 @@ export default function SubscriptionSection() {
         </Card>
       )}
 
-      {/* Manage Subscription Card - visible for all users with subscription info */}
       {subscriptionInfo && (
         <Card className="glass-card border-border">
           <CardHeader>
@@ -234,7 +232,6 @@ export default function SubscriptionSection() {
         </Card>
       )}
 
-      {/* Employee Limits Card */}
       {employeeLimits && (
         <Card className="glass-card border-border">
           <CardHeader>
@@ -279,7 +276,6 @@ export default function SubscriptionSection() {
         </Card>
       )}
 
-      {/* Premium Plan Card */}
       {plan && !isPremiumSubscriber && (
         <Card className="relative overflow-hidden border-primary shadow-lg shadow-primary/10">
           <div className="absolute top-0 right-0 bg-gradient-to-bl from-primary to-primary/80 text-primary-foreground text-xs font-medium px-4 py-1.5 rounded-bl-xl">

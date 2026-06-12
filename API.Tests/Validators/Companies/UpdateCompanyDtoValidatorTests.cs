@@ -26,7 +26,7 @@ public class UpdateCompanyDtoValidatorTests
         {
             CompanyName = "X",
             CompanyType = "LLC",
-            Bulstat = "12345" // < 9 chars
+            Bulstat = "12345"
         });
 
         result.IsValid.Should().BeFalse();
