@@ -78,7 +78,6 @@ import {
   MONTAGE_STATUS_OPTIONS
 } from '@/types'
 
-// Extended type for form state
 interface MontageFormState extends CreateMontageRequest {
   id?: string;
   indoor_unit_serial?: string;
@@ -136,14 +135,6 @@ export default function MontagesPage() {
 
   const [formData, setFormData] = useState<MontageFormState>(initialFormState)
 
-  // M2: Auto-set montage status from completion_date.
-  // Rules:
-  //   - completion_date set + status is still default 'Planned' → flip to 'Completed'
-  //   - completion_date cleared in CREATE mode while status==='Completed' → revert to 'Planned'
-  //   - never override 'InProgress' / 'Canceled' / 'Overdue' (user picked them deliberately)
-  //   - never auto-revert in EDIT mode (user may be doing data cleanup on an existing record)
-  // Returning the same `prev` reference when no change is needed is load-bearing —
-  // React bails on the update and the effect doesn't re-fire, preventing infinite loops.
   useEffect(() => {
     setFormData(prev => {
       const hasDate = !!prev.completion_date
@@ -157,16 +148,6 @@ export default function MontagesPage() {
     })
   }, [formData.completion_date, isEditing])
 
-  // M2: Live-derive payment_status from paid_amount vs total_price as the
-  // user types. The payment status is fully a function of the two amounts —
-  // any previous selection (including 'Overdue') is overridden so the badge
-  // always reflects reality.
-  //   - paid >= total (with total > 0) → 'Paid'
-  //   - 0 < paid < total                → 'PartiallyPaid'
-  //   - paid === 0                      → 'NotPaid'
-  //   - total === 0 (not entered yet)   → leave alone, nothing to compare
-  // Returning the same `prev` reference when the status didn't actually change
-  // is load-bearing — React bails on the update and the effect doesn't re-fire.
   useEffect(() => {
     setFormData(prev => {
       const paid = prev.paid_amount ?? 0
@@ -194,7 +175,6 @@ export default function MontagesPage() {
   const [acComboboxOpen, setAcComboboxOpen] = useState(false)
   const [workerComboboxOpen, setWorkerComboboxOpen] = useState(false)
 
-  // Worker assignment: only managers/admins pick assignees; workers are auto-assigned by the backend.
   const { user } = useAuth()
   const isPrivileged = !!user?.roles?.some(r => r === 'Manager' || r === 'Admin')
   const { data: employees } = useEmployees(isPrivileged)
@@ -214,7 +194,6 @@ export default function MontagesPage() {
     })
   }, [])
 
-  // Montage form validation rules
   const montageValidationRules = useMemo(() => ({
     client_name: [
       required('validation.client_name_required'),
@@ -388,7 +367,6 @@ export default function MontagesPage() {
 
     const isValid = montageValidation.validateAll(formData as unknown as Record<string, unknown>)
 
-    // Additional checks not covered by the hook
     const extraErrors: string[] = []
     if (!formData.installation_date) {
       extraErrors.push(t('validation.date_required', 'Installation date is required'))
@@ -539,7 +517,6 @@ export default function MontagesPage() {
         </Button>
       </SearchBar>
 
-      {/* Maintenance Reminders */}
       <Card className="glass-card mb-4 sm:mb-6 border-orange-500/20">
         <CardHeader className="pb-3">
           <CardTitle className="text-foreground flex items-center gap-2 text-base sm:text-lg flex-wrap">
@@ -611,7 +588,6 @@ export default function MontagesPage() {
         </CardContent>
       </Card>
 
-      {/* Count indicator */}
       {totalCount > 0 && (
         <div className="flex justify-end mb-2">
           <span className="text-xs text-muted-foreground">
@@ -620,7 +596,6 @@ export default function MontagesPage() {
         </div>
       )}
 
-      {/* Table - Desktop */}
       <div className="hidden md:block glass-card rounded-xl overflow-hidden">
         <Table>
           <TableHeader className="bg-muted/30">
@@ -690,7 +665,6 @@ export default function MontagesPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      {/* Previous Status Arrow */}
                       <Button
                         variant="ghost"
                         size="icon"
@@ -715,12 +689,10 @@ export default function MontagesPage() {
                         <ChevronLeft className="w-3 h-3" />
                       </Button>
 
-                      {/* Status Badge */}
                       <Badge variant="outline" className={statusColors[item.status || 'Planned'] || statusColors['Planned']}>
                         {getStatusLabel(item.status)}
                       </Badge>
 
-                      {/* Next Status Arrow */}
                       <Button
                         variant="ghost"
                         size="icon"
@@ -787,7 +759,6 @@ export default function MontagesPage() {
         </Table>
       </div>
 
-      {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
         {isLoading ? (
           <SkeletonMobileCards rows={4} />
@@ -876,15 +847,13 @@ export default function MontagesPage() {
         pageLabel={t('common.page', { current: page, total: totalPages || 1 })}
       />
 
-      {/* Filter Dialog */}
       <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
         <DialogContent className="bg-card border-border text-card-foreground sm:max-w-106.25">
           <DialogHeader>
             <DialogTitle>{t('common.filter', 'Filter Montages')}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            
-            {/* Status Filter */}
+
             <div className="grid gap-2">
               <Label>{t('common.status', 'Status')}</Label>
               <Select 
@@ -905,7 +874,6 @@ export default function MontagesPage() {
               </Select>
             </div>
 
-            {/* Client Phone */}
             <div className="grid gap-2">
               <Label>{t('auth.phone', 'Phone')}</Label>
               <Input 
@@ -916,7 +884,6 @@ export default function MontagesPage() {
               />
             </div>
 
-            {/* Date Range */}
             <div className="space-y-2">
               <Label>{t('common.date_range', 'Date Range')}</Label>
               <div className="grid grid-cols-2 gap-2">
@@ -967,15 +934,13 @@ export default function MontagesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="bg-card border-border text-card-foreground max-w-[95vw] sm:max-w-225 max-h-[90vh] overflow-y-auto shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">{isEditing ? t('montages.edit_details') : t('montages.new_montage')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSave} className="grid gap-4 sm:gap-6 py-4">
-            
-            {/* Client Info */}
+
             <div className="space-y-4">
                <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">{t('montages.client_info')}</h3>
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1043,7 +1008,6 @@ export default function MontagesPage() {
                </div>
             </div>
 
-            {/* Assigned Workers — managers/admins choose; workers are auto-assigned by the backend */}
             {isPrivileged && (
               <div className="space-y-4">
                 <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">{t('montages.assigned_workers', 'Assigned Workers')} *</h3>
@@ -1109,7 +1073,6 @@ export default function MontagesPage() {
               </div>
             )}
 
-            {/* Installation Details */}
             <div className="space-y-4">
                <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">{t('montages.installation_info')}</h3>
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1136,7 +1099,6 @@ export default function MontagesPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  {/* AC Unit Section */}
                   <div className="col-span-1 sm:col-span-2 space-y-3">
                     <div className="flex items-center justify-between">
                       <Label>{t('montages.ac_unit', 'Air Conditioner Unit')}</Label>
@@ -1210,7 +1172,6 @@ export default function MontagesPage() {
                           </PopoverContent>
                         </Popover>
 
-                        {/* AC Info Preview */}
                         {formData.air_conditioner_id && (() => {
                           const selectedAC = airConditioners.find(ac => ac.id === formData.air_conditioner_id)
                           if (!selectedAC) return null
@@ -1255,7 +1216,6 @@ export default function MontagesPage() {
                </div>
             </div>
 
-             {/* Financials */}
             <div className="space-y-4">
                <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">{t('montages.financials')}</h3>
                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1315,7 +1275,6 @@ export default function MontagesPage() {
         isLoading={isDeleting}
       />
 
-      {/* Mobile Filter FAB */}
       <div className="sm:hidden fixed bottom-6 right-6 z-50">
         <Button
           className="relative h-14 w-14 rounded-full shadow-lg shadow-primary/30 bg-primary hover:bg-primary/90 text-primary-foreground p-0 flex items-center justify-center transition-transform hover:scale-105 active:scale-95"

@@ -7,7 +7,7 @@ export function useMontagePhotos(montageId: string) {
     queryKey: queryKeys.montagePhotos.byMontage(montageId),
     queryFn: () => montagePhotoService.getPhotosByMontage(montageId),
     enabled: !!montageId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   })
 }
 
@@ -15,7 +15,7 @@ export function usePhotoValidationInfo() {
   return useQuery({
     queryKey: queryKeys.montagePhotos.validationInfo(),
     queryFn: () => montagePhotoService.getValidationInfo(),
-    staleTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 30 * 60 * 1000,
   })
 }
 

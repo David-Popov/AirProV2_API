@@ -31,7 +31,6 @@ public class ExceptionHandlingMiddleware
         }
         catch (ValidationException ex)
         {
-            // Caller-safe: FluentValidation errors are designed to be returned to clients.
             var errors = ex.Errors?
                 .GroupBy(e => string.IsNullOrEmpty(e.PropertyName) ? "_" : e.PropertyName)
                 .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
@@ -53,8 +52,6 @@ public class ExceptionHandlingMiddleware
         }
         catch (InvalidOperationException ex)
         {
-            // Framework throws InvalidOperationException for many internal cases.
-            // Do NOT echo ex.Message back to the client — log it, return generic.
             _logger.LogWarning(ex, "InvalidOperationException at {Path}", context.Request.Path);
             await WriteProblemAsync(
                 context,

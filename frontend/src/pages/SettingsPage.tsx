@@ -82,7 +82,6 @@ export default function SettingsPage() {
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [savingProfile, setSavingProfile] = useState(false)
 
-  // Security section state
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [isChangingEmail, setIsChangingEmail] = useState(false)
   const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' })
@@ -105,7 +104,6 @@ export default function SettingsPage() {
     try {
       await employeeService.deleteAccountAndCompany()
       toast.success(t('settings.account_deleted', 'Account and company deleted successfully'))
-      // Log out and redirect
       const { authService } = await import('@/services/auth')
       authService.logout()
       window.location.href = '/login'
@@ -136,7 +134,6 @@ export default function SettingsPage() {
       setLoading(false)
       return
     }
-    // Initialize profile form from user data
     setProfileForm({
       first_name: user.first_name || '',
       middle_name: user.middle_name || '',
@@ -144,7 +141,6 @@ export default function SettingsPage() {
       email: user.email || '',
       phone_number: user.phone_number || ''
     })
-    // Load company data if available
     if (user.company_id) {
       loadCompany()
     } else {
@@ -158,7 +154,6 @@ export default function SettingsPage() {
       setLoading(true)
       const data = await companyService.getById(user.company_id)
       setCompany(data)
-      // Initialize form with company data
       setCompanyForm({
         company_name: data.company_name || '',
         company_type: data.company_type || '',
@@ -192,7 +187,7 @@ export default function SettingsPage() {
       })
       toast.success(t('settings.company_updated', 'Company information updated successfully'))
       setIsEditing(false)
-      loadCompany() // Reload to get fresh data
+      loadCompany()
     } catch {
       toast.error(t('settings.company_update_error', 'Failed to update company information'))
     } finally {
@@ -201,7 +196,6 @@ export default function SettingsPage() {
   }
 
   const handleCancelEdit = () => {
-    // Reset form to original company data
     if (company) {
       setCompanyForm({
         company_name: company.company_name || '',
@@ -254,15 +248,13 @@ export default function SettingsPage() {
     { id: 'subscription', label: t('settings.subscription', 'Subscription'), icon: CreditCard },
     { id: 'preferences', label: t('settings.preferences', 'Preferences'), icon: Settings }
   ] as const
-  
-  // Hide company and subscription tabs from Admin users
-  const tabs = isAdmin 
+
+  const tabs = isAdmin
     ? allTabs.filter(tab => tab.id !== 'company' && tab.id !== 'subscription') 
     : allTabs
 
   return (
     <div className="min-h-screen bg-background pt-14 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300">
-      {/* Header */}
       <div className="mb-6 sm:mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t('settings.title', 'Settings')}</h1>
         <p className="text-sm sm:text-base text-muted-foreground">
@@ -270,7 +262,6 @@ export default function SettingsPage() {
         </p>
       </div>
       
-      {/* Mobile Tabs - Horizontal Scrollable */}
       <div className="lg:hidden mb-6 -mx-4 px-4">
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {tabs.map(tab => (
@@ -291,7 +282,6 @@ export default function SettingsPage() {
       </div>
 
       <div className="flex gap-6 lg:gap-8">
-        {/* Desktop Sidebar Tabs */}
         <div className="hidden lg:block w-56 shrink-0">
           <Card className="glass-card sticky top-8">
             <CardContent className="p-2">
@@ -315,9 +305,7 @@ export default function SettingsPage() {
           </Card>
         </div>
         
-        {/* Content */}
         <div className="flex-1 max-w-full lg:max-w-3xl">
-          {/* Profile Tab */}
           {activeTab === 'profile' && (
             <div className="space-y-4 sm:space-y-6">
               <Card className="glass-card">
@@ -443,7 +431,6 @@ export default function SettingsPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* Change Password */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -524,7 +511,6 @@ export default function SettingsPage() {
 
                   <div className="border-t border-border" />
 
-                  {/* Change Email */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -596,7 +582,6 @@ export default function SettingsPage() {
             </div>
           )}
           
-          {/* Company Tab */}
           {activeTab === 'company' && (
             <div className="space-y-4 sm:space-y-6">
             <Card className="glass-card">
@@ -626,7 +611,6 @@ export default function SettingsPage() {
                   </div>
                 ) : company ? (
                   <div className="space-y-4 sm:space-y-6">
-                    {/* Company header - always visible */}
                     <div className="p-3 sm:p-4 rounded-xl bg-primary/5 border border-primary/20">
                       {isEditing ? (
                         <div className="space-y-2">
@@ -706,7 +690,6 @@ export default function SettingsPage() {
                       </div>
                     </div>
 
-                    {/* Save/Cancel buttons when editing */}
                     {isEditing && (
                       <div className="flex gap-3 pt-4 border-t border-border/50">
                         <Button onClick={handleSaveCompany} disabled={saving}>
@@ -728,7 +711,6 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
-            {/* Danger Zone — only for Managers */}
             {isManager && company && (
               <Card className="glass-card border-red-500/30">
                 <CardHeader>
@@ -761,7 +743,6 @@ export default function SettingsPage() {
               </Card>
             )}
 
-            {/* Delete Account Confirmation Dialog */}
             <Dialog open={deleteAccountDialogOpen} onOpenChange={setDeleteAccountDialogOpen}>
               <DialogContent className="bg-card border-border text-card-foreground sm:max-w-md">
                 <DialogHeader>
@@ -802,15 +783,12 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {/* Subscription Tab */}
           {activeTab === 'subscription' && (
             <SubscriptionSection />
           )}
-          
-          {/* Preferences Tab */}
+
           {activeTab === 'preferences' && (
             <div className="space-y-4 sm:space-y-6">
-              {/* Appearance */}
               <Card className="glass-card">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
@@ -844,7 +822,6 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
               
-              {/* Language */}
               <Card className="glass-card">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
@@ -868,8 +845,6 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
               
-              {/* Notifications - Hidden from Admin. M4: marked Coming Soon — all switches
-                  disabled, body dimmed + pointer-events-none so the toggles can't be clicked. */}
               {!isAdmin && (
                 <Card className="glass-card">
                   <CardHeader>

@@ -39,7 +39,6 @@ export const passwordStrength = (): ValidationRule =>
     return null
   }
 
-// Bulgarian-specific validators
 export const bulgarianPhone = (messageKey: string): ValidationRule =>
   (value: string) => (value && !/^(\+359|0)\d{8,9}$/.test(value)) ? messageKey : null
 

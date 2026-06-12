@@ -7,7 +7,7 @@ export function useCompanies(page: number, pageSize: number) {
   return useQuery({
     queryKey: queryKeys.companies.list(page, pageSize),
     queryFn: () => companyService.getAll(page, pageSize),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   })
 }
 

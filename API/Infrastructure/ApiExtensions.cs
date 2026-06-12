@@ -13,7 +13,6 @@ public static class ApiExtensions
         services.AddControllers();
         services.AddOpenApi();
 
-        // ── CORS ──────────────────────────────────────────────────────────────
         var allowedOrigins = config.GetSection("CorsSettings:AllowedOrigins").Get<string[]>();
 
         services.AddCors(options =>
@@ -28,24 +27,17 @@ public static class ApiExtensions
                 }
                 else if (env.IsDevelopment())
                 {
-                    // Development-only fallback: allow any origin so local tooling works.
-                    // Never reached in production because CorsSettings:AllowedOrigins is required there.
                     policy.AllowAnyOrigin()
                           .AllowAnyMethod()
                           .AllowAnyHeader();
                 }
                 else
                 {
-                    // Production with no origins configured → reject all cross-origin requests.
-                    // Fix: add CorsSettings:AllowedOrigins to your production config.
                     policy.WithOrigins(Array.Empty<string>());
                 }
             });
         });
 
-        // ── Rate limiting ─────────────────────────────────────────────────────
-        // Auth endpoints (login, register, forgot-password, resend-confirmation)
-        // are limited to 10 requests per minute per IP to resist brute-force attacks.
         services.AddRateLimiter(options =>
         {
             options.AddFixedWindowLimiter("auth", opt =>

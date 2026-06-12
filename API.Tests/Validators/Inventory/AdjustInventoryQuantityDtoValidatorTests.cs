@@ -40,7 +40,7 @@ public class AdjustInventoryQuantityDtoValidatorTests
         var result = _validator.Validate(new AdjustInventoryQuantityDto
         {
             AdjustmentAmount = 1m,
-            Reason = new string('x', 501) // > 500
+            Reason = new string('x', 501)
         });
 
         result.IsValid.Should().BeFalse();

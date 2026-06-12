@@ -74,8 +74,6 @@ public class TrialCleanupService : BackgroundService
         {
             _logger.LogInformation($"Marking trial as expired for company: {company.CompanyName} ({company.Id})");
 
-            // Only mark as expired - do NOT deactivate employees yet
-            // User will be shown a modal to choose: Upgrade to Premium OR Return to Free Plan
             company.SubscriptionStatus = SubscriptionStatus.Expired;
             company.IsSubscriptionActive = false;
             company.UpdatedAt = DateTime.UtcNow;

@@ -19,7 +19,6 @@ public class InventoryAuditLogDto
     [JsonPropertyName("user_id")]
     public string? UserId { get; set; }
 
-    // User details object to match frontend expectation
     [JsonPropertyName("user")]
     public AuditUserDto? User { get; set; }
 

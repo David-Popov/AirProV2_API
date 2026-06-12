@@ -149,7 +149,7 @@ public class MontageInventoryServiceTests
     {
         await using var db = TestDbContextFactory.Create();
         var montage = SeedMontage();
-        var item = SeedItem(montage.CompanyId!.Value, qty: 1m); // only 1m left
+        var item = SeedItem(montage.CompanyId!.Value, qty: 1m);
         var usage = new MontageInventoryItem
         {
             Id = Guid.NewGuid(),
@@ -164,7 +164,6 @@ public class MontageInventoryServiceTests
 
         var sut = new MontageInventoryService(db, NullLogger<MontageInventoryService>.Instance, _audit);
 
-        // Going from 2 → 10 requires 8 more units, but only 1 is left in stock.
         var act = async () => await sut.UpdateMaterialQuantityAsync(usage.Id, 10m);
 
         await act.Should().ThrowAsync<ValidationException>().WithMessage("*Insufficient stock*");

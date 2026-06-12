@@ -56,11 +56,6 @@ public class ProcessedStripeEventDedupTests
     [Fact]
     public async Task DuplicateEventId_SecondInsert_ThrowsBecauseOfPrimaryKey()
     {
-        // PK on EventId is the contract the production code relies on for
-        // concurrent-duplicate detection (PostgreSQL surfaces it as 23505 and
-        // the catch block treats it as a benign no-op). InMemory provider also
-        // enforces PK uniqueness — it throws InvalidOperationException at
-        // SaveChanges time, but the protection mechanism is the same.
         var dbName = Guid.NewGuid().ToString();
         await using (var db = TestDbContextFactory.Create(dbName))
         {
@@ -83,9 +78,6 @@ public class ProcessedStripeEventDedupTests
 
         var act = async () => await db2.SaveChangesAsync();
 
-        // InMemory throws ArgumentException via the in-memory tracker when a
-        // duplicate primary key is added. We only care that *some* exception
-        // is thrown — the production catch handles the real database error.
         await act.Should().ThrowAsync<Exception>();
     }
 }

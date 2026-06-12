@@ -233,14 +233,12 @@ export default function PrivacyPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Ambient background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute -top-60 -right-60 w-125 h-125 bg-primary/8 rounded-full blur-3xl" />
         <div className="absolute top-1/3 -left-60 w-100 h-100 bg-primary/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/3 w-75 h-75 bg-violet-400/5 rounded-full blur-3xl" />
       </div>
 
-      {/* Navbar */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="container mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
@@ -262,10 +260,8 @@ export default function PrivacyPage() {
         </div>
       </header>
 
-      {/* Content */}
       <main className="container mx-auto px-4 sm:px-6 py-16 lg:py-24 max-w-3xl">
 
-        {/* Page header */}
         <div className="mb-14">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium mb-6">
             <BookOpen className="w-3.5 h-3.5" />
@@ -284,7 +280,6 @@ export default function PrivacyPage() {
 
         <div className="w-full h-px bg-border mb-14" />
 
-        {/* 1. Responsible party */}
         <Section icon={<Shield className="w-4 h-4" />} title={c.s1_title}>
           <p>{c.s1_p1}</p>
           <div className="mt-4 p-5 rounded-2xl bg-card border border-border">
@@ -298,7 +293,6 @@ export default function PrivacyPage() {
           </div>
         </Section>
 
-        {/* 2. Data collected */}
         <Section icon={<Database className="w-4 h-4" />} title={c.s2_title}>
           <p>{c.s2_p1}</p>
           <div className="mt-4 space-y-5">
@@ -317,51 +311,43 @@ export default function PrivacyPage() {
           </div>
         </Section>
 
-        {/* 3. How we use it */}
         <Section icon={<Eye className="w-4 h-4" />} title={c.s3_title}>
           <p>{c.s3_p1}</p>
           <BulletList items={c.s3_items} />
           <p className="mt-3">{c.s3_p2}</p>
         </Section>
 
-        {/* 4. Third parties */}
         <Section icon={<Lock className="w-4 h-4" />} title={c.s4_title}>
           <p>{c.s4_p1}</p>
           <BulletList items={c.s4_items} />
           <p className="mt-3">{c.s4_p2}</p>
         </Section>
 
-        {/* 5. Retention */}
         <Section icon={<Database className="w-4 h-4" />} title={c.s5_title}>
           <p>{c.s5_p1}</p>
           <BulletList items={c.s5_items} />
         </Section>
 
-        {/* 6. Rights */}
         <Section icon={<Eye className="w-4 h-4" />} title={c.s6_title}>
           <p>{c.s6_p1}</p>
           <BulletList items={c.s6_items} />
         </Section>
 
-        {/* 7. Cookies */}
         <Section icon={<Lock className="w-4 h-4" />} title={c.s7_title}>
           <p>{c.s7_p1}</p>
           <BulletList items={c.s7_items} />
           <p className="mt-3">{c.s7_p2}</p>
         </Section>
 
-        {/* 8. Security */}
         <Section icon={<Shield className="w-4 h-4" />} title={c.s8_title}>
           <p>{c.s8_p1}</p>
           <BulletList items={c.s8_items} />
         </Section>
 
-        {/* 9. Changes */}
         <Section icon={<Trash2 className="w-4 h-4" />} title={c.s9_title}>
           <p>{c.s9_p1}</p>
         </Section>
 
-        {/* 10. Contact */}
         <Section icon={<Mail className="w-4 h-4" />} title={c.s10_title}>
           <p>{c.s10_p1}</p>
           <div className="mt-4 p-5 rounded-2xl bg-card border border-border">
@@ -391,7 +377,6 @@ export default function PrivacyPage() {
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-border/50 bg-background/50 mt-10">
         <div className="container mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2.5">

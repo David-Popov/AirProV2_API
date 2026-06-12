@@ -9,6 +9,7 @@ using API.Repositories.Companies;
 using API.Services.Email;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Mapster;
 
 namespace API.Services.Companies;
 
@@ -77,8 +78,8 @@ public class CompanyService : ICompanyService
             };
 
             await _repository.AddCompanyAsync(company);
-            
-            return ToDto(company);
+
+            return company.Adapt<CompanyDto>();
         }
         catch (Exception e)
         {
@@ -135,7 +136,6 @@ public class CompanyService : ICompanyService
 
                 await _repository.DeleteCompanyAsync(company);
 
-                // Queue deletion confirmation email (non-blocking)
                 if (!string.IsNullOrEmpty(companyEmail))
                 {
                     var delEmail = companyEmail;
@@ -159,8 +159,11 @@ public class CompanyService : ICompanyService
     {
         try
         {
-            var company = await _repository.GetByIdWithUsersAsync(companyId);
-            return company == null ? null : ToDto(company);
+            return await _context.Companies
+                .AsNoTracking()
+                .Where(c => c.Id == companyId)
+                .ProjectToType<CompanyDto>()
+                .FirstOrDefaultAsync();
         }
         catch (Exception e)
         {
@@ -175,29 +178,8 @@ public class CompanyService : ICompanyService
         {
             var query = _context.Companies
                 .AsNoTracking()
-                .Include(c => c.Users)
-                .Select(c => new CompanyDto
-                {
-                    Id = c.Id.ToString(),
-                    CompanyName = c.CompanyName,
-                    CompanyType = c.CompanyType.ToString(),
-                    Bulstat = c.Bulstat,
-                    VatNumber = c.VatNumber,
-                    IsVatRegistered = c.IsVatRegistered,
-                    Address = c.Address,
-                    City = c.City,
-                    PostalCode = c.PostalCode,
-                    Phone = c.Phone,
-                    Email = c.Email,
-                    IsCompanyOwner = c.IsCompanyOwner,
-                    SubscriptionPlan = c.SubscriptionPlan.ToString(),
-                    IsSubscriptionActive = c.IsSubscriptionActive,
-                    IsActive = c.IsActive,
-                    CreatedAt = c.CreatedAt,
-                    UpdatedAt = c.UpdatedAt,
-                    UsersCount = c.Users.Count
-                });
-        
+                .ProjectToType<CompanyDto>();
+
             return await PagedList<CompanyDto>.CreateAsync(query, pageParameters);
         }
         catch (Exception e)
@@ -213,30 +195,9 @@ public class CompanyService : ICompanyService
         {
             var query = _context.Companies
                 .AsNoTracking()
-                .Include(c => c.Users)
                 .Where(c => c.IsActive == true)
-                .Select(c => new CompanyDto
-                {
-                    Id = c.Id.ToString(),
-                    CompanyName = c.CompanyName,
-                    CompanyType = c.CompanyType.ToString(),
-                    Bulstat = c.Bulstat,
-                    VatNumber = c.VatNumber,
-                    IsVatRegistered = c.IsVatRegistered,
-                    Address = c.Address,
-                    City = c.City,
-                    PostalCode = c.PostalCode,
-                    Phone = c.Phone,
-                    Email = c.Email,
-                    IsCompanyOwner = c.IsCompanyOwner,
-                    SubscriptionPlan = c.SubscriptionPlan.ToString(),
-                    IsSubscriptionActive = c.IsSubscriptionActive,
-                    IsActive = c.IsActive,
-                    CreatedAt = c.CreatedAt,
-                    UpdatedAt = c.UpdatedAt,
-                    UsersCount = c.Users.Count
-                });
-        
+                .ProjectToType<CompanyDto>();
+
             return await PagedList<CompanyDto>.CreateAsync(query, pageParameters);
         }
         catch (Exception e)
@@ -250,8 +211,11 @@ public class CompanyService : ICompanyService
     {
         try
         {
-            var company = await _repository.GetByBulstatAsync(bulstat);
-            return company == null ? null : ToDto(company);
+            return await _context.Companies
+                .AsNoTracking()
+                .Where(c => c.Bulstat == bulstat)
+                .ProjectToType<CompanyDto>()
+                .FirstOrDefaultAsync();
         }
         catch (Exception e)
         {
@@ -294,7 +258,7 @@ public class CompanyService : ICompanyService
                 throw new ValidationException($"Failed to create user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
             }
 
-            return ToUserDto(user);
+            return user.Adapt<UserDto>();
         }
         catch (Exception e)
         {
@@ -308,7 +272,7 @@ public class CompanyService : ICompanyService
         try
         {
             var users = await _repository.GetCompanyUsersAsync(companyId);
-            return users.Select(u => ToUserDto(u));
+            return users.Adapt<IEnumerable<UserDto>>();
         }
         catch (Exception e)
         {
@@ -395,43 +359,4 @@ public class CompanyService : ICompanyService
         }
     }
 
-    private static CompanyDto ToDto(Company company)
-    {
-        return new CompanyDto
-        {
-            Id = company.Id.ToString(),
-            CompanyName = company.CompanyName,
-            CompanyType = company.CompanyType.ToString(),
-            Bulstat = company.Bulstat,
-            VatNumber = company.VatNumber,
-            IsVatRegistered = company.IsVatRegistered,
-            Address = company.Address,
-            City = company.City,
-            PostalCode = company.PostalCode,
-            Phone = company.Phone,
-            Email = company.Email,
-            IsCompanyOwner = company.IsCompanyOwner,
-            SubscriptionPlan = company.SubscriptionPlan.ToString(),
-            IsSubscriptionActive = company.IsSubscriptionActive,
-            IsActive = company.IsActive,
-            CreatedAt = company.CreatedAt,
-            UpdatedAt = company.UpdatedAt,
-            UsersCount = company.Users?.Count ?? 0
-        };
-    }
-
-    private static UserDto ToUserDto(ApplicationUser user)
-    {
-        return new UserDto
-        {
-            Id = user.Id,
-            Email = user.Email ?? string.Empty,
-            FirstName = user.FirstName,
-            MiddleName = user.MiddleName,
-            LastName = user.LastName,
-            PhoneNumber = user.PhoneNumber,
-            Address = user.Address,
-            CompanyId = user.CompanyId.ToString()
-        };
-    }
 }

@@ -27,8 +27,7 @@ public class MontageInventoryItemDto
     
     [JsonPropertyName("created_at")]
     public DateTime CreatedAt { get; set; }
-    
-    // Inventory item details for display
+
     [JsonPropertyName("item_name")]
     public string? ItemName { get; set; }
     

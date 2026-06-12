@@ -112,8 +112,6 @@ export function MontagePhotosSection({
   const handleUpload = async () => {
     if (selectedFiles.length === 0) return;
     const trimmedDescription = description.trim();
-    // A2: backend requires a description — guard here so we never round-trip
-    // for a 400. UI also disables the Upload button until this is satisfied.
     if (!trimmedDescription) {
       toast.error(t('montages.photos.description_required'));
       return;
@@ -176,7 +174,6 @@ export function MontagePhotosSection({
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      // Revoke after the click has been processed so the download isn't cancelled.
       setTimeout(() => URL.revokeObjectURL(url), 0);
     } catch (error) {
       console.error('Failed to download photo:', error);
@@ -291,7 +288,6 @@ export function MontagePhotosSection({
               </div>
             ))}
 
-            {/* Add more photos placeholder */}
             {canAddMorePhotos && (
               <div
                 className="aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 transition-colors flex flex-col items-center justify-center cursor-pointer bg-muted/10 hover:bg-muted/20"
@@ -316,14 +312,11 @@ export function MontagePhotosSection({
         )}
       </CardContent>
 
-      {/* Upload Dialog */}
       <Dialog
         open={showUploadDialog}
         onOpenChange={(open) => {
           setShowUploadDialog(open);
           if (!open) {
-            // Reset transient form state on close so a fresh open isn't
-            // pre-filled with the previous attempt.
             setDescription('');
             setSelectedFiles([]);
           }
@@ -399,14 +392,11 @@ export function MontagePhotosSection({
         </DialogContent>
       </Dialog>
 
-      {/* Photo Preview Dialog - Clean Lightbox like Technomarket */}
       <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
         <DialogContent className="max-w-[85vw] w-[85vw] max-h-[90vh] h-auto p-0 border-0 bg-transparent shadow-none [&>button]:hidden">
           {selectedPhoto && (
             <div className="relative">
-              {/* Main white container */}
               <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-2xl overflow-hidden">
-                {/* Close button - top right corner */}
                 <button
                   onClick={() => setSelectedPhoto(null)}
                   className="absolute top-3 right-3 z-50 p-2 rounded-full bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors shadow-md"
@@ -415,7 +405,6 @@ export function MontagePhotosSection({
                   <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                 </button>
 
-                {/* Image container */}
                 <div className="flex items-center justify-center p-8 bg-gray-50 dark:bg-zinc-800/50 min-h-[60vh]">
                   <AuthenticatedImage
                     endpoint={montagePhotoService.getPhotoDownloadPath(selectedPhoto.id)}
@@ -425,7 +414,6 @@ export function MontagePhotosSection({
                   />
                 </div>
 
-                {/* Minimal bottom bar with actions */}
                 <div className="px-6 py-4 bg-white dark:bg-zinc-900 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-between">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-gray-900 dark:text-white truncate">

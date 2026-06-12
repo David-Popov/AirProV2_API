@@ -5,6 +5,7 @@ using API.Data.Entities;
 using API.DTOs;
 using API.Models;
 using API.Repositories;
+using Mapster;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Services.AirConditioners;
@@ -140,7 +141,7 @@ public class AirConditionerService : IAirConditionerService
                 throw new NotFoundException("Air conditioner not found");
             }
             
-            return ToDto(entity);
+            return entity.Adapt<AirConditionerDto>();
         }
         catch (Exception e)
         {
@@ -155,7 +156,6 @@ public class AirConditionerService : IAirConditionerService
         {
             var query = _context.AirConditioners.AsNoTracking();
 
-            // Apply Filters
             if (!string.IsNullOrWhiteSpace(parameters.SearchTerm))
             {
                 var term = parameters.SearchTerm.ToLower().Trim();
@@ -191,31 +191,7 @@ public class AirConditionerService : IAirConditionerService
                 query = query.Where(ac => ac.Kilowatts <= parameters.MaxKilowatts.Value);
             }
 
-            // Project to DTO
-            var dtoQuery = query.Select(ac => new AirConditionerDto
-                {
-                    Id = ac.Id,
-                    Name = ac.Name,
-                    Brand = ac.Brand,
-                    Model = ac.Model,
-                    Kilowatts = ac.Kilowatts,
-                    Description = ac.Description,
-                    Price = ac.Price,
-                    ImageUrl = ac.ImageUrl,
-                    PipeSizeLiquid = ac.PipeSizeLiquid,
-                    PipeSizeGas = ac.PipeSizeGas,
-                    RefrigerantType = ac.RefrigerantType,
-                    FactoryRefrigerantCharge = ac.FactoryRefrigerantCharge,
-                    PowerSupplyLocation = ac.PowerSupplyLocation,
-                    CableSection = ac.CableSection,
-                    RecommendedFuse = ac.RecommendedFuse,
-                    IndoorDimensions = ac.IndoorDimensions,
-                    OutdoorDimensions = ac.OutdoorDimensions,
-                    WeightIndoor = ac.WeightIndoor,
-                    WeightOutdoor = ac.WeightOutdoor,
-                    MaxPipeLength = ac.MaxPipeLength,
-                    MaxHeightDifference = ac.MaxHeightDifference,
-                });
+            var dtoQuery = query.ProjectToType<AirConditionerDto>();
 
             return await PagedList<AirConditionerDto>.CreateAsync(dtoQuery, parameters);
         }
@@ -317,7 +293,7 @@ public class AirConditionerService : IAirConditionerService
                 throw new NotFoundException("Error code not found");
             }
             
-            return ToDto(entity);
+            return entity.Adapt<ErrorCodeDto>();
         }
         catch (Exception e)
         {
@@ -333,16 +309,7 @@ public class AirConditionerService : IAirConditionerService
             var query = _context.ErrorCodes
                 .AsNoTracking()
                 .Where(e => e.AirConditionerId == airConditionerId)
-                .Select(ec => new ErrorCodeDto
-                {
-                    Id = ec.Id,
-                    AirConditionerId = ec.AirConditionerId,
-                    Code = ec.Code,
-                    ErrorName = ec.ErrorName,
-                    Description = ec.Description,
-                    Solution = ec.Solution,
-                    Severity = ec.ErrorCodeSeverity.ToString(),
-                });
+                .ProjectToType<ErrorCodeDto>();
             return await PagedList<ErrorCodeDto>.CreateAsync(query, pageParameters);
         }
         catch (Exception e)
@@ -358,16 +325,7 @@ public class AirConditionerService : IAirConditionerService
         {
             var query = _context.ErrorCodes
                 .AsNoTracking()
-                .Select(ec => new ErrorCodeDto
-                {
-                    Id = ec.Id,
-                    AirConditionerId = ec.AirConditionerId,
-                    Code = ec.Code,
-                    ErrorName = ec.ErrorName,
-                    Description = ec.Description,
-                    Solution = ec.Solution,
-                    Severity = ec.ErrorCodeSeverity.ToString(),
-                });
+                .ProjectToType<ErrorCodeDto>();
             return await PagedList<ErrorCodeDto>.CreateAsync(query, pageParameters);
         }
         catch (Exception e)
@@ -377,45 +335,4 @@ public class AirConditionerService : IAirConditionerService
         }
     }
 
-    private static AirConditionerDto ToDto(AirConditioner airConditioner)
-    {
-        return new AirConditionerDto
-        {
-            Id = airConditioner.Id,
-            Name = airConditioner.Name,
-            Brand = airConditioner.Brand,
-            Model = airConditioner.Model,
-            Kilowatts = airConditioner.Kilowatts,
-            Description = airConditioner.Description,
-            Price = airConditioner.Price,
-            ImageUrl = airConditioner.ImageUrl,
-            PipeSizeLiquid = airConditioner.PipeSizeLiquid,
-            PipeSizeGas = airConditioner.PipeSizeGas,
-            RefrigerantType = airConditioner.RefrigerantType,
-            FactoryRefrigerantCharge = airConditioner.FactoryRefrigerantCharge,
-            PowerSupplyLocation = airConditioner.PowerSupplyLocation,
-            CableSection = airConditioner.CableSection,
-            RecommendedFuse = airConditioner.RecommendedFuse,
-            IndoorDimensions = airConditioner.IndoorDimensions,
-            OutdoorDimensions = airConditioner.OutdoorDimensions,
-            WeightIndoor = airConditioner.WeightIndoor,
-            WeightOutdoor = airConditioner.WeightOutdoor,
-            MaxPipeLength = airConditioner.MaxPipeLength,
-            MaxHeightDifference = airConditioner.MaxHeightDifference,
-        };
-    }
-    
-    private static ErrorCodeDto ToDto(ErrorCode errorCode)
-    {
-        return new ErrorCodeDto
-        {
-            Id = errorCode.Id,
-            AirConditionerId = errorCode.AirConditionerId,
-            Code = errorCode.Code,
-            ErrorName = errorCode.ErrorName,
-            Description = errorCode.Description,
-            Solution = errorCode.Solution,
-            Severity = errorCode.ErrorCodeSeverity.ToString(),
-        };
-    }
 }

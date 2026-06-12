@@ -75,7 +75,6 @@ export default function DashboardLayout() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Mobile Top Bar */}
       <header className="fixed top-0 inset-x-0 z-40 h-14 flex items-center justify-between px-4 bg-background/90 backdrop-blur-md border-b border-border/50 lg:hidden">
         <button
           onClick={() => setIsSidebarOpen(true)}
@@ -93,7 +92,6 @@ export default function DashboardLayout() {
         <div className="w-9" />
       </header>
 
-      {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm"
@@ -101,16 +99,13 @@ export default function DashboardLayout() {
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`fixed left-0 top-0 h-full w-60 glass-sidebar px-3 py-4 z-50 flex flex-col transition-transform duration-300 ease-out ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        {/* Gradient header glow band */}
         <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-primary/8 to-transparent pointer-events-none" />
 
-        {/* Close button — mobile only */}
         <button
           onClick={() => setIsSidebarOpen(false)}
           className="absolute top-3 right-3 lg:hidden p-1.5 rounded-lg hover:bg-sidebar-accent/80 transition-colors z-10"
@@ -119,7 +114,6 @@ export default function DashboardLayout() {
           <X className="w-4 h-4 text-muted-foreground" />
         </button>
 
-        {/* Logo */}
         <div
           className="relative flex items-center gap-3 mb-6 px-1 cursor-pointer shrink-0 group z-10"
           onClick={() => navigate('/dashboard')}
@@ -143,7 +137,6 @@ export default function DashboardLayout() {
           </div>
         </div>
 
-        {/* Nav — scrollable */}
         <nav className="flex-1 overflow-y-auto space-y-0.5 min-h-0 [&::-webkit-scrollbar]:w-0 [&::-webkit-scrollbar]:hidden">
           {isManager && !isAdmin && (
             <NavItem
@@ -178,7 +171,6 @@ export default function DashboardLayout() {
             />
           )}
 
-          {/* Database section */}
           <div className="pt-3 mt-2">
             <div className="flex items-center gap-2 px-2 mb-2">
               <div className="flex-1 h-px bg-gradient-to-r from-transparent via-sidebar-border/60 to-transparent" />
@@ -201,7 +193,6 @@ export default function DashboardLayout() {
             />
           </div>
 
-          {/* Admin section */}
           {isAdmin && (
             <div className="pt-3 mt-2">
               <div className="flex items-center gap-2 px-2 mb-2">
@@ -226,7 +217,6 @@ export default function DashboardLayout() {
             </div>
           )}
 
-          {/* Settings */}
           <div className="pt-3 mt-2">
             <div className="h-px bg-gradient-to-r from-transparent via-sidebar-border/60 to-transparent mb-2" />
             <NavItem
@@ -238,9 +228,7 @@ export default function DashboardLayout() {
           </div>
         </nav>
 
-        {/* Bottom section — always visible */}
         <div className="mt-3 space-y-2 shrink-0">
-          {/* User info */}
           <div className="glass-card-elevated p-3 rounded-xl">
             <div className="flex items-center gap-2.5 mb-2">
               <div className="relative shrink-0">
@@ -269,7 +257,6 @@ export default function DashboardLayout() {
             </div>
           </div>
 
-          {/* Report Problem */}
           {!isAdmin && (
             <button
               className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-muted-foreground
@@ -282,7 +269,6 @@ export default function DashboardLayout() {
             </button>
           )}
 
-          {/* Logout + theme + language */}
           <div className="flex items-center gap-1.5">
             <button
               className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-muted-foreground
@@ -298,7 +284,6 @@ export default function DashboardLayout() {
         </div>
       </aside>
 
-      {/* Main Content */}
       <Outlet />
 
       <SubscriptionExpiredModal isOpen={!!isSubscriptionExpired} />

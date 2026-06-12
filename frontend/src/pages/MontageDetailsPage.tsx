@@ -63,7 +63,6 @@ export default function MontageDetailsPage() {
   const [editingMaterial, setEditingMaterial] = useState<MontageInventoryItem | null>(null)
   const [editQuantity, setEditQuantity] = useState(0)
 
-  // Filter items based on search term
   const filteredItems = availableItems.filter(item => {
     if (!materialSearch.trim()) return true
     const search = materialSearch.toLowerCase()
@@ -263,10 +262,8 @@ export default function MontageDetailsPage() {
 
   return (
     <div className="min-h-screen bg-background pt-14 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300">
-      {/* Back Button */}
       <BackButton onClick={() => navigate('/montages')} />
 
-      {/* Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-wrap items-center gap-3 mb-2">
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{montage.client_name}</h1>
@@ -280,8 +277,7 @@ export default function MontageDetailsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        
-        {/* Client Info */}
+
         <Card className="glass-card">
           <CardHeader>
             <CardTitle className="text-foreground flex items-center gap-2">
@@ -324,7 +320,6 @@ export default function MontageDetailsPage() {
           </CardContent>
         </Card>
 
-        {/* Installation Info */}
         <Card className="glass-card">
           <CardHeader>
              <CardTitle className="text-foreground flex items-center gap-2">
@@ -396,7 +391,6 @@ export default function MontageDetailsPage() {
           </CardContent>
         </Card>
 
-        {/* Financials */}
          <Card className="glass-card h-fit">
           <CardHeader>
              <CardTitle className="text-foreground flex items-center gap-2">
@@ -428,7 +422,6 @@ export default function MontageDetailsPage() {
           </CardContent>
         </Card>
 
-         {/* Notes */}
          <Card className="glass-card h-fit">
           <CardHeader>
              <CardTitle className="text-foreground">{t('common.notes')}</CardTitle>
@@ -440,7 +433,6 @@ export default function MontageDetailsPage() {
           </CardContent>
         </Card>
 
-        {/* Materials Used */}
         <Card className="glass-card h-fit lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-foreground flex items-center gap-2">
@@ -523,7 +515,6 @@ export default function MontageDetailsPage() {
               </DialogContent>
             </Dialog>
 
-            {/* Edit Material Dialog */}
             <Dialog open={!!editingMaterial} onOpenChange={(open) => !open && setEditingMaterial(null)}>
               <DialogContent>
                 <DialogHeader>
@@ -603,7 +594,6 @@ export default function MontageDetailsPage() {
           </CardContent>
         </Card>
 
-        {/* Photos Section */}
         <MontagePhotosSection
           montageId={montage.id}
           photos={montage.photos}
@@ -613,7 +603,6 @@ export default function MontageDetailsPage() {
           }}
         />
 
-        {/* Location Map Section */}
         <MontageLocationMap
           address={montage.client_address}
           city={montage.client_city}

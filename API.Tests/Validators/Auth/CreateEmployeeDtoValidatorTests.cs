@@ -37,7 +37,7 @@ public class CreateEmployeeDtoValidatorTests
     public void Weak_Password_Fails()
     {
         var dto = ValidDto();
-        dto.Password = "weakpw"; // no uppercase, no digit
+        dto.Password = "weakpw";
 
         var result = _validator.Validate(dto);
 

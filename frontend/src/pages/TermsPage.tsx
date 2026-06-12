@@ -319,14 +319,12 @@ export default function TermsPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Ambient background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute -top-60 -right-60 w-125 h-125 bg-primary/8 rounded-full blur-3xl" />
         <div className="absolute top-1/3 -left-60 w-100 h-100 bg-primary/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/3 w-75 h-75 bg-violet-400/5 rounded-full blur-3xl" />
       </div>
 
-      {/* Navbar */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="container mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
@@ -348,10 +346,8 @@ export default function TermsPage() {
         </div>
       </header>
 
-      {/* Content */}
       <main className="container mx-auto px-4 sm:px-6 py-16 lg:py-24 max-w-3xl">
 
-        {/* Page header */}
         <div className="mb-14">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium mb-6">
             <BookOpen className="w-3.5 h-3.5" />
@@ -370,13 +366,11 @@ export default function TermsPage() {
 
         <div className="w-full h-px bg-border mb-14" />
 
-        {/* 1. Overview */}
         <Section icon={<AcIcon className="w-4 h-4" />} title={c.s1_title}>
           <p>{c.s1_p1}</p>
           <p>{c.s1_p2}</p>
         </Section>
 
-        {/* 2. User Roles */}
         <Section icon={<UserCheck className="w-4 h-4" />} title={c.s2_title}>
           <p className="mb-6">{c.s2_intro}</p>
           <div className="grid sm:grid-cols-2 gap-4 not-prose">
@@ -405,7 +399,6 @@ export default function TermsPage() {
           </div>
         </Section>
 
-        {/* 3. Jobs */}
         <Section icon={<ClipboardList className="w-4 h-4" />} title={c.s3_title}>
           <p>{c.s3_p1}</p>
           <div className="space-y-2.5 mt-4">
@@ -413,7 +406,6 @@ export default function TermsPage() {
           </div>
         </Section>
 
-        {/* 4. Photos */}
         <Section icon={<Camera className="w-4 h-4" />} title={c.s4_title}>
           <p>{c.s4_p1}</p>
           <div className="space-y-2.5 mt-4">
@@ -421,7 +413,6 @@ export default function TermsPage() {
           </div>
         </Section>
 
-        {/* 5. Inventory */}
         <Section icon={<Package className="w-4 h-4" />} title={c.s5_title}>
           <p>{c.s5_p1}</p>
           <div className="space-y-2.5 mt-4">
@@ -429,7 +420,6 @@ export default function TermsPage() {
           </div>
         </Section>
 
-        {/* 6. Team */}
         <Section icon={<Users className="w-4 h-4" />} title={c.s6_title}>
           <p>{c.s6_p1}</p>
           <div className="space-y-2.5 mt-4">
@@ -437,7 +427,6 @@ export default function TermsPage() {
           </div>
         </Section>
 
-        {/* 7. AC Catalog */}
         <Section icon={<AcIcon className="w-4 h-4" />} title={c.s7_title}>
           <p>{c.s7_p1}</p>
           <div className="space-y-2.5 mt-4">
@@ -445,7 +434,6 @@ export default function TermsPage() {
           </div>
         </Section>
 
-        {/* 8. Dashboard */}
         <Section icon={<BarChart3 className="w-4 h-4" />} title={c.s8_title}>
           <p>{c.s8_p1}</p>
           <div className="space-y-2.5 mt-4">
@@ -453,7 +441,6 @@ export default function TermsPage() {
           </div>
         </Section>
 
-        {/* 9. Plans */}
         <Section icon={<CreditCard className="w-4 h-4" />} title={c.s9_title}>
           <p>{c.s9_p1}</p>
           <div className="grid sm:grid-cols-3 gap-4 mt-4 not-prose">
@@ -474,7 +461,6 @@ export default function TermsPage() {
           <p className="mt-4">{c.s9_cancel}</p>
         </Section>
 
-        {/* 10. Emails */}
         <Section icon={<Bell className="w-4 h-4" />} title={c.s10_title}>
           <p>{c.s10_p1}</p>
           <div className="space-y-2.5 mt-4">
@@ -482,7 +468,6 @@ export default function TermsPage() {
           </div>
         </Section>
 
-        {/* 11. Security */}
         <Section icon={<Shield className="w-4 h-4" />} title={c.s11_title}>
           <p>{c.s11_p1}</p>
           <div className="space-y-2.5 mt-4">
@@ -490,7 +475,6 @@ export default function TermsPage() {
           </div>
         </Section>
 
-        {/* 12. Contact */}
         <Section icon={<Mail className="w-4 h-4" />} title={c.s12_title}>
           <p>{c.s12_p1}</p>
           <div className="mt-4 p-5 rounded-2xl bg-card border border-border">
@@ -524,7 +508,6 @@ export default function TermsPage() {
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-border/50 bg-background/50 mt-10">
         <div className="container mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2.5">

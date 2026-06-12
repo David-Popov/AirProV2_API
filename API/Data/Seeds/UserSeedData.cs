@@ -16,9 +16,6 @@ public static class UserSeedData
 
         var hasher = new PasswordHasher<ApplicationUser>();
 
-        // M-12: Read seed passwords from environment variables so they are not
-        // committed to source control. Fall back to obvious dev-only defaults that
-        // must be changed before any real deployment.
         var adminPassword   = Environment.GetEnvironmentVariable("SEED_ADMIN_PASSWORD")   ?? "Admin@Dev123!";
         var managerPassword = Environment.GetEnvironmentVariable("SEED_MANAGER_PASSWORD") ?? "Manager@Dev123!";
         var userPassword    = Environment.GetEnvironmentVariable("SEED_USER_PASSWORD")    ?? "User@Dev123!";
@@ -37,7 +34,7 @@ public static class UserSeedData
             Address = "Sofia, Bulgaria",
             PhoneNumber = "+359888111111",
             PhoneNumberConfirmed = true,
-            CompanyId = null, // Admin has no company
+            CompanyId = null,
             SecurityStamp = Guid.NewGuid().ToString(),
             ConcurrencyStamp = Guid.NewGuid().ToString()
         };
@@ -57,7 +54,7 @@ public static class UserSeedData
             Address = "Plovdiv, Bulgaria",
             PhoneNumber = "+359888222222",
             PhoneNumberConfirmed = true,
-            CompanyId = Guid.Parse("c0000000-0000-0000-0000-000000000001"), // АйрПро ЕООД
+            CompanyId = Guid.Parse("c0000000-0000-0000-0000-000000000001"),
             SecurityStamp = Guid.NewGuid().ToString(),
             ConcurrencyStamp = Guid.NewGuid().ToString()
         };
@@ -77,7 +74,7 @@ public static class UserSeedData
             Address = "Varna, Bulgaria",
             PhoneNumber = "+359888333333",
             PhoneNumberConfirmed = true,
-            CompanyId = Guid.Parse("c0000000-0000-0000-0000-000000000002"), // Климат Сървис ООД
+            CompanyId = Guid.Parse("c0000000-0000-0000-0000-000000000002"),
             SecurityStamp = Guid.NewGuid().ToString(),
             ConcurrencyStamp = Guid.NewGuid().ToString()
         };
@@ -97,7 +94,7 @@ public static class UserSeedData
             Address = "Burgas, Bulgaria",
             PhoneNumber = "+359888444444",
             PhoneNumberConfirmed = true,
-            CompanyId = Guid.Parse("c0000000-0000-0000-0000-000000000003"), // Техно Климат ЕТ
+            CompanyId = Guid.Parse("c0000000-0000-0000-0000-000000000003"),
             SecurityStamp = Guid.NewGuid().ToString(),
             ConcurrencyStamp = Guid.NewGuid().ToString()
         };

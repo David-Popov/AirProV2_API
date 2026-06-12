@@ -17,24 +17,23 @@ interface Particle {
   delay: number
   opacity: number
   blur: number
-  hue: number     // slight hue variation around primary blue (245°)
+  hue: number
 }
 
 export function FloatingParticles({ count = 26 }: { count?: number }) {
   const particles = useMemo<Particle[]>(() =>
     Array.from({ length: count }, (_, i) => {
       const r = (o: number) => rand(i * 13 + o)
-      const size = 8 + r(1) * 22           // 8–30 px  — visible at dark bg
+      const size = 8 + r(1) * 22
       return {
         id:       i,
         size,
-        left:     2  + r(2) * 93,          // 2–95 %
-        duration: 16 + r(3) * 22,          // 16–38 s
-        // First ~6 particles start immediately so the screen isn't empty on load
+        left:     2  + r(2) * 93,
+        duration: 16 + r(3) * 22,
         delay:    i < 6 ? r(4) * 4 : r(4) * 18,
-        opacity:  0.18 + r(5) * 0.22,      // 0.18–0.40 — enough for dark mode
-        blur:     size * 0.32,             // proportional soft glow
-        hue:      235 + r(6) * 20,         // 235–255 — primary-ish blues
+        opacity:  0.18 + r(5) * 0.22,
+        blur:     size * 0.32,
+        hue:      235 + r(6) * 20,
       }
     }),
   [count])
@@ -42,7 +41,7 @@ export function FloatingParticles({ count = 26 }: { count?: number }) {
   return (
     <div
       className="fixed inset-0 pointer-events-none overflow-hidden"
-      style={{ zIndex: 1 }}   /* positive — sits above bg, below z-50 navbar */
+      style={{ zIndex: 1 }}
       aria-hidden="true"
     >
       {particles.map((p) => (

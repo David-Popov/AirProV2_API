@@ -69,6 +69,7 @@ public class MontageRepository : IMontageRepository
                 .Include(m => m.Photos)
                 .Include(m => m.Assignments)
                     .ThenInclude(a => a.User)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(m => m.Id == montageId);
         }
         catch (Exception e)

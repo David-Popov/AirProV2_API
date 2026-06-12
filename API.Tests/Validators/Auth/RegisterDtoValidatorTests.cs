@@ -42,10 +42,10 @@ public class RegisterDtoValidatorTests
     }
 
     [Theory]
-    [InlineData("short")]              // < 6 chars
-    [InlineData("nouppercase1")]        // no upper
-    [InlineData("NOLOWERCASE1")]        // no lower
-    [InlineData("NoDigitHere")]         // no digit
+    [InlineData("short")]
+    [InlineData("nouppercase1")]
+    [InlineData("NOLOWERCASE1")]
+    [InlineData("NoDigitHere")]
     public void Weak_Password_Fails(string password)
     {
         var dto = ValidDto();
@@ -59,9 +59,9 @@ public class RegisterDtoValidatorTests
     }
 
     [Theory]
-    [InlineData("12345678")]    // 8 digits — fails (must be 9 or 13)
-    [InlineData("12345678901")] // 11 digits — fails
-    [InlineData("abcdefghi")]   // 9 non-digits — fails
+    [InlineData("12345678")]
+    [InlineData("12345678901")]
+    [InlineData("abcdefghi")]
     public void Invalid_Bulstat_Fails(string bulstat)
     {
         var dto = ValidDto();
@@ -86,9 +86,9 @@ public class RegisterDtoValidatorTests
     }
 
     [Theory]
-    [InlineData("123456789")]      // missing BG prefix
-    [InlineData("BG123")]          // too few digits
-    [InlineData("BG12345678901")]  // too many digits (>10)
+    [InlineData("123456789")]
+    [InlineData("BG123")]
+    [InlineData("BG12345678901")]
     public void Invalid_VatNumber_Fails(string vat)
     {
         var dto = ValidDto();

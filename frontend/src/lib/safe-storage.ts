@@ -31,7 +31,6 @@ export const safeStorage = {
     try {
       localStorage.removeItem(key);
     } catch {
-      /* no-op — already gone or storage unavailable */
     }
   },
 };

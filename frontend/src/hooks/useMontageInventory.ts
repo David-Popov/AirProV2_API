@@ -8,7 +8,7 @@ export function useMontageInventoryMaterials(montageId: string) {
     queryKey: queryKeys.montageInventory.byMontage(montageId),
     queryFn: () => montageInventoryService.getMaterials(montageId),
     enabled: !!montageId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   })
 }
 

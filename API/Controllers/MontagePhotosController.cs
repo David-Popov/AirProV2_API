@@ -38,14 +38,12 @@ public class MontagePhotosController : ApiControllerBase
     {
         await EnsureCanAccessMontageAsync(montageId);
 
-        // Validate file before processing
         var (isValid, fileError) = _photoService.ValidateFile(file);
         if (!isValid)
         {
             throw new ValidationException(fileError);
         }
 
-        // Check if can add more photos
         var (canAdd, countError) = await _photoService.CanAddPhotoAsync(montageId);
         if (!canAdd)
         {
@@ -71,7 +69,6 @@ public class MontagePhotosController : ApiControllerBase
     {
         await EnsureCanAccessMontageAsync(montageId);
 
-        // Validate total count
         var currentCount = await _photoService.GetPhotoCountAsync(montageId);
         var totalAfterUpload = currentCount + files.Count;
 
@@ -82,7 +79,6 @@ public class MontagePhotosController : ApiControllerBase
                 $"Cannot upload {files.Count} photos. Only {remaining} more photo(s) can be added (max {ImageValidationConstants.MaxPhotosPerMontage} per montage)");
         }
 
-        // Validate each file
         foreach (var file in files)
         {
             var (isValid, fileError) = _photoService.ValidateFile(file);

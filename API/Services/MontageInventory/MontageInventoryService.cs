@@ -54,7 +54,6 @@ public class MontageInventoryService : IMontageInventoryService
 
     public async Task<List<MontageInventoryItemDto>> AddMaterialsAsync(Guid montageId, AddMaterialsToMontageRequest request)
     {
-        // Validate montage exists
         var montage = await _context.Montages.FindAsync(montageId);
         if (montage == null)
         {
@@ -63,11 +62,9 @@ public class MontageInventoryService : IMontageInventoryService
 
         var addedItems = new List<MontageInventoryItemDto>();
 
-        // Use transaction to ensure atomicity
         await using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
-            // Batch-load all required inventory items upfront to avoid N+1 queries
             var materialIds = request.Materials.Select(m => m.InventoryItemId).Distinct().ToList();
             var inventoryItemsMap = await _context.InventoryItems
                 .Where(i => materialIds.Contains(i.Id))
@@ -75,7 +72,6 @@ public class MontageInventoryService : IMontageInventoryService
 
             foreach (var material in request.Materials)
             {
-                // Get inventory item and check stock
                 if (!inventoryItemsMap.TryGetValue(material.InventoryItemId, out var inventoryItem))
                 {
                     throw new ValidationException($"Inventory item {material.InventoryItemId} not found");
@@ -86,11 +82,9 @@ public class MontageInventoryService : IMontageInventoryService
                     throw new ValidationException($"Insufficient stock for {inventoryItem.Name}. Available: {inventoryItem.Quantity}, Requested: {material.QuantityUsed}");
                 }
 
-                // Deduct from inventory
                 inventoryItem.Quantity -= material.QuantityUsed;
                 inventoryItem.UpdatedAt = DateTime.UtcNow;
 
-                // Create link record
                 var montageInventoryItem = new MontageInventoryItem
                 {
                     MontageId = montageId,
@@ -102,13 +96,12 @@ public class MontageInventoryService : IMontageInventoryService
 
                 _context.MontageInventoryItems.Add(montageInventoryItem);
 
-                // Log the usage in montage
                 await _auditService.LogActionAsync(new InventoryAuditLog
                 {
                     CompanyId = inventoryItem.CompanyId,
                     InventoryItemId = material.InventoryItemId,
                     Action = "UsedInMontage",
-                    UserId = request.UserId, // Assuming we add UserId to request
+                    UserId = request.UserId,
                     QuantityBefore = inventoryItem.Quantity + material.QuantityUsed,
                     QuantityAfter = inventoryItem.Quantity,
                     QuantityChanged = -material.QuantityUsed,
@@ -160,7 +153,6 @@ public class MontageInventoryService : IMontageInventoryService
                 throw new NotFoundException("Material record not found");
             }
 
-            // Restore quantity to inventory
             if (montageItem.InventoryItem != null)
             {
                 montageItem.InventoryItem.Quantity += montageItem.QuantityUsed;
@@ -202,11 +194,10 @@ public class MontageInventoryService : IMontageInventoryService
             
             decimal diff = newQuantity - montageItem.QuantityUsed;
             
-            if (Math.Abs(diff) < 0.001m) return; // No change
+            if (Math.Abs(diff) < 0.001m) return;
 
             if (diff > 0)
             {
-                 // Need more stock
                  if (montageItem.InventoryItem.Quantity < diff)
                  {
                       throw new ValidationException($"Insufficient stock. Available: {montageItem.InventoryItem.Quantity}, Needed additional: {diff}");
@@ -215,7 +206,6 @@ public class MontageInventoryService : IMontageInventoryService
             }
             else
             {
-                 // Returning stock
                  montageItem.InventoryItem.Quantity += Math.Abs(diff);
             }
             

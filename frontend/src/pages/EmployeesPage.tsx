@@ -112,7 +112,6 @@ export default function EmployeesPage() {
   const activateEmployee = useActivateEmployee()
   const deactivateEmployee = useDeactivateEmployee()
 
-  // Compute workload per employee from active montages linked via user_id
   const workloadMap = useMemo(() => {
     const allMontages = montagesData?.items ?? []
     const map: Record<string, number> = {}
@@ -228,7 +227,6 @@ export default function EmployeesPage() {
 
       <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder={t('employees.search_placeholder')} />
 
-      {/* Table — Desktop */}
       <div className="hidden md:block glass-card rounded-xl overflow-hidden">
         <Table>
           <TableHeader className="bg-muted/30">
@@ -262,7 +260,6 @@ export default function EmployeesPage() {
                     className="border-border table-row-interactive animate-fade-in"
                     onClick={() => navigate(`/employees/${emp.id}`)}
                   >
-                    {/* Member column: avatar + name + email */}
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-9 w-9 shrink-0">
@@ -351,7 +348,6 @@ export default function EmployeesPage() {
         </Table>
       </div>
 
-      {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
         {isLoading ? (
           <SkeletonMobileCards rows={4} />
@@ -462,7 +458,6 @@ export default function EmployeesPage() {
         )}
       </div>
 
-      {/* Create Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="bg-card border-border text-card-foreground sm:max-w-106.25">
           <DialogHeader>

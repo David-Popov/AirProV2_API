@@ -19,7 +19,6 @@ public interface IAuthService
     
     Task<AuthUserDto> UpdateProfileAsync(string userId, UpdateProfileDto dto);
     
-    // Employee management (for Managers)
     Task<EmployeeDto> CreateEmployeeAsync(CreateEmployeeDto dto, Guid companyId);
     
     Task<List<EmployeeDto>> GetEmployeesByCompanyIdAsync(Guid companyId);
@@ -36,8 +35,6 @@ public interface IAuthService
 
     Task<bool> IsManagerAsync(string userId);
 
-    // Manager company/employee operations (DB logic extracted from ManagerController)
-
     /// <summary>Activates an employee. Throws NotFoundException or InvalidOperationException on business-rule violations.</summary>
     Task ActivateEmployeeAsync(string employeeId, Guid companyId);
 
@@ -53,7 +50,6 @@ public interface IAuthService
     /// <summary>Deletes the company and all associated data. Returns (companyEmail, companyName) for the controller to queue a confirmation email.</summary>
     Task<(string email, string companyName)> DeleteAccountAndCompanyAsync(Guid companyId);
 
-    // Email confirmation & password management
     Task<IdentityResult> ConfirmEmailAsync(string userId, string token);
     Task ResendConfirmationEmailAsync(string email);
     Task ForgotPasswordAsync(string email);

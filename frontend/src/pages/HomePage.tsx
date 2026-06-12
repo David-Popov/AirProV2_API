@@ -49,7 +49,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Animated ambient orbs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <motion.div
           className="absolute -top-60 -right-60 w-125 h-125 bg-primary/10 rounded-full blur-3xl"
@@ -70,7 +69,6 @@ export default function HomePage() {
 
       <FloatingParticles />
 
-      {/* Navigation */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="container mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <motion.div
@@ -111,7 +109,6 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Hero */}
       <section className="container mx-auto px-4 sm:px-6 pt-20 pb-24 lg:pt-28 lg:pb-32">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div {...fadeUp(0.1)}>
@@ -162,7 +159,6 @@ export default function HomePage() {
             </Link>
           </motion.div>
 
-          {/* Trust row */}
           <motion.div
             className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 mt-12 text-sm text-muted-foreground"
             variants={staggerContainer}
@@ -182,7 +178,6 @@ export default function HomePage() {
           </motion.div>
         </div>
 
-        {/* Dashboard preview mockup */}
         <motion.div
           className="mt-20 max-w-3xl mx-auto"
           initial={{ opacity: 0, y: 40 }}
@@ -241,7 +236,6 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* Features */}
       <section className="container mx-auto px-4 sm:px-6 py-20 lg:py-28">
         <motion.div
           className="text-center mb-16"
@@ -274,7 +268,6 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* Pricing */}
       <section id="pricing" className="container mx-auto px-4 sm:px-6 py-20 lg:py-28 border-t border-border/50">
         <motion.div
           className="text-center mb-16"
@@ -298,7 +291,6 @@ export default function HomePage() {
           whileInView="show"
           viewport={{ once: true, margin: '-60px' }}
         >
-          {/* Free Plan */}
           <motion.div variants={staggerItem} className="bg-card/70 backdrop-blur-sm border border-border/50 rounded-2xl p-7 flex flex-col hover:border-primary/20 transition-all duration-300">
             <h3 className="text-xl font-bold text-foreground mb-1">{t('landing.plan_free')}</h3>
             <p className="text-sm text-muted-foreground mb-6">{t('landing.plan_free_desc')}</p>
@@ -321,7 +313,6 @@ export default function HomePage() {
             </Link>
           </motion.div>
 
-          {/* Free Trial — featured */}
           <motion.div
             variants={staggerItem}
             className="bg-card/80 backdrop-blur-sm border-2 border-primary/60 rounded-2xl p-7 flex flex-col relative glow-sm dark:glow-md shimmer-overlay"
@@ -356,7 +347,6 @@ export default function HomePage() {
             </Link>
           </motion.div>
 
-          {/* Premium */}
           <motion.div variants={staggerItem} className="bg-card/70 backdrop-blur-sm border border-border/50 rounded-2xl p-7 flex flex-col hover:border-primary/20 transition-all duration-300">
             <h3 className="text-xl font-bold text-foreground mb-1">{t('landing.plan_premium')}</h3>
             <p className="text-sm text-muted-foreground mb-6">{t('landing.plan_premium_desc')}</p>
@@ -391,7 +381,6 @@ export default function HomePage() {
         </motion.p>
       </section>
 
-      {/* CTA */}
       <section className="container mx-auto px-4 sm:px-6 py-20 lg:py-28">
         <motion.div
           className="rounded-3xl p-10 sm:p-16 text-center relative overflow-hidden shimmer-overlay"
@@ -436,7 +425,6 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* Footer */}
       <footer className="border-t border-border/50 bg-background/50">
         <div className="container mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2.5">

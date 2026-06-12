@@ -54,9 +54,9 @@ export interface Montage {
   client_email?: string | null;
   client_address?: string | null;
   client_city?: string | null;
-  installation_date: string; // DateOnly as string
-  completion_date?: string | null; // DateOnly as string
-  next_maintenance_date?: string | null; // DateOnly as string
+  installation_date: string;
+  completion_date?: string | null;
+  next_maintenance_date?: string | null;
   status?: string | null;
   indoor_unit_serial?: string | null;
   outdoor_unit_serial?: string | null;

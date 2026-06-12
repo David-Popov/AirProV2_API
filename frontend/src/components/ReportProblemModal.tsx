@@ -40,14 +40,12 @@ export function ReportProblemModal({ isOpen, onClose }: ReportProblemModalProps)
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      // Validate file type
       const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
       if (!allowedTypes.includes(file.type)) {
         toast.error(t('problem_reports.invalid_file_type'))
         return
       }
-      
-      // Validate file size (10MB max)
+
       if (file.size > 10 * 1024 * 1024) {
         toast.error(t('problem_reports.file_too_large'))
         return
@@ -115,7 +113,6 @@ export function ReportProblemModal({ isOpen, onClose }: ReportProblemModalProps)
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Category Select */}
           <div className="space-y-2">
             <Label htmlFor="category">{t('problem_reports.category')}</Label>
             <Select
@@ -135,7 +132,6 @@ export function ReportProblemModal({ isOpen, onClose }: ReportProblemModalProps)
             </Select>
           </div>
 
-          {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="description">{t('problem_reports.problem_description')}</Label>
             <Textarea
@@ -152,7 +148,6 @@ export function ReportProblemModal({ isOpen, onClose }: ReportProblemModalProps)
             </p>
           </div>
 
-          {/* Screenshot Upload */}
           <div className="space-y-2">
             <Label>{t('problem_reports.screenshot')} <span className="text-muted-foreground">({t('common.optional')})</span></Label>
             

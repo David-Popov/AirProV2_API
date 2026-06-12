@@ -129,8 +129,7 @@ export default function ReportedProblemsPage() {
       toast.success(t('problem_reports.marked_reviewed'))
       setIsDeleteDialogOpen(false)
       setProblemToDelete(null)
-      
-      // Close detail dialog if we just deleted the viewed problem
+
       if (selectedProblem?.id === problemToDelete.id) {
         setIsDetailOpen(false)
         setSelectedProblem(null)
@@ -155,7 +154,6 @@ export default function ReportedProblemsPage() {
   return (
     <main className="lg:pl-64 min-h-screen bg-linear-to-br from-background to-muted/30">
       <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
@@ -172,7 +170,6 @@ export default function ReportedProblemsPage() {
           </Badge>
         </div>
 
-        {/* Problems Table */}
         <Card>
           <CardHeader>
             <CardTitle>{t('problem_reports.all_reports')}</CardTitle>
@@ -249,7 +246,6 @@ export default function ReportedProblemsPage() {
           </CardContent>
         </Card>
 
-        {/* Detail Dialog */}
         <Dialog open={isDetailOpen} onOpenChange={handleDetailClose}>
           <DialogContent className="sm:max-w-150">
             <DialogHeader>
@@ -264,7 +260,6 @@ export default function ReportedProblemsPage() {
 
             {selectedProblem && (
               <div className="space-y-4">
-                {/* Reporter Info */}
                 <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                   <User className="w-5 h-5 text-muted-foreground" />
                   <div>
@@ -273,7 +268,6 @@ export default function ReportedProblemsPage() {
                   </div>
                 </div>
 
-                {/* Category */}
                 <div className="flex items-center gap-3">
                   <Tag className="w-5 h-5 text-muted-foreground" />
                   <Badge variant="outline" className={getCategoryColor(selectedProblem.category)}>
@@ -281,7 +275,6 @@ export default function ReportedProblemsPage() {
                   </Badge>
                 </div>
 
-                {/* Description */}
                 <div className="space-y-2">
                   <h4 className="font-medium">{t('problem_reports.problem_description')}</h4>
                   <p className="text-muted-foreground whitespace-pre-wrap p-3 bg-muted/30 rounded-lg">
@@ -289,7 +282,6 @@ export default function ReportedProblemsPage() {
                   </p>
                 </div>
 
-                {/* Screenshot */}
                 {selectedProblem.hasScreenshot && (
                   <div className="space-y-2">
                     <h4 className="font-medium flex items-center gap-2">
@@ -331,7 +323,6 @@ export default function ReportedProblemsPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Delete Confirmation Dialog */}
         <ConfirmDialog
           open={isDeleteDialogOpen}
           onOpenChange={setIsDeleteDialogOpen}

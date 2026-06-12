@@ -7,8 +7,6 @@ export const queryKeys = {
     list: (page: number, pageSize: number, filters?: MontageFilters) =>
       ['montages', 'list', { page, pageSize, ...filters }] as const,
     detail: (id: string) => ['montages', id] as const,
-    // H1: separate key so useMontageWithAC doesn't collide with useMontage in the
-    // cache (they return different shapes — sharing a key caused runtime errors).
     detailWithAC: (id: string) => ['montages', id, 'with-ac'] as const,
     byUser: (userId: string, page: number, pageSize: number) =>
       ['montages', 'user', userId, { page, pageSize }] as const,
@@ -53,8 +51,6 @@ export const queryKeys = {
   montagePhotos: {
     byMontage: (montageId: string) => ['montage-photos', montageId] as const,
     validationInfo: () => ['montage-photos', 'validation-info'] as const,
-    // A1: blob cache for AuthenticatedImage — endpoint string identifies the
-    // resource so the same blob is shared between thumbnail and lightbox.
     blob: (endpoint: string) => ['montage-photos', 'blob', endpoint] as const,
   },
   montageInventory: {
