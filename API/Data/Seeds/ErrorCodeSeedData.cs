@@ -137,7 +137,6 @@ public static class ErrorCodeSeedData
             }
         });
 
-        // Mitsubishi Electric error codes
         errorCodes.AddRange(new[]
         {
             new ErrorCode
@@ -252,7 +251,6 @@ public static class ErrorCodeSeedData
             }
         });
 
-        // Gree error codes
         errorCodes.AddRange(new[]
         {
             new ErrorCode
@@ -367,7 +365,6 @@ public static class ErrorCodeSeedData
             }
         });
 
-        // LG error codes
         errorCodes.AddRange(new[]
         {
             new ErrorCode
@@ -482,7 +479,6 @@ public static class ErrorCodeSeedData
             }
         });
 
-        // Panasonic error codes
         errorCodes.AddRange(new[]
         {
             new ErrorCode

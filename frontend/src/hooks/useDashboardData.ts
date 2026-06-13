@@ -68,7 +68,6 @@ export function useDashboardData(
       return d >= startDate && d <= endDate
     })
 
-    // Revenue by month
     const revenueByMonth: MonthDataPoint[] = months.map(date => {
       const year = date.getFullYear()
       const month = date.getMonth()
@@ -87,7 +86,6 @@ export function useDashboardData(
       }
     })
 
-    // Status breakdown (donut)
     const statusCounts: Record<string, number> = {}
     for (const m of filteredMontages) {
       const s = m.status || 'Unknown'
@@ -99,7 +97,6 @@ export function useDashboardData(
       fill: STATUS_COLORS[status] || 'var(--color-muted-foreground)',
     }))
 
-    // Payment status by month (stacked bar)
     const paymentByMonth: MonthDataPoint[] = months.map(date => {
       const year = date.getFullYear()
       const month = date.getMonth()
@@ -116,7 +113,6 @@ export function useDashboardData(
       }
     })
 
-    // Activity by month (grouped bar: created vs completed)
     const activityByMonth: MonthDataPoint[] = months.map(date => {
       const year = date.getFullYear()
       const month = date.getMonth()
@@ -138,13 +134,11 @@ export function useDashboardData(
       }
     })
 
-    // Summary stats
     const totalRevenue = revenueByMonth.reduce((s, d) => s + (d.revenue as number), 0)
     const totalMontages = filteredMontages.length
     const completedMontages = filteredMontages.filter(m => m.status === 'Completed').length
     const completionRate = totalMontages > 0 ? Math.round((completedMontages / totalMontages) * 100) : 0
 
-    // Trends: compare second half vs first half of the period
     const half = Math.floor(revenueByMonth.length / 2)
     const recentRevenue = revenueByMonth.slice(half).reduce((s, d) => s + (d.revenue as number), 0)
     const previousRevenue = revenueByMonth.slice(0, half).reduce((s, d) => s + (d.revenue as number), 0)

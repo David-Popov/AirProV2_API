@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Loader2, Sparkles, Check } from 'lucide-react'
@@ -32,7 +33,7 @@ export function PremiumUpgradeModal({
     try {
       await stripeService.redirectToCheckout()
     } catch (error) {
-      console.error('Failed to redirect to checkout:', error)
+      logger.error('Failed to redirect to checkout:', error)
       toast.error(t('subscription.checkout_error', 'Failed to start checkout. Please try again.'))
       setIsRedirecting(false)
     }

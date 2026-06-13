@@ -75,7 +75,6 @@ public class InventoryAuditLog
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    // Navigation properties
     [ForeignKey("CompanyId")]
     public virtual Company? Company { get; set; }
 

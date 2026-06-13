@@ -121,7 +121,6 @@ export function SubscriptionExpiredModal({ isOpen }: SubscriptionExpiredModalPro
           </DialogHeader>
 
           <div className="space-y-4 py-6">
-            {/* Renew Subscription */}
             <div className="glass-card p-4 rounded-lg">
               <div className="flex items-start gap-4">
                 <div className="p-2 bg-green-500/10 rounded-lg">
@@ -146,7 +145,6 @@ export function SubscriptionExpiredModal({ isOpen }: SubscriptionExpiredModalPro
               </div>
             </div>
 
-            {/* Return to Free Plan OR Delete Account */}
             {canReturnToFree ? (
               <div className="glass-card p-4 rounded-lg">
                 <div className="flex items-start gap-4">
@@ -197,7 +195,6 @@ export function SubscriptionExpiredModal({ isOpen }: SubscriptionExpiredModalPro
               </div>
             )}
 
-            {/* Logout */}
             <div className="glass-card p-4 rounded-lg">
               <div className="flex items-start gap-4">
                 <div className="p-2 bg-muted rounded-lg">
@@ -224,7 +221,6 @@ export function SubscriptionExpiredModal({ isOpen }: SubscriptionExpiredModalPro
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent className="bg-card border-border">
           <AlertDialogHeader>

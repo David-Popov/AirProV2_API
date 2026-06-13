@@ -3,7 +3,7 @@ import { queryKeys } from '@/lib/queryKeys'
 import { airConditionerService } from '@/services'
 import type { CreateAirConditionerRequest, UpdateAirConditionerRequest, CreateErrorCodeRequest, UpdateErrorCodeRequest } from '@/types'
 
-const LONG_STALE_TIME = 30 * 60 * 1000 // 30 minutes
+const LONG_STALE_TIME = 30 * 60 * 1000
 
 export function useAirConditioners(page: number, pageSize: number, filters?: Record<string, any>) {
   return useQuery({

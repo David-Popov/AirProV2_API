@@ -52,14 +52,12 @@ public class AuthService : IAuthService
 
         try
         {
-            // Check if user already exists
             var existingUser = await _userManager.FindByEmailAsync(dto.Email);
             if (existingUser != null)
             {
                 throw new ValidationException("A user with this email already exists");
             }
 
-            // Create company first
             var company = new Company
             {
                 CompanyName = dto.CompanyName,
@@ -74,12 +72,12 @@ public class AuthService : IAuthService
                 PostalCode = dto.CompanyPostalCode,
                 Phone = dto.CompanyPhone,
                 Email = dto.CompanyEmail,
-                IsCompanyOwner = true, // User registering is the company owner
-                SubscriptionPlan = SubscriptionPlan.Free,  // Start with Free plan (2 employees)
-                SubscriptionStatus = SubscriptionStatus.Active,  // Free plan is active by default
-                TrialStartDate = null,  // No trial yet
-                TrialEndDate = null,    // No trial yet
-                HasUsedTrial = false,   // Trial not used yet
+                IsCompanyOwner = true,
+                SubscriptionPlan = SubscriptionPlan.Free,
+                SubscriptionStatus = SubscriptionStatus.Active,
+                TrialStartDate = null,
+                TrialEndDate = null,
+                HasUsedTrial = false,
                 IsSubscriptionActive = true,
                 IsActive = true
             };
@@ -87,7 +85,6 @@ public class AuthService : IAuthService
             await _context.Companies.AddAsync(company);
             await _context.SaveChangesAsync();
 
-            // Create user — email must be confirmed before login
             var user = new ApplicationUser
             {
                 UserName = dto.Email,
@@ -109,13 +106,10 @@ public class AuthService : IAuthService
                 throw new ValidationException($"Failed to create user: {errors}");
             }
 
-            // Add Manager role - user who self-registers is the company owner/manager
-            // They can later add employees with "User" role
             await _userManager.AddToRoleAsync(user, AppRoles.Manager);
 
             await transaction.CommitAsync();
 
-            // Queue email confirmation email (non-blocking)
             var confirmToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(confirmToken));
             var confirmLink = $"{_emailSettings.WebsiteUrl}/confirm-email?userId={user.Id}&token={encodedToken}";
@@ -152,8 +146,6 @@ public class AuthService : IAuthService
 
             if (result.IsLockedOut)
             {
-                // Reveal lockout state so the user knows to wait or use forgot-password.
-                // We do NOT reveal how many attempts remain to avoid aiding brute-force calibration.
                 throw new ValidationException(
                     "Your account has been temporarily locked due to too many failed login attempts. " +
                     "Please wait 15 minutes or reset your password to unlock it immediately.");
@@ -271,8 +263,6 @@ public class AuthService : IAuthService
                 throw new NotFoundException("User not found");
             }
 
-            // Email changes are handled through the dedicated change-email flow
-
             user.FirstName = dto.FirstName;
             user.MiddleName = dto.MiddleName ?? string.Empty;
             user.LastName = dto.LastName;
@@ -326,7 +316,6 @@ public class AuthService : IAuthService
         var expiryDateUnix    = long.Parse(principal.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Exp).Value);
         var expiryDateTimeUtc = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(expiryDateUnix);
 
-        // C-2: Only allow refresh of genuinely expired tokens (allow 30 s clock skew).
         if (expiryDateTimeUtc > DateTime.UtcNow.AddSeconds(30))
         {
             throw new ValidationException("This token has not expired yet.");
@@ -334,9 +323,6 @@ public class AuthService : IAuthService
 
         var jti = principal.Claims.Single(x => x.Type == JwtRegisteredClaimNames.Jti).Value;
 
-        // C-1: Atomic single-statement UPDATE that marks the token as used only if it
-        // was not already used/invalidated/expired and the jti matches.
-        // Returns 0 rows if ANY of those conditions are already violated — no TOCTOU window.
         var affected = await _context.RefreshTokens
             .Where(rt => rt.Token        == refreshToken
                       && rt.JwtId        == jti
@@ -364,17 +350,14 @@ public class AuthService : IAuthService
 
         if (!user.IsActive)
         {
-            // Same parity as LoginAsync — a deactivated user cannot mint new access tokens.
             throw new ForbiddenException("Your account has been deactivated. Please contact your manager.");
         }
 
         var newToken = await GenerateJwtTokenAsync(user);
         var newRefreshToken = await GenerateRefreshTokenAsync(user, newToken.Id);
 
-        // Return roles and other info
         var roles = await _userManager.GetRolesAsync(user);
 
-        // Load company again to populate DTO
         var company = user.CompanyId.HasValue
             ? await _context.Companies.FindAsync(user.CompanyId.Value)
             : null;
@@ -425,9 +408,6 @@ public class AuthService : IAuthService
         var jwtSettings = _configuration.GetSection("JwtSettings");
         var secretKey   = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured");
 
-        // H-6: Validate issuer and audience even for expired tokens to prevent
-        // token-substitution attacks (a token issued for a different system
-        // shares the same signing key but different iss/aud claims).
         var tokenValidationParameters = new TokenValidationParameters
         {
             ValidateAudience         = true,
@@ -436,7 +416,7 @@ public class AuthService : IAuthService
             ValidAudience            = jwtSettings["Audience"],
             ValidateIssuerSigningKey = true,
             IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-            ValidateLifetime         = false  // Intentional — we are validating an expired token during refresh
+            ValidateLifetime         = false
         };
 
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -475,13 +455,11 @@ public class AuthService : IAuthService
             new("full_name", $"{user.FirstName} {user.LastName}".Trim())
         };
 
-        // Add company claim if exists
         if (user.CompanyId.HasValue)
         {
             claims.Add(new Claim("company_id", user.CompanyId.Value.ToString()));
         }
 
-        // Add role claims
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
         var token = new JwtSecurityToken(
@@ -498,10 +476,8 @@ public class AuthService : IAuthService
     private int GetTokenExpirationMinutes()
     {
         var expirationStr = _configuration.GetSection("JwtSettings")["ExpirationInMinutes"];
-        return int.TryParse(expirationStr, out var expiration) ? expiration : 1440; // Default 24 hours
+        return int.TryParse(expirationStr, out var expiration) ? expiration : 1440;
     }
-
-    // Employee Management Methods
 
     public async Task<EmployeeDto> CreateEmployeeAsync(CreateEmployeeDto dto, Guid companyId)
     {
@@ -524,7 +500,6 @@ public class AuthService : IAuthService
 
             if (currentEmployeeCount >= maxEmployees)
             {
-                // Queue employee limit notification (non-blocking)
                 var limitCompany = company;
                 var limitCount = currentEmployeeCount;
                 var limitMax = maxEmployees;
@@ -562,14 +537,11 @@ public class AuthService : IAuthService
 
             await _userManager.AddToRoleAsync(user, AppRoles.User);
 
-            // Generate a password-set link so the employee can set their own password.
-            // We never transmit the plain-text password in email (H-7).
             var resetToken    = await _userManager.GeneratePasswordResetTokenAsync(user);
             var encodedToken  = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(resetToken));
             var encodedEmail  = Uri.EscapeDataString(user.Email!);
             var passwordSetLink = $"{_emailSettings.WebsiteUrl}/reset-password?email={encodedEmail}&token={encodedToken}";
 
-            // Queue welcome email to new employee (non-blocking)
             var empUser         = user;
             var empCompany      = company;
             var empPasswordLink = passwordSetLink;
@@ -613,7 +585,6 @@ public class AuthService : IAuthService
                 .ThenBy(u => u.LastName)
                 .ToListAsync();
 
-            // Batch-load all user roles in a single query to avoid N+1
             var userIds = users.Select(u => u.Id).ToList();
             var roleMap = await _context.UserRoles
                 .Where(ur => userIds.Contains(ur.UserId))
@@ -633,7 +604,7 @@ public class AuthService : IAuthService
                 Address = user.Address,
                 Roles = roleMap.TryGetValue(user.Id, out var roles) ? roles : [],
                 IsActive = user.IsActive,
-                CreatedAt = null // Identity doesn't track creation date by default
+                CreatedAt = null
             }).ToList();
 
             return employeeDtos;
@@ -841,8 +812,6 @@ public class AuthService : IAuthService
         }
     }
 
-    // Manager company/employee operations (extracted from ManagerController)
-
     public async Task ActivateEmployeeAsync(string employeeId, Guid companyId)
     {
         try
@@ -996,7 +965,6 @@ public class AuthService : IAuthService
             var companyEmail = company.Email ?? string.Empty;
             var companyName = company.CompanyName;
 
-            // Delete montage-related data
             var montageIds = await _context.Montages
                 .Where(m => m.CompanyId == companyId)
                 .Select(m => m.Id)
@@ -1017,7 +985,6 @@ public class AuthService : IAuthService
                     .ExecuteDeleteAsync();
             }
 
-            // Delete user-related data
             var userIds = await _context.Users
                 .Where(u => u.CompanyId == companyId)
                 .Select(u => u.Id)
@@ -1042,7 +1009,6 @@ public class AuthService : IAuthService
                     .ExecuteDeleteAsync();
             }
 
-            // Delete company (cascades to inventory items and audit logs)
             _context.Companies.Remove(company);
             await _context.SaveChangesAsync();
 
@@ -1055,8 +1021,6 @@ public class AuthService : IAuthService
         }
     }
 
-    // Email confirmation & password management
-
     public async Task<IdentityResult> ConfirmEmailAsync(string userId, string token)
     {
         var user = await _userManager.FindByIdAsync(userId);
@@ -1065,7 +1029,6 @@ public class AuthService : IAuthService
             return IdentityResult.Failed(new IdentityError { Description = "Invalid confirmation link." });
         }
 
-        // Already confirmed — idempotent success (handles double-clicks / browser pre-fetches)
         if (user.EmailConfirmed)
         {
             return IdentityResult.Success;
@@ -1079,8 +1042,6 @@ public class AuthService : IAuthService
         }
         catch (DbUpdateConcurrencyException)
         {
-            // A concurrent request confirmed the email between our load and our update.
-            // Re-fetch to verify — if confirmed now, treat as success.
             var freshUser = await _userManager.FindByIdAsync(userId);
             if (freshUser?.EmailConfirmed == true)
             {
@@ -1099,7 +1060,7 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByEmailAsync(email);
         if (user == null || user.EmailConfirmed)
         {
-            return; // Silent — no user enumeration
+            return;
         }
 
         var confirmToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
@@ -1120,7 +1081,7 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByEmailAsync(email);
         if (user == null || !user.EmailConfirmed)
         {
-            return; // Silent — no user enumeration
+            return;
         }
 
         var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
@@ -1150,8 +1111,6 @@ public class AuthService : IAuthService
 
         if (result.Succeeded)
         {
-            // Proving email ownership via the reset link counts as sufficient verification —
-            // unlock the account so a locked-out user doesn't need to wait 15 minutes.
             await _userManager.ResetAccessFailedCountAsync(user);
             await _userManager.SetLockoutEndDateAsync(user, null);
         }
@@ -1167,7 +1126,6 @@ public class AuthService : IAuthService
             return IdentityResult.Failed(new IdentityError { Description = "User not found." });
         }
 
-        // Generate a reset token and use it to set the new password (ensures password validation)
         var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
         return await _userManager.ResetPasswordAsync(user, resetToken, newPassword);
     }
@@ -1212,7 +1170,6 @@ public class AuthService : IAuthService
 
         if (result.Succeeded)
         {
-            // Keep UserName in sync with Email
             user.UserName = newEmail;
             await _userManager.UpdateNormalizedUserNameAsync(user);
         }

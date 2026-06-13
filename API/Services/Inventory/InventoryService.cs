@@ -5,6 +5,7 @@ using API.Data.Entities;
 using API.DTOs;
 using API.Models;
 using API.Repositories;
+using Mapster;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Services.Inventory;
@@ -32,7 +33,6 @@ public class InventoryService : IInventoryService
     {
         try
         {
-            // Check for duplicate name within the same company
             var exists = await _repository.ExistsByNameAndCompanyIdAsync(dto.Name, dto.CompanyId);
             if (exists)
             {
@@ -87,7 +87,6 @@ public class InventoryService : IInventoryService
             }
 
 
-            // Check for duplicate name within the same company
             var exists = await _repository.ExistsByNameAndCompanyIdAsync(dto.Name, item.CompanyId, itemId);
             if (exists)
             {
@@ -110,7 +109,6 @@ public class InventoryService : IInventoryService
 
             await _repository.UpdateAsync(item);
 
-            // Log the update if quantity changed
             if (oldQuantity != item.Quantity)
             {
                 await _auditService.LogActionAsync(new InventoryAuditLog
@@ -155,7 +153,7 @@ public class InventoryService : IInventoryService
         try
         {
             var item = await _repository.GetByIdAsync(itemId);
-            return item == null ? null : ToDto(item);
+            return item?.Adapt<InventoryItemDto>();
         }
         catch (Exception e)
         {
@@ -171,25 +169,7 @@ public class InventoryService : IInventoryService
             var query = _context.InventoryItems
                 .AsNoTracking()
                 .OrderBy(i => i.Name)
-                .Select(i => new InventoryItemDto
-                {
-                    Id = i.Id,
-                    CompanyId = i.CompanyId,
-                    Name = i.Name,
-                    Description = i.Description,
-                    Sku = i.Sku,
-                    Quantity = i.Quantity,
-                    UnitOfMeasure = i.UnitOfMeasure.ToString(),
-                    MinQuantity = i.MinQuantity,
-                    UnitPrice = i.UnitPrice,
-                    Supplier = i.Supplier,
-                    Location = i.Location,
-                    Notes = i.Notes,
-                    IsActive = i.IsActive,
-                    IsLowStock = i.MinQuantity.HasValue && i.Quantity <= i.MinQuantity.Value,
-                    CreatedAt = i.CreatedAt,
-                    UpdatedAt = i.UpdatedAt,
-                });
+                .ProjectToType<InventoryItemDto>();
 
             return await PagedList<InventoryItemDto>.CreateAsync(query, pageParameters);
         }
@@ -208,25 +188,7 @@ public class InventoryService : IInventoryService
                 .AsNoTracking()
                 .Where(i => i.CompanyId == companyId)
                 .OrderBy(i => i.Name)
-                .Select(i => new InventoryItemDto
-                {
-                    Id = i.Id,
-                    CompanyId = i.CompanyId,
-                    Name = i.Name,
-                    Description = i.Description,
-                    Sku = i.Sku,
-                    Quantity = i.Quantity,
-                    UnitOfMeasure = i.UnitOfMeasure.ToString(),
-                    MinQuantity = i.MinQuantity,
-                    UnitPrice = i.UnitPrice,
-                    Supplier = i.Supplier,
-                    Location = i.Location,
-                    Notes = i.Notes,
-                    IsActive = i.IsActive,
-                    IsLowStock = i.MinQuantity.HasValue && i.Quantity <= i.MinQuantity.Value,
-                    CreatedAt = i.CreatedAt,
-                    UpdatedAt = i.UpdatedAt,
-                });
+                .ProjectToType<InventoryItemDto>();
 
             return await PagedList<InventoryItemDto>.CreateAsync(query, pageParameters);
         }
@@ -248,25 +210,7 @@ public class InventoryService : IInventoryService
                             && i.Quantity <= i.MinQuantity.Value
                             && i.IsActive)
                 .OrderBy(i => i.Quantity)
-                .Select(i => new InventoryItemDto
-                {
-                    Id = i.Id,
-                    CompanyId = i.CompanyId,
-                    Name = i.Name,
-                    Description = i.Description,
-                    Sku = i.Sku,
-                    Quantity = i.Quantity,
-                    UnitOfMeasure = i.UnitOfMeasure.ToString(),
-                    MinQuantity = i.MinQuantity,
-                    UnitPrice = i.UnitPrice,
-                    Supplier = i.Supplier,
-                    Location = i.Location,
-                    Notes = i.Notes,
-                    IsActive = i.IsActive,
-                    IsLowStock = true,
-                    CreatedAt = i.CreatedAt,
-                    UpdatedAt = i.UpdatedAt,
-                });
+                .ProjectToType<InventoryItemDto>();
 
             return await PagedList<InventoryItemDto>.CreateAsync(query, pageParameters);
         }
@@ -287,25 +231,7 @@ public class InventoryService : IInventoryService
                             && i.Quantity <= i.MinQuantity.Value
                             && i.IsActive)
                 .OrderBy(i => i.Quantity)
-                .Select(i => new InventoryItemDto
-                {
-                    Id = i.Id,
-                    CompanyId = i.CompanyId,
-                    Name = i.Name,
-                    Description = i.Description,
-                    Sku = i.Sku,
-                    Quantity = i.Quantity,
-                    UnitOfMeasure = i.UnitOfMeasure.ToString(),
-                    MinQuantity = i.MinQuantity,
-                    UnitPrice = i.UnitPrice,
-                    Supplier = i.Supplier,
-                    Location = i.Location,
-                    Notes = i.Notes,
-                    IsActive = i.IsActive,
-                    IsLowStock = true,
-                    CreatedAt = i.CreatedAt,
-                    UpdatedAt = i.UpdatedAt
-                });
+                .ProjectToType<InventoryItemDto>();
 
             return await PagedList<InventoryItemDto>.CreateAsync(query, pageParameters);
         }
@@ -321,7 +247,7 @@ public class InventoryService : IInventoryService
         try
         {
             var item = await _repository.GetBySkuAndCompanyIdAsync(sku, companyId);
-            return item == null ? null : ToDto(item);
+            return item?.Adapt<InventoryItemDto>();
         }
         catch (Exception e)
         {
@@ -349,8 +275,7 @@ public class InventoryService : IInventoryService
 
             var oldQuantity = item.Quantity;
             item.Quantity = newQuantity;
-            
-            // Optionally append the reason to notes
+
             if (!string.IsNullOrEmpty(dto.Reason))
             {
                 var timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm");
@@ -362,7 +287,6 @@ public class InventoryService : IInventoryService
                 }
                 else
                 {
-                    // Append to existing notes, keeping within the 500 char limit
                     var combinedNotes = $"{item.Notes}\n{adjustmentNote}";
                     item.Notes = combinedNotes.Length > 500 ? combinedNotes.Substring(0, 500) : combinedNotes;
                 }
@@ -370,7 +294,6 @@ public class InventoryService : IInventoryService
 
             await _repository.UpdateAsync(item);
 
-            // Log the quantity adjustment
             await _auditService.LogActionAsync(new InventoryAuditLog
             {
                 CompanyId = item.CompanyId,
@@ -383,7 +306,7 @@ public class InventoryService : IInventoryService
                 Reason = dto.Reason
             });
             
-            return ToDto(item);
+            return item.Adapt<InventoryItemDto>();
         }
         catch (Exception e)
         {
@@ -406,25 +329,7 @@ public class InventoryService : IInventoryService
                             (i.Description != null && i.Description.ToLower().Contains(lowerSearchTerm)) ||
                             (i.Supplier != null && i.Supplier.ToLower().Contains(lowerSearchTerm))))
                 .OrderBy(i => i.Name)
-                .Select(i => new InventoryItemDto
-                {
-                    Id = i.Id,
-                    CompanyId = i.CompanyId,
-                    Name = i.Name,
-                    Description = i.Description,
-                    Sku = i.Sku,
-                    Quantity = i.Quantity,
-                    UnitOfMeasure = i.UnitOfMeasure.ToString(),
-                    MinQuantity = i.MinQuantity,
-                    UnitPrice = i.UnitPrice,
-                    Supplier = i.Supplier,
-                    Location = i.Location,
-                    Notes = i.Notes,
-                    IsActive = i.IsActive,
-                    IsLowStock = i.MinQuantity.HasValue && i.Quantity <= i.MinQuantity.Value,
-                    CreatedAt = i.CreatedAt,
-                    UpdatedAt = i.UpdatedAt
-                });
+                .ProjectToType<InventoryItemDto>();
 
             return await PagedList<InventoryItemDto>.CreateAsync(query, pageParameters);
         }
@@ -470,13 +375,11 @@ public class InventoryService : IInventoryService
                 return false;
             }
 
-            // Check 1: Has it been used in any montages? (EXISTS — no collection load)
             if (await _context.MontageInventoryItems.AnyAsync(m => m.InventoryItemId == itemId))
             {
                 return false;
             }
 
-            // Check 2: Is it older than 30 days?
             if ((DateTime.UtcNow - item.CreatedAt).TotalDays > 30)
             {
                 return false;
@@ -491,26 +394,4 @@ public class InventoryService : IInventoryService
         }
     }
 
-    private static InventoryItemDto ToDto(InventoryItem item)
-    {
-        return new InventoryItemDto
-        {
-            Id = item.Id,
-            CompanyId = item.CompanyId,
-            Name = item.Name,
-            Description = item.Description,
-            Sku = item.Sku,
-            Quantity = item.Quantity,
-            UnitOfMeasure = item.UnitOfMeasure.ToString(),
-            MinQuantity = item.MinQuantity,
-            UnitPrice = item.UnitPrice,
-            Supplier = item.Supplier,
-            Location = item.Location,
-            Notes = item.Notes,
-            IsActive = item.IsActive,
-            IsLowStock = item.MinQuantity.HasValue && item.Quantity <= item.MinQuantity.Value,
-            CreatedAt = item.CreatedAt,
-            UpdatedAt = item.UpdatedAt
-        };
-    }
 }

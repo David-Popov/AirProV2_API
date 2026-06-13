@@ -40,14 +40,12 @@ export function ReportProblemModal({ isOpen, onClose }: ReportProblemModalProps)
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      // Validate file type
       const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
       if (!allowedTypes.includes(file.type)) {
         toast.error(t('problem_reports.invalid_file_type'))
         return
       }
-      
-      // Validate file size (10MB max)
+
       if (file.size > 10 * 1024 * 1024) {
         toast.error(t('problem_reports.file_too_large'))
         return
@@ -115,7 +113,6 @@ export function ReportProblemModal({ isOpen, onClose }: ReportProblemModalProps)
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Category Select */}
           <div className="space-y-2">
             <Label htmlFor="category">{t('problem_reports.category')}</Label>
             <Select
@@ -135,7 +132,6 @@ export function ReportProblemModal({ isOpen, onClose }: ReportProblemModalProps)
             </Select>
           </div>
 
-          {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="description">{t('problem_reports.problem_description')}</Label>
             <Textarea
@@ -152,14 +148,17 @@ export function ReportProblemModal({ isOpen, onClose }: ReportProblemModalProps)
             </p>
           </div>
 
-          {/* Screenshot Upload */}
           <div className="space-y-2">
             <Label>{t('problem_reports.screenshot')} <span className="text-muted-foreground">({t('common.optional')})</span></Label>
             
             {!screenshot ? (
               <div
-                className="border-2 border-dashed border-muted rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                role="button"
+                tabIndex={0}
+                aria-label={t('problem_reports.click_to_upload')}
+                className="border-2 border-dashed border-muted rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
                 onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click(); } }}
               >
                 <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
                 <p className="text-sm text-muted-foreground">{t('problem_reports.click_to_upload')}</p>
@@ -184,6 +183,7 @@ export function ReportProblemModal({ isOpen, onClose }: ReportProblemModalProps)
                   <Button
                     variant="ghost"
                     size="icon"
+                    aria-label={t('common.remove')}
                     onClick={handleRemoveScreenshot}
                     className="shrink-0"
                   >

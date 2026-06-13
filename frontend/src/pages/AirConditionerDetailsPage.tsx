@@ -1,3 +1,4 @@
+import { formatCurrency } from '@/lib/formatters'
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -70,10 +71,8 @@ export default function AirConditionerDetailsPage() {
 
   return (
     <div className="min-h-screen bg-background pt-14 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300 animate-fade-in">
-      {/* Back Button */}
       <BackButton onClick={() => navigate("/air-conditioners")} />
 
-      {/* Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
@@ -86,12 +85,10 @@ export default function AirConditionerDetailsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {/* Image Section */}
         <div className="bg-muted/30 rounded-xl overflow-hidden aspect-[4/3] flex items-center justify-center border border-border">
           <AcImage url={ac.image_url} alt={ac.name} size="lg" />
         </div>
 
-        {/* Info Section */}
         <div className="space-y-6">
           <Card className="glass-card">
             <CardHeader>
@@ -114,7 +111,7 @@ export default function AirConditionerDetailsPage() {
                     {t("air_conditioners.price")}
                   </p>
                   <p className="text-green-500 font-bold text-lg">
-                    €{ac.price}
+                    {formatCurrency(ac.price ?? 0)}
                   </p>
                 </div>
                 <div>
@@ -141,7 +138,6 @@ export default function AirConditionerDetailsPage() {
         </div>
       </div>
 
-      {/* Technical Specifications Section */}
       {(ac.pipe_size_liquid ||
         ac.pipe_size_gas ||
         ac.max_pipe_length ||
@@ -167,7 +163,6 @@ export default function AirConditionerDetailsPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Piping Section */}
               {(ac.pipe_size_liquid ||
                 ac.pipe_size_gas ||
                 ac.max_pipe_length ||
@@ -228,7 +223,6 @@ export default function AirConditionerDetailsPage() {
                 </div>
               )}
 
-              {/* Refrigerant Section */}
               {(ac.refrigerant_type || ac.factory_refrigerant_charge) && (
                 <div className="p-4 rounded-xl bg-background/50 border border-border">
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-3 flex items-center gap-2">
@@ -263,7 +257,6 @@ export default function AirConditionerDetailsPage() {
                 </div>
               )}
 
-              {/* Electrical Section */}
               {(ac.power_supply_location ||
                 ac.cable_section ||
                 ac.recommended_fuse) && (
@@ -310,7 +303,6 @@ export default function AirConditionerDetailsPage() {
                 </div>
               )}
 
-              {/* Indoor Unit Dimensions & Weight */}
               {(ac.indoor_dimensions || ac.weight_indoor) && (
                 <div className="p-4 rounded-xl bg-background/50 border border-border">
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-3 flex items-center gap-2">
@@ -342,7 +334,6 @@ export default function AirConditionerDetailsPage() {
                 </div>
               )}
 
-              {/* Outdoor Unit Dimensions & Weight */}
               {(ac.outdoor_dimensions || ac.weight_outdoor) && (
                 <div className="p-4 rounded-xl bg-background/50 border border-border">
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-3 flex items-center gap-2">
@@ -378,8 +369,6 @@ export default function AirConditionerDetailsPage() {
         </Card>
       )}
 
-      {/* Error Codes Section */}
-      {/* Error Codes Section */}
       <Card className="glass-card">
         <CardHeader>
           <CardTitle className="text-foreground flex items-center gap-2">
@@ -430,7 +419,6 @@ export default function AirConditionerDetailsPage() {
         </CardContent>
       </Card>
 
-      {/* Error Code Details Dialog */}
       <Dialog
         open={!!selectedErrorCode}
         onOpenChange={(open) => !open && setSelectedErrorCode(null)}

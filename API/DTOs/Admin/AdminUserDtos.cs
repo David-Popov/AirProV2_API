@@ -32,12 +32,10 @@ public class AdminUserDto
     public bool IsActive { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
-    
-    // Company info
+
     public Guid? CompanyId { get; set; }
     public string? CompanyName { get; set; }
-    
-    // Role info
+
     public List<string> Roles { get; set; } = new();
     
     public DateTime CreatedAt { get; set; }

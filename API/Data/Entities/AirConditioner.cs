@@ -35,7 +35,6 @@ public class AirConditioner
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    // 1. Piping & Freon
     [Column("pipe_size_liquid")]
     public string? PipeSizeLiquid { get; set; }
 
@@ -46,9 +45,8 @@ public class AirConditioner
     public string? RefrigerantType { get; set; }
 
     [Column("factory_refrigerant_charge")]
-    public int? FactoryRefrigerantCharge { get; set; } // grams
+    public int? FactoryRefrigerantCharge { get; set; }
 
-    // 2. Electrical
     [Column("power_supply_location")]
     public string? PowerSupplyLocation { get; set; }
 
@@ -56,9 +54,8 @@ public class AirConditioner
     public string? CableSection { get; set; }
 
     [Column("recommended_fuse")]
-    public int? RecommendedFuse { get; set; } // Amps
+    public int? RecommendedFuse { get; set; }
 
-    // 3. Dimensions (WxHxD mm) & Weight (kg)
     [Column("indoor_dimensions")]
     public string? IndoorDimensions { get; set; }
 
@@ -71,7 +68,6 @@ public class AirConditioner
     [Column("weight_outdoor", TypeName = "decimal(5, 2)")]
     public decimal? WeightOutdoor { get; set; }
 
-    // 4. Limits
     [Column("max_pipe_length")]
     public int? MaxPipeLength { get; set; }
 

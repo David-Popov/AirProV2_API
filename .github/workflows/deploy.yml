@@ -39,6 +39,10 @@ jobs:
             echo "Building new images..."
             docker compose -p airpro-prod -f docker-compose.prod.yml build
 
+            echo "Removing legacy gateway / staging containers (prod frontend now binds :80 directly)..."
+            docker rm -f airpro_gateway 2>/dev/null || true
+            docker rm -f staging_frontend staging_backend staging_postgres staging_minio staging_pgadmin 2>/dev/null || true
+
             echo "Restarting containers (migrations run on backend startup)..."
             docker compose -p airpro-prod -f docker-compose.prod.yml up -d
 

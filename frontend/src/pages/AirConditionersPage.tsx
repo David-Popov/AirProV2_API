@@ -1,3 +1,4 @@
+import { formatCurrency } from '@/lib/formatters'
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -79,7 +80,6 @@ export default function AirConditionersPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<AirConditioner | null>(null)
 
-  // Debounce search term
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm)
@@ -88,7 +88,6 @@ export default function AirConditionersPage() {
     return () => clearTimeout(timer)
   }, [searchTerm])
 
-  // Build query filters
   const queryFilters = {
     searchTerm: debouncedSearch,
     brand: activeFilters.brand,
@@ -109,7 +108,7 @@ export default function AirConditionersPage() {
   const handleApplyFilters = () => {
     setActiveFilters(tempFilters)
     setIsFilterOpen(false)
-    setPage(1) // Reset to page 1 on filter application
+    setPage(1)
   }
 
   const handleClearFilters = () => {
@@ -162,7 +161,7 @@ export default function AirConditionersPage() {
   }
 
   const handleEdit = (e: React.MouseEvent, item: AirConditioner) => {
-    e.stopPropagation() // Prevent navigation
+    e.stopPropagation()
     setIsEditing(true)
     setCurrentItem({
       id: item.id,
@@ -305,14 +304,12 @@ export default function AirConditionersPage() {
         </Button>
       </SearchBar>
 
-      {/* Filter Dialog */}
       <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
         <DialogContent className="bg-card border-border text-card-foreground sm:max-w-[425px] overflow-y-auto max-h-[85vh]">
           <DialogHeader>
             <DialogTitle>{t('air_conditioners.filter_title', 'Filter Air Conditioners')}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            {/* Brand Filter */}
             <div className="grid gap-2">
               <Label>{t('air_conditioners.brand')}</Label>
               <Input 
@@ -323,7 +320,6 @@ export default function AirConditionersPage() {
               />
             </div>
 
-            {/* Price Range */}
             <div className="space-y-2">
               <Label>{t('air_conditioners.price_range')}</Label>
               <div className="flex items-center gap-2">
@@ -347,7 +343,6 @@ export default function AirConditionersPage() {
               </div>
             </div>
 
-            {/* Power Range */}
             <div className="space-y-2">
               <Label>{t('air_conditioners.power_range')} (kW)</Label>
                <div className="flex items-center gap-2">
@@ -384,7 +379,6 @@ export default function AirConditionersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Grid Content */}
       {isLoading ? (
         <AirConditionersGridSkeleton />
       ) : items.length === 0 ? (
@@ -397,16 +391,14 @@ export default function AirConditionersPage() {
               className={`glass-card overflow-hidden hover:border-primary/50 hover:scale-[1.02] hover:-translate-y-1 cursor-pointer group animate-slide-up stagger-${Math.min(index + 1, 8)}`}
               onClick={() => navigate(`/air-conditioners/${item.id}`)}
             >
-              {/* Image Placeholder */}
               <div className="aspect-[4/3] bg-muted/30 relative flex items-center justify-center">
                  <AcImage url={item.image_url} alt={item.name} />
-                 
-                 {/* Actions Overlay - Admin Only */}
+
                  {isAdmin && (
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                      <DropdownMenu>
                        <DropdownMenuTrigger asChild>
-                         <Button variant="secondary" size="icon" className="h-8 w-8 bg-black/50 hover:bg-black/70 text-white border-0">
+                         <Button variant="secondary" size="icon" aria-label={t('common.actions')} className="h-8 w-8 bg-black/50 hover:bg-black/70 text-white border-0">
                            <MoreVertical className="w-4 h-4" />
                          </Button>
                        </DropdownMenuTrigger>
@@ -439,7 +431,7 @@ export default function AirConditionersPage() {
                     {item.kilowatts || '-'} kW
                   </div>
                   <span className="text-green-500 font-bold">
-                    €{item.price}
+                    {formatCurrency(item.price ?? 0)}
                   </span>
                 </div>
               </CardContent>
@@ -458,14 +450,12 @@ export default function AirConditionersPage() {
         className="justify-center py-8"
       />
 
-      {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="bg-card border-border text-card-foreground sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isEditing ? t('air_conditioners.edit_ac') : t('air_conditioners.new_ac')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSave} className="grid gap-6 py-4">
-            {/* Basic Information */}
             <div className="space-y-4">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase flex items-center gap-2">
                 <div className="w-1 h-4 bg-primary rounded"></div>
@@ -543,7 +533,6 @@ export default function AirConditionersPage() {
               </div>
             </div>
 
-            {/* Technical Specifications - Piping */}
             <div className="space-y-4 pt-4 border-t border-border">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase flex items-center gap-2">
                 <div className="w-1 h-4 bg-blue-500 rounded"></div>
@@ -593,7 +582,6 @@ export default function AirConditionersPage() {
               </div>
             </div>
 
-            {/* Technical Specifications - Refrigerant */}
             <div className="space-y-4 pt-4 border-t border-border">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase flex items-center gap-2">
                 <div className="w-1 h-4 bg-cyan-500 rounded"></div>
@@ -623,7 +611,6 @@ export default function AirConditionersPage() {
               </div>
             </div>
 
-            {/* Technical Specifications - Electrical */}
             <div className="space-y-4 pt-4 border-t border-border">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase flex items-center gap-2">
                 <div className="w-1 h-4 bg-yellow-500 rounded"></div>
@@ -663,7 +650,6 @@ export default function AirConditionersPage() {
               </div>
             </div>
 
-            {/* Technical Specifications - Dimensions & Weight */}
             <div className="space-y-4 pt-4 border-t border-border">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase flex items-center gap-2">
                 <div className="w-1 h-4 bg-purple-500 rounded"></div>
@@ -737,7 +723,6 @@ export default function AirConditionersPage() {
         isLoading={deleteAirConditioner.isPending}
       />
 
-      {/* Mobile Filter FAB - Bubble */}
       <div className="lg:hidden fixed bottom-6 right-6 z-50">
         <Button 
             className="h-14 w-14 rounded-full shadow-lg shadow-primary/30 bg-primary hover:bg-primary/90 text-primary-foreground p-0 flex items-center justify-center transform transition-transform hover:scale-105 active:scale-95"

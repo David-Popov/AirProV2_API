@@ -1,3 +1,5 @@
+import { formatCurrency } from '@/lib/formatters'
+import { logger } from '@/lib/logger'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -51,8 +53,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { PageHeader, SearchBar, Pagination, EmptyState, ConfirmDialog, FieldMessage } from '@/components/shared'
-import { useFieldValidation } from '@/hooks'
+import { PageHeader, SearchBar, Pagination, EmptyState, ConfirmDialog, FieldMessage, MontageStatusBadge } from '@/components/shared'
+import { useFieldValidation, useStatusLabels } from '@/hooks'
 import { useEmployees } from '@/hooks/useEmployees'
 import { useAuth } from '@/context'
 import { required, minLength, optional, bulgarianPhone, email } from '@/lib/validation-rules'
@@ -78,7 +80,6 @@ import {
   MONTAGE_STATUS_OPTIONS
 } from '@/types'
 
-// Extended type for form state
 interface MontageFormState extends CreateMontageRequest {
   id?: string;
   indoor_unit_serial?: string;
@@ -95,6 +96,7 @@ interface MontageFormState extends CreateMontageRequest {
 export default function MontagesPage() {
   usePageTitle('Montages')
   const { t } = useTranslation()
+  const { getPaymentStatusLabel } = useStatusLabels()
   const navigate = useNavigate()
   const [items, setItems] = useState<Montage[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -136,14 +138,6 @@ export default function MontagesPage() {
 
   const [formData, setFormData] = useState<MontageFormState>(initialFormState)
 
-  // M2: Auto-set montage status from completion_date.
-  // Rules:
-  //   - completion_date set + status is still default 'Planned' → flip to 'Completed'
-  //   - completion_date cleared in CREATE mode while status==='Completed' → revert to 'Planned'
-  //   - never override 'InProgress' / 'Canceled' / 'Overdue' (user picked them deliberately)
-  //   - never auto-revert in EDIT mode (user may be doing data cleanup on an existing record)
-  // Returning the same `prev` reference when no change is needed is load-bearing —
-  // React bails on the update and the effect doesn't re-fire, preventing infinite loops.
   useEffect(() => {
     setFormData(prev => {
       const hasDate = !!prev.completion_date
@@ -157,16 +151,6 @@ export default function MontagesPage() {
     })
   }, [formData.completion_date, isEditing])
 
-  // M2: Live-derive payment_status from paid_amount vs total_price as the
-  // user types. The payment status is fully a function of the two amounts —
-  // any previous selection (including 'Overdue') is overridden so the badge
-  // always reflects reality.
-  //   - paid >= total (with total > 0) → 'Paid'
-  //   - 0 < paid < total                → 'PartiallyPaid'
-  //   - paid === 0                      → 'NotPaid'
-  //   - total === 0 (not entered yet)   → leave alone, nothing to compare
-  // Returning the same `prev` reference when the status didn't actually change
-  // is load-bearing — React bails on the update and the effect doesn't re-fire.
   useEffect(() => {
     setFormData(prev => {
       const paid = prev.paid_amount ?? 0
@@ -194,7 +178,6 @@ export default function MontagesPage() {
   const [acComboboxOpen, setAcComboboxOpen] = useState(false)
   const [workerComboboxOpen, setWorkerComboboxOpen] = useState(false)
 
-  // Worker assignment: only managers/admins pick assignees; workers are auto-assigned by the backend.
   const { user } = useAuth()
   const isPrivileged = !!user?.roles?.some(r => r === 'Manager' || r === 'Admin')
   const { data: employees } = useEmployees(isPrivileged)
@@ -214,7 +197,6 @@ export default function MontagesPage() {
     })
   }, [])
 
-  // Montage form validation rules
   const montageValidationRules = useMemo(() => ({
     client_name: [
       required('validation.client_name_required'),
@@ -260,14 +242,6 @@ export default function MontagesPage() {
   const [itemToDelete, setItemToDelete] = useState<Montage | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const statusColors: Record<string, string> = {
-    'Planned':    'bg-primary/10 text-primary border-primary/20 border-l-2 border-l-primary/50',
-    'InProgress': 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 border-l-2 border-l-amber-500/60',
-    'Completed':  'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 border-l-2 border-l-emerald-500/60',
-    'Canceled':   'bg-muted text-muted-foreground border-border border-l-2 border-l-muted-foreground/30',
-    'Overdue':    'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20 border-l-2 border-l-orange-500/60',
-  }
-
   const loadMaintenanceReminders = async () => {
     try {
       const today = new Date()
@@ -299,7 +273,7 @@ export default function MontagesPage() {
 
       setMaintenanceReminders(reminders)
     } catch (error) {
-      console.error('Failed to load maintenance reminders:', error)
+      logger.error('Failed to load maintenance reminders:', error)
     }
   }
 
@@ -316,7 +290,7 @@ export default function MontagesPage() {
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
-      console.error(error)
+      logger.error(error)
     } finally {
       setIsLoading(false)
     }
@@ -336,7 +310,7 @@ export default function MontagesPage() {
       const response = await airConditionerService.getAll(1, 100)
       setAirConditioners(response.items)
     } catch (error) {
-      console.error('Failed to load air conditioners:', error)
+      logger.error('Failed to load air conditioners:', error)
     } finally {
       setIsLoadingACs(false)
     }
@@ -388,7 +362,6 @@ export default function MontagesPage() {
 
     const isValid = montageValidation.validateAll(formData as unknown as Record<string, unknown>)
 
-    // Additional checks not covered by the hook
     const extraErrors: string[] = []
     if (!formData.installation_date) {
       extraErrors.push(t('validation.date_required', 'Installation date is required'))
@@ -449,7 +422,7 @@ export default function MontagesPage() {
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
-      console.error(error)
+      logger.error(error)
     } finally {
       setIsSaving(false)
     }
@@ -477,29 +450,6 @@ export default function MontagesPage() {
       setDeleteDialogOpen(false)
       setItemToDelete(null)
     }
-  }
-
-  const getStatusLabel = (val?: string | null) => {
-    if (!val) return t('montages.status_planned', 'Planned')
-    const statusMap: Record<string, string> = {
-      'Planned': t('montages.status_planned', 'Planned'),
-      'InProgress': t('montages.status_in_progress', 'In Progress'),
-      'Completed': t('montages.status_completed', 'Completed'),
-      'Canceled': t('montages.status_canceled', 'Cancelled'),
-      'Overdue': t('montages.status_overdue', 'Overdue')
-    }
-    return statusMap[val] || val
-  }
-  
-  const getPaymentStatusLabel = (val?: string | null) => {
-    if (!val) return t('montages.payment_not_paid', 'Not Paid')
-    const paymentStatusMap: Record<string, string> = {
-      'NotPaid': t('montages.payment_not_paid', 'Not Paid'),
-      'PartiallyPaid': t('montages.payment_partially_paid', 'Partially Paid'),
-      'Paid': t('montages.payment_paid', 'Paid'),
-      'Overdue': t('montages.payment_overdue', 'Overdue')
-    }
-    return paymentStatusMap[val] || val
   }
 
   return (
@@ -539,7 +489,6 @@ export default function MontagesPage() {
         </Button>
       </SearchBar>
 
-      {/* Maintenance Reminders */}
       <Card className="glass-card mb-4 sm:mb-6 border-orange-500/20">
         <CardHeader className="pb-3">
           <CardTitle className="text-foreground flex items-center gap-2 text-base sm:text-lg flex-wrap">
@@ -611,16 +560,14 @@ export default function MontagesPage() {
         </CardContent>
       </Card>
 
-      {/* Count indicator */}
       {totalCount > 0 && (
         <div className="flex justify-end mb-2">
           <span className="text-xs text-muted-foreground">
-            Showing {(page - 1) * 10 + 1}–{Math.min(page * 10, totalCount)} of {totalCount} montages
+            {t('montages.showing_count', { start: (page - 1) * 10 + 1, end: Math.min(page * 10, totalCount), total: totalCount, defaultValue: 'Showing {{start}}–{{end}} of {{total}} montages' })}
           </span>
         </div>
       )}
 
-      {/* Table - Desktop */}
       <div className="hidden md:block glass-card rounded-xl overflow-hidden">
         <Table>
           <TableHeader className="bg-muted/30">
@@ -690,7 +637,6 @@ export default function MontagesPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      {/* Previous Status Arrow */}
                       <Button
                         variant="ghost"
                         size="icon"
@@ -705,7 +651,7 @@ export default function MontagesPage() {
                               toast.success(t('montages.status_updated', 'Status updated'))
                               loadItems()
                             } catch (error) {
-                              console.error('Status update error:', error)
+                              logger.error('Status update error:', error)
                               toast.error(error instanceof Error ? error.message : t('common.unknown_error'))
                             }
                           }
@@ -715,12 +661,8 @@ export default function MontagesPage() {
                         <ChevronLeft className="w-3 h-3" />
                       </Button>
 
-                      {/* Status Badge */}
-                      <Badge variant="outline" className={statusColors[item.status || 'Planned'] || statusColors['Planned']}>
-                        {getStatusLabel(item.status)}
-                      </Badge>
+                      <MontageStatusBadge status={item.status} />
 
-                      {/* Next Status Arrow */}
                       <Button
                         variant="ghost"
                         size="icon"
@@ -735,7 +677,7 @@ export default function MontagesPage() {
                               toast.success(t('montages.status_updated', 'Status updated'))
                               loadItems()
                             } catch (error) {
-                              console.error('Status update error:', error)
+                              logger.error('Status update error:', error)
                               toast.error(error instanceof Error ? error.message : t('common.unknown_error'))
                             }
                           }
@@ -750,7 +692,7 @@ export default function MontagesPage() {
                      <div className="flex flex-col">
                       <div className="flex items-center gap-1 text-foreground font-medium">
                         <CreditCard className="w-3 h-3 text-green-500" />
-                        €{item.total_price || 0}
+                        {formatCurrency(item.total_price || 0)}
                       </div>
                         <span className={`text-xs ${item.payment_status === 'Paid' ? 'text-green-500' : 'text-yellow-500'}`}>
                         {getPaymentStatusLabel(item.payment_status)}
@@ -760,7 +702,7 @@ export default function MontagesPage() {
                   <TableCell className="text-center">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                        <Button variant="ghost" size="icon" aria-label={t('common.actions')} className="h-8 w-8 text-muted-foreground hover:text-foreground">
                           <MoreVertical className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -787,7 +729,6 @@ export default function MontagesPage() {
         </Table>
       </div>
 
-      {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
         {isLoading ? (
           <SkeletonMobileCards rows={4} />
@@ -812,9 +753,7 @@ export default function MontagesPage() {
                       </p>
                     )}
                   </div>
-                  <Badge variant="outline" className={statusColors[item.status || 'Planned'] || statusColors['Planned']}>
-                    {getStatusLabel(item.status)}
-                  </Badge>
+                  <MontageStatusBadge status={item.status} />
                 </div>
 
                 <div className="space-y-2 text-sm">
@@ -834,7 +773,7 @@ export default function MontagesPage() {
                   )}
                   <div className="flex items-center gap-2 text-foreground font-medium">
                     <CreditCard className="w-3 h-3 shrink-0 text-green-500" />
-                    <span>€{item.total_price || 0}</span>
+                    <span>{formatCurrency(item.total_price || 0)}</span>
                     <span className={`text-xs ml-auto ${item.payment_status === 'Paid' ? 'text-green-500' : 'text-yellow-500'}`}>
                       {getPaymentStatusLabel(item.payment_status)}
                     </span>
@@ -876,15 +815,13 @@ export default function MontagesPage() {
         pageLabel={t('common.page', { current: page, total: totalPages || 1 })}
       />
 
-      {/* Filter Dialog */}
       <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
         <DialogContent className="bg-card border-border text-card-foreground sm:max-w-106.25">
           <DialogHeader>
             <DialogTitle>{t('common.filter', 'Filter Montages')}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            
-            {/* Status Filter */}
+
             <div className="grid gap-2">
               <Label>{t('common.status', 'Status')}</Label>
               <Select 
@@ -905,7 +842,6 @@ export default function MontagesPage() {
               </Select>
             </div>
 
-            {/* Client Phone */}
             <div className="grid gap-2">
               <Label>{t('auth.phone', 'Phone')}</Label>
               <Input 
@@ -916,7 +852,6 @@ export default function MontagesPage() {
               />
             </div>
 
-            {/* Date Range */}
             <div className="space-y-2">
               <Label>{t('common.date_range', 'Date Range')}</Label>
               <div className="grid grid-cols-2 gap-2">
@@ -967,15 +902,13 @@ export default function MontagesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="bg-card border-border text-card-foreground max-w-[95vw] sm:max-w-225 max-h-[90vh] overflow-y-auto shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">{isEditing ? t('montages.edit_details') : t('montages.new_montage')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSave} className="grid gap-4 sm:gap-6 py-4">
-            
-            {/* Client Info */}
+
             <div className="space-y-4">
                <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">{t('montages.client_info')}</h3>
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1043,7 +976,6 @@ export default function MontagesPage() {
                </div>
             </div>
 
-            {/* Assigned Workers — managers/admins choose; workers are auto-assigned by the backend */}
             {isPrivileged && (
               <div className="space-y-4">
                 <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">{t('montages.assigned_workers', 'Assigned Workers')} *</h3>
@@ -1109,7 +1041,6 @@ export default function MontagesPage() {
               </div>
             )}
 
-            {/* Installation Details */}
             <div className="space-y-4">
                <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">{t('montages.installation_info')}</h3>
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1136,7 +1067,6 @@ export default function MontagesPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  {/* AC Unit Section */}
                   <div className="col-span-1 sm:col-span-2 space-y-3">
                     <div className="flex items-center justify-between">
                       <Label>{t('montages.ac_unit', 'Air Conditioner Unit')}</Label>
@@ -1210,7 +1140,6 @@ export default function MontagesPage() {
                           </PopoverContent>
                         </Popover>
 
-                        {/* AC Info Preview */}
                         {formData.air_conditioner_id && (() => {
                           const selectedAC = airConditioners.find(ac => ac.id === formData.air_conditioner_id)
                           if (!selectedAC) return null
@@ -1255,7 +1184,6 @@ export default function MontagesPage() {
                </div>
             </div>
 
-             {/* Financials */}
             <div className="space-y-4">
                <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">{t('montages.financials')}</h3>
                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1315,7 +1243,6 @@ export default function MontagesPage() {
         isLoading={isDeleting}
       />
 
-      {/* Mobile Filter FAB */}
       <div className="sm:hidden fixed bottom-6 right-6 z-50">
         <Button
           className="relative h-14 w-14 rounded-full shadow-lg shadow-primary/30 bg-primary hover:bg-primary/90 text-primary-foreground p-0 flex items-center justify-center transition-transform hover:scale-105 active:scale-95"

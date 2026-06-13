@@ -40,7 +40,7 @@ public class CreateAirConditionerDtoValidatorTests
         var result = _validator.Validate(new CreateAirConditionerDto
         {
             Name = "Mega Cooler",
-            Kilowatts = 101 // exceeds max
+            Kilowatts = 101
         });
 
         result.IsValid.Should().BeFalse();

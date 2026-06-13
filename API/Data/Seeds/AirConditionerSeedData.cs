@@ -23,7 +23,6 @@ public static class AirConditionerSeedData
         
         var airConditioners = new List<AirConditioner>();
 
-        // Daikin Air Conditioners (10)
         airConditioners.AddRange(new[]
         {
             new AirConditioner
@@ -148,7 +147,6 @@ public static class AirConditionerSeedData
             }
         });
 
-        // Mitsubishi Electric Air Conditioners (10)
         airConditioners.AddRange(new[]
         {
             new AirConditioner
@@ -273,7 +271,6 @@ public static class AirConditionerSeedData
             }
         });
 
-        // Gree Air Conditioners (10)
         airConditioners.AddRange(new[]
         {
             new AirConditioner
@@ -398,7 +395,6 @@ public static class AirConditionerSeedData
             }
         });
 
-        // LG Air Conditioners (10)
         airConditioners.AddRange(new[]
         {
             new AirConditioner
@@ -523,7 +519,6 @@ public static class AirConditionerSeedData
             }
         });
 
-        // Panasonic Air Conditioners (10)
         airConditioners.AddRange(new[]
         {
             new AirConditioner

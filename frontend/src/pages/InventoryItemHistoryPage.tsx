@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -73,7 +74,7 @@ export default function InventoryItemHistoryPage() {
           const itemData = await inventoryService.getById(id);
           setItem(itemData);
         } catch (error) {
-          console.error("Failed to load item", error);
+          logger.error("Failed to load item", error);
         }
       }
 
@@ -82,7 +83,7 @@ export default function InventoryItemHistoryPage() {
       setTotalPages(historyData.total_pages);
       
     } catch (error) {
-      console.error('Failed to load history', error);
+      logger.error('Failed to load history', error);
       toast.error(t('inventory.error_loading', 'Failed to load inventory history'));
     } finally {
       setIsLoading(false);
@@ -121,7 +122,6 @@ export default function InventoryItemHistoryPage() {
 
   return (
     <div className="min-h-screen bg-background pt-14 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300">
-      {/* Header */}
       <div className="mb-6 sm:mb-8">
         <BackButton onClick={() => navigate('/inventory')} label={t('common.back', 'Back to Inventory')} />
         
@@ -153,7 +153,6 @@ export default function InventoryItemHistoryPage() {
         </CardHeader>
         <CardContent>
           <div className="relative">
-            {/* Timeline Line */}
             <div className="absolute left-8 top-0 bottom-0 w-px bg-border hidden sm:block" />
 
             <div className="space-y-8">
@@ -174,22 +173,18 @@ export default function InventoryItemHistoryPage() {
 
                   return (
                      <div key={log.id} className="relative flex flex-col sm:flex-row gap-4 sm:gap-8">
-                        {/* Timeline Dot */}
                         <div className="absolute left-8 -translate-x-1/2 mt-1.5 w-3 h-3 rounded-full bg-border ring-4 ring-background hidden sm:block" />
-                        
-                        {/* Date - Mobile */}
+
                         <div className="sm:hidden text-xs text-muted-foreground mb-1 flex items-center gap-2">
                             <Clock className="w-3 h-3" />
                             {formatDate(log.created_at)}
                         </div>
 
-                        {/* Date - Desktop */}
                         <div className="hidden sm:block w-32 shrink-0 text-sm text-muted-foreground text-right pt-1">
                            <div className="font-medium text-foreground">{format(date, 'P')}</div>
                            <div className="text-xs">{format(date, 'p')}</div>
                         </div>
 
-                        {/* Content */}
                         <div className="flex-1 pb-4 sm:pb-0 border-b sm:border-0 border-border last:border-0">
                            <Card className="border shadow-none bg-muted/20">
                               <CardContent className="p-4">
@@ -209,16 +204,16 @@ export default function InventoryItemHistoryPage() {
                                               </Badge>
                                           )}
                                        </div>
-                                       
+
                                        <div className="space-y-2">
                                           {log.details && (
                                              <p className="text-sm text-foreground/80">{log.details}</p>
                                           )}
-                                          
+
                                           {log.reason && (
                                              <p className="text-sm text-muted-foreground italic">"{log.reason}"</p>
                                           )}
-                                          
+
                                           {log.related_montage && (
                                             <div 
                                               className="flex items-center gap-2 text-sm text-primary hover:underline cursor-pointer mt-1"
@@ -247,8 +242,7 @@ export default function InventoryItemHistoryPage() {
                 })
               )}
             </div>
-            
-            {/* Pagination keys */}
+
             {totalPages > 1 && (
               <div className="flex justify-center gap-2 mt-8">
                  <Button
@@ -272,7 +266,7 @@ export default function InventoryItemHistoryPage() {
                  </Button>
               </div>
             )}
-            
+
           </div>
         </CardContent>
       </Card>

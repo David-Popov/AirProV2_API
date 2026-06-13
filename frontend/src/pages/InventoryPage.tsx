@@ -1,3 +1,5 @@
+import { formatCurrency } from '@/lib/formatters'
+import { logger } from '@/lib/logger'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -75,17 +77,18 @@ function getStockIndicatorClass(item: InventoryItem): string {
 }
 
 function StockStatusBadge({ item }: { item: InventoryItem }) {
+  const { t } = useTranslation()
   if (!item.is_active) {
     return (
       <Badge variant="outline" className="text-muted-foreground border-muted-foreground/30 border-l-2 border-l-muted-foreground/40 whitespace-nowrap">
-        Inactive
+        {t('common.inactive', 'Inactive')}
       </Badge>
     )
   }
   if (item.quantity === 0) {
     return (
       <Badge className="bg-red-500/10 text-red-500 border-red-500/20 border-l-2 border-l-red-500 whitespace-nowrap">
-        Out of Stock
+        {t('inventory.out_of_stock', 'Out of Stock')}
       </Badge>
     )
   }
@@ -93,13 +96,13 @@ function StockStatusBadge({ item }: { item: InventoryItem }) {
     return (
       <Badge className="bg-orange-500/10 text-orange-500 border-orange-500/20 border-l-2 border-l-orange-500/60 whitespace-nowrap">
         <AlertTriangle className="w-3 h-3 mr-1" />
-        {('Low Stock')}
+        {t('inventory.low_stock', 'Low Stock')}
       </Badge>
     )
   }
   return (
     <Badge className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 border-l-2 border-l-green-500/60 whitespace-nowrap">
-      In Stock
+      {t('inventory.in_stock', 'In Stock')}
     </Badge>
   )
 }
@@ -127,7 +130,6 @@ export default function InventoryPage() {
   const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Inventory form validation rules
   const inventoryValidationRules = useMemo(() => ({
     name: [
       required('validation.inventory_name_required'),
@@ -211,7 +213,6 @@ export default function InventoryPage() {
 
     const isValid = inventoryValidation.validateAll(currentItem as unknown as Record<string, unknown>)
 
-    // Additional checks not covered by the hook
     const extraErrors: string[] = []
     if (currentItem.quantity === undefined || currentItem.quantity < 0) extraErrors.push(t('validation.quantity_invalid', 'Quantity must be 0 or greater'))
     if (currentItem.min_quantity != null && currentItem.min_quantity < 0) extraErrors.push(t('validation.min_quantity_invalid', 'Min quantity must be 0 or greater'))
@@ -260,7 +261,7 @@ export default function InventoryPage() {
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
-      console.error(error)
+      logger.error(error)
     } finally {
       setIsSaving(false)
     }
@@ -312,7 +313,6 @@ export default function InventoryPage() {
 
       <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder={t('inventory.search_placeholder')} />
 
-      {/* Low Stock Alerts */}
       <Card className="glass-card mb-4 sm:mb-6 border-orange-500/20">
         <CardHeader className="pb-3">
           <CardTitle className="text-foreground flex items-center gap-2 text-base sm:text-lg flex-wrap">
@@ -359,7 +359,6 @@ export default function InventoryPage() {
         </CardContent>
       </Card>
 
-      {/* Filter row */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-muted-foreground">{t('common.status')}:</span>
@@ -368,28 +367,27 @@ export default function InventoryPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="in_stock">In Stock</SelectItem>
-              <SelectItem value="low_stock">Low Stock</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
+              <SelectItem value="all">{t('common.all', 'All')}</SelectItem>
+              <SelectItem value="in_stock">{t('inventory.in_stock', 'In Stock')}</SelectItem>
+              <SelectItem value="low_stock">{t('inventory.low_stock', 'Low Stock')}</SelectItem>
+              <SelectItem value="inactive">{t('common.inactive', 'Inactive')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         {totalCount > 0 && (
           <span className="text-xs text-muted-foreground">
-            Showing {startItem}–{endItem} of {totalCount} items
+            {t('inventory.showing_count', { start: startItem, end: endItem, total: totalCount, defaultValue: 'Showing {{start}}–{{end}} of {{total}} items' })}
           </span>
         )}
       </div>
 
-      {/* Table — Desktop */}
       <div className="hidden md:block glass-card rounded-xl overflow-hidden mb-4">
         <Table>
           <TableHeader className="bg-muted/30">
             <TableRow className="border-border hover:bg-muted/30">
               <TableHead className="text-muted-foreground">{t('inventory.name')}</TableHead>
               <TableHead className="text-muted-foreground">{t('inventory.sku')}</TableHead>
-              <TableHead className="text-muted-foreground">Stock Level</TableHead>
+              <TableHead className="text-muted-foreground">{t('inventory.stock_level', 'Stock Level')}</TableHead>
               <TableHead className="text-muted-foreground">{t('common.unit_price')}</TableHead>
               <TableHead className="text-muted-foreground">{t('common.location')}</TableHead>
               <TableHead className="text-muted-foreground">{t('common.status')}</TableHead>
@@ -422,7 +420,7 @@ export default function InventoryPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {item.unit_price ? `€${item.unit_price}` : '—'}
+                      {item.unit_price ? formatCurrency(item.unit_price) : '—'}
                     </TableCell>
                     <TableCell className="text-muted-foreground">{item.location || '—'}</TableCell>
                     <TableCell>
@@ -431,7 +429,7 @@ export default function InventoryPage() {
                     <TableCell className="text-center">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                          <Button variant="ghost" size="icon" aria-label={t('common.actions')} className="h-8 w-8 text-muted-foreground hover:text-foreground">
                             <MoreVertical className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -447,12 +445,12 @@ export default function InventoryPage() {
                           {item.is_active ? (
                             <DropdownMenuItem onClick={() => handleStatusChange(item, false)}>
                               <Archive className="w-4 h-4 mr-2 text-orange-500" />
-                              <span className="text-orange-500">Deactivate</span>
+                              <span className="text-orange-500">{t('common.deactivate', 'Deactivate')}</span>
                             </DropdownMenuItem>
                           ) : (
                             <DropdownMenuItem onClick={() => handleStatusChange(item, true)}>
                               <Archive className="w-4 h-4 mr-2 text-green-500" />
-                              <span className="text-green-500">Activate</span>
+                              <span className="text-green-500">{t('common.activate', 'Activate')}</span>
                             </DropdownMenuItem>
                           )}
                           {user?.roles.includes('Manager') && (
@@ -475,7 +473,6 @@ export default function InventoryPage() {
         </Table>
       </div>
 
-      {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
         {isLoading ? (
           <SkeletonMobileCards rows={4} />
@@ -491,15 +488,14 @@ export default function InventoryPage() {
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-foreground truncate">{item.name}</h3>
-                      <p className="text-xs text-muted-foreground font-mono">{item.sku || 'No SKU'}</p>
+                      <p className="text-xs text-muted-foreground font-mono">{item.sku || t('inventory.no_sku', 'No SKU')}</p>
                     </div>
                     <StockStatusBadge item={item} />
                   </div>
 
-                  {/* Stock Level bar on mobile */}
                   <div className="mb-3">
                     <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                      <span>Stock Level</span>
+                      <span>{t('inventory.stock_level', 'Stock Level')}</span>
                       <span>{item.quantity} {t(`inventory.units.${item.unit_of_measure.toLowerCase()}`, item.unit_of_measure)}</span>
                     </div>
                     <Progress value={stockPct} indicatorClassName={indicatorCls} className="h-1.5" />
@@ -509,7 +505,7 @@ export default function InventoryPage() {
                     {item.unit_price && (
                       <div className="flex items-center justify-between text-muted-foreground">
                         <span>{t('common.unit_price')}:</span>
-                        <span className="text-green-500 font-medium">€{item.unit_price}</span>
+                        <span className="text-green-500 font-medium">{formatCurrency(item.unit_price || 0)}</span>
                       </div>
                     )}
                     {item.location && (
@@ -531,7 +527,7 @@ export default function InventoryPage() {
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon" className="h-8 w-8 shrink-0">
+                        <Button variant="outline" size="icon" aria-label={t('common.actions')} className="h-8 w-8 shrink-0">
                           <MoreVertical className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -539,12 +535,12 @@ export default function InventoryPage() {
                         {item.is_active ? (
                           <DropdownMenuItem onClick={() => handleStatusChange(item, false)}>
                             <Archive className="w-4 h-4 mr-2 text-orange-500" />
-                            <span className="text-orange-500">Deactivate</span>
+                            <span className="text-orange-500">{t('common.deactivate', 'Deactivate')}</span>
                           </DropdownMenuItem>
                         ) : (
                           <DropdownMenuItem onClick={() => handleStatusChange(item, true)}>
                             <Archive className="w-4 h-4 mr-2 text-green-500" />
-                            <span className="text-green-500">Activate</span>
+                            <span className="text-green-500">{t('common.activate', 'Activate')}</span>
                           </DropdownMenuItem>
                         )}
                         {user?.roles.includes('Manager') && (
@@ -575,7 +571,6 @@ export default function InventoryPage() {
         pageLabel={t('common.page', { current: page, total: totalPages || 1 })}
       />
 
-      {/* Item Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="bg-card border-border text-card-foreground max-w-[95vw] sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>

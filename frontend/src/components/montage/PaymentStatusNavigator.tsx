@@ -20,6 +20,9 @@ import {
 } from '@/components/ui/select'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { PAYMENT_STATUS_ORDER, PAYMENT_STATUS_COLORS } from '@/lib/montage-status'
+import { useStatusLabels } from '@/hooks/useStatusLabels'
+import { formatCurrency } from '@/lib/formatters'
 
 interface PaymentStatusNavigatorProps {
   currentStatus: string
@@ -27,39 +30,24 @@ interface PaymentStatusNavigatorProps {
   paidAmount: number
   onStatusChange: (newStatus: string, newPaidAmount?: number) => void
   disabled?: boolean
-  getPaymentStatusLabel: (status: string) => string
 }
 
-const PAYMENT_STATUSES = ['NotPaid', 'PartiallyPaid', 'Paid']
-
-export function PaymentStatusNavigator({ 
-  currentStatus, 
+export function PaymentStatusNavigator({
+  currentStatus,
   totalPrice,
   paidAmount,
-  onStatusChange, 
+  onStatusChange,
   disabled,
-  getPaymentStatusLabel
 }: PaymentStatusNavigatorProps) {
   const { t } = useTranslation()
+  const { getPaymentStatusLabel } = useStatusLabels()
   const [showAmountDialog, setShowAmountDialog] = useState(false)
   const [tempAmount, setTempAmount] = useState(paidAmount)
   const [nextStatusTarget, setNextStatusTarget] = useState<string>('')
-  
-  const currentIndex = PAYMENT_STATUSES.indexOf(currentStatus)
-  
-  const getStatusColor = (status?: string) => {
-    const s = status || currentStatus
-    switch (s) {
-      case 'Paid':
-        return 'bg-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/30 border-green-500/20'
-      case 'PartiallyPaid':
-        return 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/30 border-yellow-500/20'
-      case 'NotPaid':
-        return 'bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/30 border-red-500/20'
-      default:
-        return ''
-    }
-  }
+
+  const currentIndex = (PAYMENT_STATUS_ORDER as string[]).indexOf(currentStatus)
+
+  const getStatusColor = (status?: string) => PAYMENT_STATUS_COLORS[status || currentStatus] || ''
 
   const triggerStatusChange = (targetStatus: string) => {
     if (targetStatus === currentStatus) return
@@ -76,25 +64,25 @@ export function PaymentStatusNavigator({
   }
 
   const handleNext = () => {
-    if (currentIndex >= PAYMENT_STATUSES.length - 1) return
-    triggerStatusChange(PAYMENT_STATUSES[currentIndex + 1])
+    if (currentIndex >= PAYMENT_STATUS_ORDER.length - 1) return
+    triggerStatusChange(PAYMENT_STATUS_ORDER[currentIndex + 1])
   }
-  
+
   const handlePrevious = () => {
     if (currentIndex <= 0) return
-    triggerStatusChange(PAYMENT_STATUSES[currentIndex - 1])
+    triggerStatusChange(PAYMENT_STATUS_ORDER[currentIndex - 1])
   }
-  
+
   const handleSaveAmount = () => {
     if (tempAmount > totalPrice) {
       alert(t('montages.amount_exceeds_total', 'Amount cannot exceed total price'))
       return
     }
-    
+
     onStatusChange(nextStatusTarget, tempAmount)
     setShowAmountDialog(false)
   }
-  
+
   return (
     <>
       <div className="flex items-center gap-2">
@@ -103,6 +91,7 @@ export function PaymentStatusNavigator({
           variant="ghost"
           onClick={handlePrevious}
           disabled={disabled || currentIndex <= 0}
+          aria-label={t('common.previous')}
           className="h-8 w-8"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -112,11 +101,11 @@ export function PaymentStatusNavigator({
           onValueChange={(val) => triggerStatusChange(val)}
           disabled={disabled}
         >
-          <SelectTrigger className={`w-auto min-w-[130px] h-8 border text-xs font-medium px-3 ${getStatusColor()}`}>
+          <SelectTrigger className={`w-auto min-w-32.5 h-8 border text-xs font-medium px-3 ${getStatusColor()}`}>
             <SelectValue>{getPaymentStatusLabel(currentStatus)}</SelectValue>
           </SelectTrigger>
           <SelectContent className="bg-popover border-border text-popover-foreground">
-            {PAYMENT_STATUSES.map((status) => (
+            {PAYMENT_STATUS_ORDER.map((status) => (
               <SelectItem key={status} value={status} className="cursor-pointer">
                 <Badge variant="outline" className={`${getStatusColor(status)} border-0 bg-transparent px-0`}>
                   {getPaymentStatusLabel(status)}
@@ -129,13 +118,14 @@ export function PaymentStatusNavigator({
           size="icon"
           variant="ghost"
           onClick={handleNext}
-          disabled={disabled || currentIndex >= PAYMENT_STATUSES.length - 1}
+          disabled={disabled || currentIndex >= PAYMENT_STATUS_ORDER.length - 1}
+          aria-label={t('common.next')}
           className="h-8 w-8"
         >
           <ChevronRight className="w-4 h-4" />
         </Button>
       </div>
-      
+
       <Dialog open={showAmountDialog} onOpenChange={setShowAmountDialog}>
         <DialogContent>
           <DialogHeader>
@@ -158,10 +148,10 @@ export function PaymentStatusNavigator({
               />
             </div>
             <p className="text-sm text-muted-foreground">
-              {t('montages.total_price')}: ${totalPrice?.toFixed(2) || '0.00'}
+              {t('montages.total_price')}: {formatCurrency(totalPrice || 0)}
             </p>
             <p className="text-sm text-muted-foreground">
-              {t('montages.remaining', 'Remaining')}: ${((totalPrice || 0) - tempAmount).toFixed(2)}
+              {t('montages.remaining', 'Remaining')}: {formatCurrency((totalPrice || 0) - tempAmount)}
             </p>
           </div>
           <DialogFooter>

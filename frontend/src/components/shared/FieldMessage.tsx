@@ -11,7 +11,6 @@ interface FieldMessageProps {
 export function FieldMessage({ status, message }: FieldMessageProps) {
   const { t } = useTranslation()
 
-  // Reserve a fixed line of space so the layout doesn't shift
   if (status === 'idle' || !message) {
     return <div className="min-h-4" />
   }

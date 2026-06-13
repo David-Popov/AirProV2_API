@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -60,7 +61,7 @@ export default function AdminMontagesPage() {
       setTotalPages(result.totalPages)
     } catch (error) {
       toast.error(t('common.error'))
-      console.error(error)
+      logger.error(error)
     } finally {
       setLoading(false)
     }
@@ -226,7 +227,7 @@ export default function AdminMontagesPage() {
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
+                          <Button size="sm" variant="ghost" aria-label={t('common.actions')} className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
                             <MoreVertical className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -266,7 +267,6 @@ export default function AdminMontagesPage() {
         </CardContent>
       </Card>
 
-      {/* View Dialog */}
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>{t('admin.montage_details')}</DialogTitle></DialogHeader>
@@ -288,7 +288,6 @@ export default function AdminMontagesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit/Create Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{isCreateMode ? t('admin.create_montage') : t('admin.edit_montage')}</DialogTitle></DialogHeader>
@@ -330,7 +329,6 @@ export default function AdminMontagesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>{t('admin.confirm_delete')}</DialogTitle><DialogDescription>{t('admin.delete_montage_warning')}</DialogDescription></DialogHeader>

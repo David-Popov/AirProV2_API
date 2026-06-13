@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Loader2 } from 'lucide-react'
@@ -48,7 +49,7 @@ export function TrialActivationModal({
       } else {
         toast.error(message)
       }
-      console.error(error)
+      logger.error(error)
     } finally {
       setIsActivating(false)
     }

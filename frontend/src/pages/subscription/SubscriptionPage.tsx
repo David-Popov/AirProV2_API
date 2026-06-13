@@ -1,3 +1,5 @@
+import { formatCurrency } from '@/lib/formatters'
+import { logger } from '@/lib/logger'
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -45,7 +47,7 @@ export default function SubscriptionPage() {
       setPlan(planData)
       setSubscriptionInfo(statusData)
     } catch (error) {
-      console.error('Failed to fetch subscription data:', error)
+      logger.error('Failed to fetch subscription data:', error)
       toast.error(t('common.unknown_error'))
     } finally {
       setIsLoading(false)
@@ -62,7 +64,7 @@ export default function SubscriptionPage() {
     try {
       await stripeService.redirectToCheckout()
     } catch (error) {
-      console.error('Failed to redirect to checkout:', error)
+      logger.error('Failed to redirect to checkout:', error)
       toast.error(t('subscription.checkout_error'))
       setIsRedirecting(false)
     }
@@ -73,7 +75,7 @@ export default function SubscriptionPage() {
     try {
       await stripeService.redirectToPortal()
     } catch (error) {
-      console.error('Failed to redirect to portal:', error)
+      logger.error('Failed to redirect to portal:', error)
       toast.error(t('subscription.portal_error'))
       setIsRedirecting(false)
     }
@@ -91,7 +93,6 @@ export default function SubscriptionPage() {
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
-      {/* Header */}
       <div className="text-center">
         <h1 className="text-3xl font-bold text-foreground mb-4">
           {t('subscription.title')}
@@ -101,7 +102,6 @@ export default function SubscriptionPage() {
         </p>
       </div>
 
-      {/* Current subscription status */}
       {subscriptionInfo && (
         <Card className="glass-card">
           <CardHeader>
@@ -155,7 +155,6 @@ export default function SubscriptionPage() {
         </Card>
       )}
 
-      {/* Premium Plan Card */}
       {plan && (
         <div className="grid place-items-center">
           <Card className="relative overflow-hidden max-w-md w-full border-primary shadow-xl shadow-primary/10">
@@ -172,7 +171,7 @@ export default function SubscriptionPage() {
                 {t('subscription.perfect_for_business')}
               </CardDescription>
               <div className="mt-4">
-                <span className="text-5xl font-bold text-foreground">€{plan.price}</span>
+                <span className="text-5xl font-bold text-foreground">{formatCurrency(plan.price)}</span>
                 <span className="text-muted-foreground">/{t('subscription.month')}</span>
               </div>
             </CardHeader>
@@ -213,7 +212,6 @@ export default function SubscriptionPage() {
         </div>
       )}
 
-      {/* Additional info */}
       <div className="text-center">
         <p className="text-sm text-muted-foreground">
           {t('subscription.secure_payment')}

@@ -21,7 +21,6 @@ export default function ForgotPasswordPage() {
     try {
       await authService.forgotPassword(email);
     } catch {
-      // Silently ignore — always show success to prevent user enumeration
     } finally {
       setIsSubmitting(false);
       setIsSubmitted(true);

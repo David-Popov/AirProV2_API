@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -40,7 +41,7 @@ export default function AdminCompaniesPage() {
       setTotalPages(result.totalPages)
     } catch (error) {
       toast.error(t('common.error'))
-      console.error(error)
+      logger.error(error)
     } finally {
       setLoading(false)
     }
@@ -79,7 +80,7 @@ export default function AdminCompaniesPage() {
       fetchCompanies()
     } catch (error) {
       toast.error(t('common.error'))
-      console.error(error)
+      logger.error(error)
     }
   }
 
@@ -92,7 +93,7 @@ export default function AdminCompaniesPage() {
       fetchCompanies()
     } catch (error) {
       toast.error(t('common.error'))
-      console.error(error)
+      logger.error(error)
     }
   }
 
@@ -103,7 +104,7 @@ export default function AdminCompaniesPage() {
       fetchCompanies()
     } catch (error) {
       toast.error(t('common.error'))
-      console.error(error)
+      logger.error(error)
     }
   }
 
@@ -173,7 +174,6 @@ export default function AdminCompaniesPage() {
     </div>
   )
 
-  // Mobile Card View
   const MobileCard = ({ company }: { company: AdminCompany }) => (
     <Card className="mb-4">
       <CardContent className="pt-4">
@@ -216,7 +216,6 @@ export default function AdminCompaniesPage() {
             <Building2 className="w-5 h-5" />
             {t('admin.companies_management')}
           </CardTitle>
-          {/* Mobile Filter Toggle */}
           <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" className="md:hidden">
@@ -230,10 +229,8 @@ export default function AdminCompaniesPage() {
           </Sheet>
         </CardHeader>
         <CardContent>
-          {/* Desktop Filters */}
           <div className="hidden md:block mb-6"><FilterPanel /></div>
 
-          {/* Desktop Table */}
           <div className="hidden md:block">
             <Table>
               <TableHeader>
@@ -284,14 +281,12 @@ export default function AdminCompaniesPage() {
             </Table>
           </div>
 
-          {/* Mobile Cards */}
           <div className="md:hidden">
-            {loading ? <div className="text-center py-8">{t('common.loading')}</div> : 
+            {loading ? <div className="text-center py-8">{t('common.loading')}</div> :
               companies.length === 0 ? <div className="text-center py-8">{t('common.no_data')}</div> :
               companies.map(company => <MobileCard key={company.id} company={company} />)}
           </div>
 
-          {/* Pagination */}
           <div className="flex justify-between items-center mt-4">
             <Button variant="outline" disabled={filter.page === 1} onClick={() => setFilter(f => ({ ...f, page: (f.page || 1) - 1 }))}>
               <ChevronLeft className="w-4 h-4" />
@@ -304,7 +299,6 @@ export default function AdminCompaniesPage() {
         </CardContent>
       </Card>
 
-      {/* Edit Subscription Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -346,7 +340,6 @@ export default function AdminCompaniesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent>
           <DialogHeader>

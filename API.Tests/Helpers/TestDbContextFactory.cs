@@ -28,9 +28,6 @@ public static class TestDbContextFactory
 
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(databaseName ?? Guid.NewGuid().ToString())
-            // Suppress the in-memory warning about transactions — services use
-            // BeginTransactionAsync which is a no-op under InMemory but should
-            // not throw during tests.
             .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
             .Options;
 

@@ -23,8 +23,6 @@ public static class IdentityExtensions
                 options.Password.RequiredLength          = 8;
                 options.User.RequireUniqueEmail          = true;
 
-                // Lock the account for 15 minutes after 10 consecutive failed attempts.
-                // Users can self-unlock by completing the forgot-password flow.
                 options.Lockout.MaxFailedAccessAttempts = 10;
                 options.Lockout.DefaultLockoutTimeSpan  = TimeSpan.FromMinutes(15);
                 options.Lockout.AllowedForNewUsers      = true;
@@ -45,7 +43,6 @@ public static class IdentityExtensions
         {
             options.SaveToken = true;
 
-            // Require HTTPS for token transmission in all environments except local development.
             options.RequireHttpsMetadata = !env.IsDevelopment();
 
             options.TokenValidationParameters = new TokenValidationParameters

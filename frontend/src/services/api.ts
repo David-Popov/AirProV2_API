@@ -4,9 +4,6 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5209/api'
 import { extractErrorMessage } from '../lib/utils';
 import { safeStorage } from '../lib/safe-storage';
 
-// C-4: Module-level promise ensures only one token refresh is in-flight at a time.
-// All concurrent 401 responses share the same refresh attempt instead of each
-// triggering an independent call (which would exhaust the single-use refresh token).
 let refreshPromise: Promise<void> | null = null;
 
 class ApiClient {
@@ -46,7 +43,6 @@ class ApiClient {
             throw new Error('Refresh token expired');
           }
 
-          // C-4: Deduplicate concurrent refresh calls with a shared promise.
           if (!refreshPromise) {
             refreshPromise = (async () => {
               const authService = (await import('./auth')).authService;
@@ -61,8 +57,6 @@ class ApiClient {
         } catch (error) {
           const authService = (await import('./auth')).authService;
           authService.logout();
-          // M-5: Dispatch a custom event so AuthContext can handle the navigation
-          // via React Router instead of a full page reload.
           window.dispatchEvent(new CustomEvent('auth:session-expired'));
           throw error;
         }

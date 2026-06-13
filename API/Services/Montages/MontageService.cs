@@ -4,7 +4,9 @@ using API.Data;
 using API.Data.Entities;
 using API.DTOs;
 using API.Models;
+using API.Mappings;
 using API.Repositories;
+using Mapster;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Services.Montages;
@@ -117,10 +119,6 @@ public class MontageService : IMontageService
             montage.Notes = dto.Notes;
             montage.UpdatedAt = DateTime.UtcNow;
 
-            // Reassignment — honored only when the controller passes a set (manager/admin);
-            // for workers the controller leaves this null, so assignments are left untouched.
-            // Diff against the DbSet directly so added rows INSERT and removed rows DELETE
-            // (adding to the tracked navigation can misclassify a new row as an update).
             if (dto.AssignedUserIds != null)
             {
                 await ValidateAssigneesAsync(dto.AssignedUserIds, montage.CompanyId);
@@ -260,7 +258,7 @@ public class MontageService : IMontageService
         try
         {
             var montage = await _repository.GetByIdAsync(montageId);
-            return montage == null ? null : ToDto(montage);
+            return montage == null ? null : montage.Adapt<MontageDto>(MontageMappingConfig.Detail);
         }
         catch (Exception e)
         {
@@ -274,7 +272,7 @@ public class MontageService : IMontageService
         try
         {
             var montage = await _repository.GetByIdWithAirConditionerAsync(montageId);
-            return montage == null ? null : ToDto(montage);
+            return montage == null ? null : montage.Adapt<MontageDto>(MontageMappingConfig.Detail);
         }
         catch (Exception e)
         {
@@ -309,8 +307,6 @@ public class MontageService : IMontageService
                 query = query.Where(m => m.Status == statusEnum);
             }
 
-            // ClientName/ClientPhone are EncryptColumn — can't be SQL-filtered.
-            // For this branch only we must materialize matching rows to decrypt; then filter + paginate in memory.
             var needsInMemoryFilter = !string.IsNullOrWhiteSpace(parameters.ClientName)
                                    || !string.IsNullOrWhiteSpace(parameters.ClientPhone);
 
@@ -318,8 +314,6 @@ public class MontageService : IMontageService
             {
                 var allItems = await query
                     .Include(m => m.AirConditioner)
-                    .Include(m => m.UsedMaterials)
-                        .ThenInclude(um => um.InventoryItem)
                     .Include(m => m.Assignments)
                         .ThenInclude(a => a.User)
                     .OrderByDescending(m => m.InstallationDate)
@@ -342,57 +336,15 @@ public class MontageService : IMontageService
                 var pagedItems = filteredList
                     .Skip((parameters.PageNumber - 1) * parameters.PageSize)
                     .Take(parameters.PageSize)
-                    .Select(ToDto)
+                    .Select(m => m.Adapt<MontageDto>(MontageMappingConfig.List))
                     .ToList();
 
                 return new PagedList<MontageDto>(pagedItems, parameters.PageNumber, parameters.PageSize, totalCount);
             }
 
-            // SQL-paginated path: project directly to DTO so EF Core issues LIMIT/OFFSET in SQL
-            // and the AirConditioner JOIN is part of the same single query (no client materialization).
             var dtoQuery = query
                 .OrderByDescending(m => m.InstallationDate)
-                .Select(m => new MontageDto
-                {
-                    Id = m.Id,
-                    CompanyId = m.CompanyId,
-                    UserId = m.UserId,
-                    AssignedUserIds = m.Assignments.Select(a => a.UserId).ToList(),
-                    AssignedUsers = m.Assignments.Select(a => new AssignedUserDto { Id = a.UserId, FullName = a.User != null ? a.User.FirstName + " " + a.User.LastName : "" }).ToList(),
-                    AirConditionerId = m.AirConditionerId,
-                    CustomAcBrand = m.CustomAcBrand,
-                    CustomAcModel = m.CustomAcModel,
-                    CustomAcKilowatts = m.CustomAcKilowatts,
-                    ClientName = m.ClientName,
-                    ClientPhone = m.ClientPhone,
-                    ClientEmail = m.ClientEmail,
-                    ClientAddress = m.ClientAddress,
-                    ClientCity = m.ClientCity,
-                    InstallationDate = m.InstallationDate,
-                    CompletionDate = m.CompletionDate,
-                    Status = m.Status.ToString(),
-                    IndoorUnitSerial = m.IndoorUnitSerial,
-                    OutdoorUnitSerial = m.OutdoorUnitSerial,
-                    TotalPrice = m.TotalPrice,
-                    PaidAmount = m.PaidAmount,
-                    PaymentStatus = m.PaymentStatus.ToString(),
-                    Notes = m.Notes,
-                    CreatedAt = m.CreatedAt,
-                    UpdatedAt = m.UpdatedAt,
-                    AirConditioner = m.AirConditioner != null
-                        ? new AirConditionerDto
-                        {
-                            Id = m.AirConditioner.Id,
-                            Name = m.AirConditioner.Name,
-                            Brand = m.AirConditioner.Brand,
-                            Model = m.AirConditioner.Model,
-                            Kilowatts = m.AirConditioner.Kilowatts,
-                            Description = m.AirConditioner.Description,
-                            Price = m.AirConditioner.Price,
-                            ImageUrl = m.AirConditioner.ImageUrl,
-                        }
-                        : null
-                });
+                .ProjectToType<MontageDto>(MontageMappingConfig.List);
 
             return await PagedList<MontageDto>.CreateAsync(dtoQuery, parameters);
         }
@@ -409,21 +361,14 @@ public class MontageService : IMontageService
         {
             var query = _context.Montages
                 .AsNoTracking()
-                .Include(m => m.AirConditioner)
-                .Include(m => m.UsedMaterials)
-                    .ThenInclude(um => um.InventoryItem)
-                .Include(m => m.Assignments)
-                    .ThenInclude(a => a.User)
                 .Where(m => m.CompanyId == companyId)
                 .AsQueryable();
 
-            // Workers see only montages they are assigned to; managers/admins pass null.
             if (!string.IsNullOrEmpty(assignedToUserId))
             {
                 query = query.Where(m => m.Assignments.Any(a => a.UserId == assignedToUserId));
             }
 
-            // Apply filters from MontageParameters
             if (parameters.StartDate.HasValue)
             {
                 var startDate = DateOnly.FromDateTime(parameters.StartDate.Value);
@@ -444,17 +389,15 @@ public class MontageService : IMontageService
                 }
             }
 
-            // ClientName and ClientPhone are encrypted columns ([EncryptColumn]),
-            // so they cannot be filtered at the SQL level. We need to:
-            // 1. Load entities (EF Core decrypts on materialization)
-            // 2. Filter encrypted fields in memory
-            // 3. Paginate the filtered results
             var needsInMemoryFilter = !string.IsNullOrWhiteSpace(parameters.ClientName)
                                    || !string.IsNullOrWhiteSpace(parameters.ClientPhone);
 
             if (needsInMemoryFilter)
             {
                 var allItems = await query
+                    .Include(m => m.AirConditioner)
+                    .Include(m => m.Assignments)
+                        .ThenInclude(a => a.User)
                     .OrderByDescending(m => m.InstallationDate)
                     .ToListAsync();
 
@@ -475,7 +418,7 @@ public class MontageService : IMontageService
                 var pagedItems = filteredList
                     .Skip((parameters.PageNumber - 1) * parameters.PageSize)
                     .Take(parameters.PageSize)
-                    .Select(m => ToDto(m))
+                    .Select(m => m.Adapt<MontageDto>(MontageMappingConfig.List))
                     .ToList();
 
                 return new PagedList<MontageDto>(pagedItems, parameters.PageNumber, parameters.PageSize, totalCount);
@@ -483,45 +426,7 @@ public class MontageService : IMontageService
 
             var dtoQuery = query
                 .OrderByDescending(m => m.InstallationDate)
-                .Select(m => new MontageDto
-                {
-                    Id = m.Id,
-                    CompanyId = m.CompanyId,
-                    UserId = m.UserId,
-                    AssignedUserIds = m.Assignments.Select(a => a.UserId).ToList(),
-                    AssignedUsers = m.Assignments.Select(a => new AssignedUserDto { Id = a.UserId, FullName = a.User != null ? a.User.FirstName + " " + a.User.LastName : "" }).ToList(),
-                    AirConditionerId = m.AirConditionerId,
-                    CustomAcBrand = m.CustomAcBrand,
-                    CustomAcModel = m.CustomAcModel,
-                    CustomAcKilowatts = m.CustomAcKilowatts,
-                    ClientName = m.ClientName,
-                    ClientPhone = m.ClientPhone,
-                    ClientEmail = m.ClientEmail,
-                    ClientAddress = m.ClientAddress,
-                    ClientCity = m.ClientCity,
-                    InstallationDate = m.InstallationDate,
-                    CompletionDate = m.CompletionDate,
-                    Status = m.Status.ToString(),
-                    IndoorUnitSerial = m.IndoorUnitSerial,
-                    OutdoorUnitSerial = m.OutdoorUnitSerial,
-                    TotalPrice = m.TotalPrice,
-                    PaidAmount = m.PaidAmount,
-                    PaymentStatus = m.PaymentStatus.ToString(),
-                    Notes = m.Notes,
-                    CreatedAt = m.CreatedAt,
-                    UpdatedAt = m.UpdatedAt,
-                    AirConditioner = m.AirConditioner != null ? new AirConditionerDto
-                    {
-                        Id = m.AirConditioner.Id,
-                        Name = m.AirConditioner.Name,
-                        Brand = m.AirConditioner.Brand,
-                        Model = m.AirConditioner.Model,
-                        Kilowatts = m.AirConditioner.Kilowatts,
-                        Description = m.AirConditioner.Description,
-                        Price = m.AirConditioner.Price,
-                        ImageUrl = m.AirConditioner.ImageUrl,
-                    } : null
-                });
+                .ProjectToType<MontageDto>(MontageMappingConfig.List);
 
             return await PagedList<MontageDto>.CreateAsync(dtoQuery, parameters);
         }
@@ -531,58 +436,17 @@ public class MontageService : IMontageService
             throw;
         }
     }
-    
+
     public async Task<PagedList<MontageDto>> GetByUserIdAsync(string userId, PageParameters pageParameters)
     {
         try
         {
             var query = _context.Montages
                 .AsNoTracking()
-                .Include(m => m.AirConditioner)
-                .Include(m => m.UsedMaterials)
-                    .ThenInclude(um => um.InventoryItem)
                 .Where(m => m.Assignments.Any(a => a.UserId == userId))
                 .OrderByDescending(m => m.InstallationDate)
-                .Select(m => new MontageDto
-                {
-                    Id = m.Id,
-                    CompanyId = m.CompanyId,
-                    UserId = m.UserId,
-                    AssignedUserIds = m.Assignments.Select(a => a.UserId).ToList(),
-                    AssignedUsers = m.Assignments.Select(a => new AssignedUserDto { Id = a.UserId, FullName = a.User != null ? a.User.FirstName + " " + a.User.LastName : "" }).ToList(),
-                    AirConditionerId = m.AirConditionerId,
-                    CustomAcBrand = m.CustomAcBrand,
-                    CustomAcModel = m.CustomAcModel,
-                    CustomAcKilowatts = m.CustomAcKilowatts,
-                    ClientName = m.ClientName,
-                    ClientPhone = m.ClientPhone,
-                    ClientEmail = m.ClientEmail,
-                    ClientAddress = m.ClientAddress,
-                    ClientCity = m.ClientCity,
-                    InstallationDate = m.InstallationDate,
-                    CompletionDate = m.CompletionDate,
-                    Status = m.Status.ToString(),
-                    IndoorUnitSerial = m.IndoorUnitSerial,
-                    OutdoorUnitSerial = m.OutdoorUnitSerial,
-                    TotalPrice = m.TotalPrice,
-                    PaidAmount = m.PaidAmount,
-                    PaymentStatus = m.PaymentStatus.ToString(),
-                    Notes = m.Notes,
-                    CreatedAt = m.CreatedAt,
-                    UpdatedAt = m.UpdatedAt,
-                    AirConditioner = m.AirConditioner != null ? new AirConditionerDto
-                    {
-                        Id = m.AirConditioner.Id,
-                        Name = m.AirConditioner.Name,
-                        Brand = m.AirConditioner.Brand,
-                        Model = m.AirConditioner.Model,
-                        Kilowatts = m.AirConditioner.Kilowatts,
-                        Description = m.AirConditioner.Description,
-                        Price = m.AirConditioner.Price,
-                        ImageUrl = m.AirConditioner.ImageUrl,
-                    } : null
-                });
-            
+                .ProjectToType<MontageDto>(MontageMappingConfig.List);
+
             return await PagedList<MontageDto>.CreateAsync(query, pageParameters);
         }
         catch (Exception e)
@@ -598,51 +462,10 @@ public class MontageService : IMontageService
         {
             var query = _context.Montages
                 .AsNoTracking()
-                .Include(m => m.AirConditioner)
-                .Include(m => m.UsedMaterials)
-                    .ThenInclude(um => um.InventoryItem)
                 .Where(m => m.CompanyId == companyId && m.Assignments.Any(a => a.UserId == userId))
                 .OrderByDescending(m => m.InstallationDate)
-                .Select(m => new MontageDto
-                {
-                    Id = m.Id,
-                    CompanyId = m.CompanyId,
-                    UserId = m.UserId,
-                    AssignedUserIds = m.Assignments.Select(a => a.UserId).ToList(),
-                    AssignedUsers = m.Assignments.Select(a => new AssignedUserDto { Id = a.UserId, FullName = a.User != null ? a.User.FirstName + " " + a.User.LastName : "" }).ToList(),
-                    AirConditionerId = m.AirConditionerId,
-                    CustomAcBrand = m.CustomAcBrand,
-                    CustomAcModel = m.CustomAcModel,
-                    CustomAcKilowatts = m.CustomAcKilowatts,
-                    ClientName = m.ClientName,
-                    ClientPhone = m.ClientPhone,
-                    ClientEmail = m.ClientEmail,
-                    ClientAddress = m.ClientAddress,
-                    ClientCity = m.ClientCity,
-                    InstallationDate = m.InstallationDate,
-                    CompletionDate = m.CompletionDate,
-                    Status = m.Status.ToString(),
-                    IndoorUnitSerial = m.IndoorUnitSerial,
-                    OutdoorUnitSerial = m.OutdoorUnitSerial,
-                    TotalPrice = m.TotalPrice,
-                    PaidAmount = m.PaidAmount,
-                    PaymentStatus = m.PaymentStatus.ToString(),
-                    Notes = m.Notes,
-                    CreatedAt = m.CreatedAt,
-                    UpdatedAt = m.UpdatedAt,
-                    AirConditioner = m.AirConditioner != null ? new AirConditionerDto
-                    {
-                        Id = m.AirConditioner.Id,
-                        Name = m.AirConditioner.Name,
-                        Brand = m.AirConditioner.Brand,
-                        Model = m.AirConditioner.Model,
-                        Kilowatts = m.AirConditioner.Kilowatts,
-                        Description = m.AirConditioner.Description,
-                        Price = m.AirConditioner.Price,
-                        ImageUrl = m.AirConditioner.ImageUrl,
-                    } : null
-                });
-            
+                .ProjectToType<MontageDto>(MontageMappingConfig.List);
+
             return await PagedList<MontageDto>.CreateAsync(query, pageParameters);
         }
         catch (Exception e)
@@ -656,57 +479,15 @@ public class MontageService : IMontageService
     {
         try
         {
-            // Parse enum before query — guarantees SQL-translatable WHERE clause
             if (!Enum.TryParse<MontageStatus>(status, ignoreCase: true, out var statusEnum))
                 return PagedList<MontageDto>.Empty();
 
             var query = _context.Montages
                 .AsNoTracking()
-                .Include(m => m.AirConditioner)
-                .Include(m => m.UsedMaterials)
-                    .ThenInclude(um => um.InventoryItem)
                 .Where(m => m.Status == statusEnum)
                 .OrderByDescending(m => m.InstallationDate)
-                .Select(m => new MontageDto
-                {
-                    Id = m.Id,
-                    CompanyId = m.CompanyId,
-                    UserId = m.UserId,
-                    AssignedUserIds = m.Assignments.Select(a => a.UserId).ToList(),
-                    AssignedUsers = m.Assignments.Select(a => new AssignedUserDto { Id = a.UserId, FullName = a.User != null ? a.User.FirstName + " " + a.User.LastName : "" }).ToList(),
-                    AirConditionerId = m.AirConditionerId,
-                    CustomAcBrand = m.CustomAcBrand,
-                    CustomAcModel = m.CustomAcModel,
-                    CustomAcKilowatts = m.CustomAcKilowatts,
-                    ClientName = m.ClientName,
-                    ClientPhone = m.ClientPhone,
-                    ClientEmail = m.ClientEmail,
-                    ClientAddress = m.ClientAddress,
-                    ClientCity = m.ClientCity,
-                    InstallationDate = m.InstallationDate,
-                    CompletionDate = m.CompletionDate,
-                    Status = m.Status.ToString(),
-                    IndoorUnitSerial = m.IndoorUnitSerial,
-                    OutdoorUnitSerial = m.OutdoorUnitSerial,
-                    TotalPrice = m.TotalPrice,
-                    PaidAmount = m.PaidAmount,
-                    PaymentStatus = m.PaymentStatus.ToString(),
-                    Notes = m.Notes,
-                    CreatedAt = m.CreatedAt,
-                    UpdatedAt = m.UpdatedAt,
-                    AirConditioner = m.AirConditioner != null ? new AirConditionerDto
-                    {
-                        Id = m.AirConditioner.Id,
-                        Name = m.AirConditioner.Name,
-                        Brand = m.AirConditioner.Brand,
-                        Model = m.AirConditioner.Model,
-                        Kilowatts = m.AirConditioner.Kilowatts,
-                        Description = m.AirConditioner.Description,
-                        Price = m.AirConditioner.Price,
-                        ImageUrl = m.AirConditioner.ImageUrl,
-                    } : null
-                });
-            
+                .ProjectToType<MontageDto>(MontageMappingConfig.List);
+
             return await PagedList<MontageDto>.CreateAsync(query, pageParameters);
         }
         catch (Exception e)
@@ -722,53 +503,10 @@ public class MontageService : IMontageService
         {
             var query = _context.Montages
                 .AsNoTracking()
-                .Include(m => m.AirConditioner)
-                .Include(m => m.UsedMaterials)
-                    .ThenInclude(um => um.InventoryItem)
                 .Where(m => m.InstallationDate >= startDate && m.InstallationDate <= endDate)
                 .OrderByDescending(m => m.InstallationDate)
-                .Select(m => new MontageDto
-                {
-                    Id = m.Id,
-                    CompanyId = m.CompanyId,
-                    UserId = m.UserId,
-                    AssignedUserIds = m.Assignments.Select(a => a.UserId).ToList(),
-                    AssignedUsers = m.Assignments.Select(a => new AssignedUserDto { Id = a.UserId, FullName = a.User != null ? a.User.FirstName + " " + a.User.LastName : "" }).ToList(),
-                    AirConditionerId = m.AirConditionerId,
-                    CustomAcBrand = m.CustomAcBrand,
-                    CustomAcModel = m.CustomAcModel,
-                    CustomAcKilowatts = m.CustomAcKilowatts,
-                    ClientName = m.ClientName,
-                    ClientPhone = m.ClientPhone,
-                    ClientEmail = m.ClientEmail,
-                    ClientAddress = m.ClientAddress,
-                    ClientCity = m.ClientCity,
-                    InstallationDate = m.InstallationDate,
-                    CompletionDate = m.CompletionDate,
-                    Status = m.Status.ToString(),
-                    IndoorUnitSerial = m.IndoorUnitSerial,
-                    OutdoorUnitSerial = m.OutdoorUnitSerial,
-                    TotalPrice = m.TotalPrice,
-                    PaidAmount = m.PaidAmount,
-                    PaymentStatus = m.PaymentStatus.ToString(),
-                    Notes = m.Notes,
-                    CreatedAt = m.CreatedAt,
-                    UpdatedAt = m.UpdatedAt,
-                    AirConditioner = m.AirConditioner != null
-                        ? new AirConditionerDto
-                        {
-                            Id = m.AirConditioner.Id,
-                            Name = m.AirConditioner.Name,
-                            Brand = m.AirConditioner.Brand,
-                            Model = m.AirConditioner.Model,
-                            Kilowatts = m.AirConditioner.Kilowatts,
-                            Description = m.AirConditioner.Description,
-                            Price = m.AirConditioner.Price,
-                            ImageUrl = m.AirConditioner.ImageUrl,
-                        }
-                        : null
-                });
-    
+                .ProjectToType<MontageDto>(MontageMappingConfig.List);
+
             return await PagedList<MontageDto>.CreateAsync(query, pageParameters);
         }
         catch (Exception e)
@@ -795,7 +533,6 @@ public class MontageService : IMontageService
             return;
         }
 
-        // ApplicationUser has a global query filter on !IsDeleted, so deleted users are excluded automatically.
         var validCount = await _context.Users
             .AsNoTracking()
             .CountAsync(u => distinctIds.Contains(u.Id) && u.CompanyId == companyId && u.IsActive);
@@ -806,78 +543,4 @@ public class MontageService : IMontageService
         }
     }
 
-    private static MontageDto ToDto(Montage montage)
-    {
-       return new MontageDto
-       {
-           Id = montage.Id,
-           CompanyId = montage.CompanyId,
-           UserId = montage.UserId,
-           AssignedUserIds = montage.Assignments?.Select(a => a.UserId).ToList() ?? new(),
-           AssignedUsers = montage.Assignments?.Select(a => new AssignedUserDto
-           {
-               Id = a.UserId,
-               FullName = a.User != null ? $"{a.User.FirstName} {a.User.LastName}".Trim() : ""
-           }).ToList() ?? new(),
-           AirConditionerId = montage.AirConditionerId,
-           CustomAcBrand = montage.CustomAcBrand,
-           CustomAcModel = montage.CustomAcModel,
-           CustomAcKilowatts = montage.CustomAcKilowatts,
-           ClientName = montage.ClientName,
-           ClientPhone = montage.ClientPhone,
-           ClientEmail = montage.ClientEmail,
-           ClientAddress = montage.ClientAddress,
-           ClientCity = montage.ClientCity,
-           InstallationDate = montage.InstallationDate,
-           CompletionDate = montage.CompletionDate,
-           Status = montage.Status.ToString(),
-           IndoorUnitSerial = montage.IndoorUnitSerial,
-           OutdoorUnitSerial = montage.OutdoorUnitSerial,
-           TotalPrice = montage.TotalPrice,
-           PaidAmount = montage.PaidAmount,
-           PaymentStatus = montage.PaymentStatus.ToString(),
-           Notes = montage.Notes,
-           CreatedAt = montage.CreatedAt,
-           UpdatedAt = montage.UpdatedAt,
-           UsedMaterials = montage.UsedMaterials?.Select(m => new MontageInventoryItemDto
-           {
-               Id = m.Id,
-               MontageId = m.MontageId,
-               InventoryItemId = m.InventoryItemId,
-               QuantityUsed = m.QuantityUsed,
-               UnitPriceAtTime = m.UnitPriceAtTime,
-               Notes = m.Notes,
-               CreatedAt = m.CreatedAt,
-               ItemName = m.InventoryItem?.Name,
-               ItemSku = m.InventoryItem?.Sku,
-               UnitOfMeasure = m.InventoryItem?.UnitOfMeasure.ToString()
-           }).ToList() ?? new List<MontageInventoryItemDto>(),
-           AirConditioner = montage.AirConditioner != null
-               ? new AirConditionerDto
-               {
-                   Id = montage.AirConditioner.Id,
-                   Name = montage.AirConditioner.Name,
-                   Brand = montage.AirConditioner.Brand,
-                   Model = montage.AirConditioner.Model,
-                   Kilowatts = montage.AirConditioner.Kilowatts,
-                   Description = montage.AirConditioner.Description,
-                   Price = montage.AirConditioner.Price,
-                   ImageUrl = montage.AirConditioner.ImageUrl,
-               }
-               : null,
-           Photos = montage.Photos?.Select(p => new MontagePhotoDto
-           {
-               Id = p.Id,
-               MontageId = p.MontageId,
-               FileName = p.FileName,
-               OriginalFileName = p.OriginalFileName,
-               ContentType = p.ContentType,
-               FileSize = p.FileSize,
-               Url = $"/api/montagephotos/{p.Id}/download",
-               Description = p.Description,
-               DisplayOrder = p.DisplayOrder,
-               CreatedAt = p.CreatedAt
-           }).OrderBy(p => p.DisplayOrder).ThenBy(p => p.CreatedAt).ToList()
-       };
-    }
 }

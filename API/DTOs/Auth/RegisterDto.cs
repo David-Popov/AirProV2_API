@@ -7,7 +7,6 @@ namespace API.DTOs;
 /// </summary>
 public class RegisterDto
 {
-    // User Information
     [JsonPropertyName("email")]
     public string Email { get; set; } = string.Empty;
     
@@ -31,8 +30,7 @@ public class RegisterDto
     
     [JsonPropertyName("address")]
     public string? Address { get; set; }
-    
-    // Company Information
+
     [JsonPropertyName("company_name")]
     public string CompanyName { get; set; } = string.Empty;
     

@@ -2,7 +2,7 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/queryKeys'
 import { stripeService } from '@/services'
 
-const LONG_STALE_TIME = 30 * 60 * 1000 // 30 minutes
+const LONG_STALE_TIME = 30 * 60 * 1000
 
 export function useStripeConfig() {
   return useQuery({
@@ -24,7 +24,7 @@ export function useSubscriptionStatus() {
   return useQuery({
     queryKey: queryKeys.stripe.status(),
     queryFn: () => stripeService.getSubscriptionStatus(),
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 30 * 1000,
   })
 }
 

@@ -1,3 +1,5 @@
+import { formatCurrency } from '@/lib/formatters'
+import { logger } from '@/lib/logger'
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -39,13 +41,13 @@ export default function SubscriptionSection() {
       const [planData, statusData, limitsData] = await Promise.all([
         stripeService.getPlan(),
         stripeService.getSubscriptionStatus(),
-        employeeService.getLimits().catch(() => null) // Don't fail if limits fetch fails
+        employeeService.getLimits().catch(() => null)
       ])
       setPlan(planData)
       setSubscriptionInfo(statusData)
       setEmployeeLimits(limitsData)
     } catch (error) {
-      console.error('Failed to fetch subscription data:', error)
+      logger.error('Failed to fetch subscription data:', error)
       toast.error(t('common.unknown_error'))
     } finally {
       setIsLoading(false)
@@ -62,7 +64,7 @@ export default function SubscriptionSection() {
     try {
       await stripeService.redirectToCheckout()
     } catch (error) {
-      console.error('Failed to redirect to checkout:', error)
+      logger.error('Failed to redirect to checkout:', error)
       toast.error(t('subscription.checkout_error'))
       setIsRedirecting(false)
     }
@@ -73,7 +75,7 @@ export default function SubscriptionSection() {
     try {
       await stripeService.redirectToPortal()
     } catch (error) {
-      console.error('Failed to redirect to portal:', error)
+      logger.error('Failed to redirect to portal:', error)
       toast.error(t('subscription.portal_error'))
       setIsRedirecting(false)
     }
@@ -91,7 +93,6 @@ export default function SubscriptionSection() {
 
   return (
     <div className="space-y-6">
-      {/* Current subscription status */}
       {subscriptionInfo && (
         <Card className="glass-card border-primary/20">
           <CardHeader>
@@ -145,7 +146,6 @@ export default function SubscriptionSection() {
         </Card>
       )}
 
-      {/* Manage Subscription Card - visible for all users with subscription info */}
       {subscriptionInfo && (
         <Card className="glass-card border-border">
           <CardHeader>
@@ -234,7 +234,6 @@ export default function SubscriptionSection() {
         </Card>
       )}
 
-      {/* Employee Limits Card */}
       {employeeLimits && (
         <Card className="glass-card border-border">
           <CardHeader>
@@ -279,7 +278,6 @@ export default function SubscriptionSection() {
         </Card>
       )}
 
-      {/* Premium Plan Card */}
       {plan && !isPremiumSubscriber && (
         <Card className="relative overflow-hidden border-primary shadow-lg shadow-primary/10">
           <div className="absolute top-0 right-0 bg-gradient-to-bl from-primary to-primary/80 text-primary-foreground text-xs font-medium px-4 py-1.5 rounded-bl-xl">
@@ -295,7 +293,7 @@ export default function SubscriptionSection() {
               {t('subscription.perfect_for_business')}
             </CardDescription>
             <div className="mt-6">
-              <span className="text-5xl font-bold text-foreground">€{plan.price}</span>
+              <span className="text-5xl font-bold text-foreground">{formatCurrency(plan.price)}</span>
               <span className="text-muted-foreground text-lg">/{t('subscription.month')}</span>
             </div>
           </CardHeader>

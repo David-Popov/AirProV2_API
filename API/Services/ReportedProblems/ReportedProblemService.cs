@@ -4,6 +4,7 @@ using API.Data;
 using API.Data.Entities;
 using API.DTOs.ReportedProblems;
 using API.Models;
+using Mapster;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Minio;
@@ -18,7 +19,7 @@ public class ReportedProblemService : IReportedProblemService
     private readonly MinioSettings _minioSettings;
     private readonly ILogger<ReportedProblemService> _logger;
 
-    private const long MaxFileSizeBytes = 10 * 1024 * 1024; // 10MB — higher limit for bug report images
+    private const long MaxFileSizeBytes = 10 * 1024 * 1024;
 
     public ReportedProblemService(
         ApplicationDbContext context,
@@ -41,7 +42,6 @@ public class ReportedProblemService : IReportedProblemService
             Description = description
         };
 
-        // Handle screenshot upload if provided
         if (screenshot != null && screenshot.Length > 0)
         {
             var (isValid, error) = ValidateScreenshot(screenshot);
@@ -74,10 +74,9 @@ public class ReportedProblemService : IReportedProblemService
         _context.ReportedProblems.Add(reportedProblem);
         await _context.SaveChangesAsync();
 
-        // Load user information
         await _context.Entry(reportedProblem).Reference(p => p.User).LoadAsync();
 
-        return ToDto(reportedProblem);
+        return reportedProblem.Adapt<ReportedProblemDto>();
     }
 
     public async Task<List<ReportedProblemDto>> GetAllAsync()
@@ -88,7 +87,7 @@ public class ReportedProblemService : IReportedProblemService
             .OrderByDescending(p => p.CreatedAt)
             .ToListAsync();
 
-        return problems.Select(ToDto).ToList();
+        return problems.Adapt<List<ReportedProblemDto>>();
     }
 
     public async Task<ReportedProblemDto?> GetByIdAsync(Guid id)
@@ -98,7 +97,7 @@ public class ReportedProblemService : IReportedProblemService
             .Include(p => p.User)
             .FirstOrDefaultAsync(p => p.Id == id);
 
-        return problem == null ? null : ToDto(problem);
+        return problem?.Adapt<ReportedProblemDto>();
     }
 
     public async Task<(Stream stream, string contentType, string fileName)?> GetScreenshotStreamAsync(Guid id)
@@ -133,7 +132,6 @@ public class ReportedProblemService : IReportedProblemService
             return false;
         }
 
-        // Delete screenshot from MinIO if exists
         if (!string.IsNullOrEmpty(problem.ScreenshotObjectName))
         {
             try
@@ -147,7 +145,6 @@ public class ReportedProblemService : IReportedProblemService
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to delete screenshot from MinIO: {ObjectName}", problem.ScreenshotObjectName);
-                // Continue to delete database record even if MinIO delete fails
             }
         }
 
@@ -203,25 +200,5 @@ public class ReportedProblemService : IReportedProblemService
             _logger.LogError(ex, "Failed to ensure bucket exists: {BucketName}", _minioSettings.BucketName);
             throw;
         }
-    }
-
-    private ReportedProblemDto ToDto(ReportedProblem problem)
-    {
-        return new ReportedProblemDto
-        {
-            Id = problem.Id,
-            UserId = problem.UserId,
-            UserName = problem.User != null 
-                ? $"{problem.User.FirstName} {problem.User.LastName}".Trim() 
-                : "Unknown",
-            UserEmail = problem.User?.Email ?? "Unknown",
-            Category = problem.Category,
-            Description = problem.Description,
-            HasScreenshot = !string.IsNullOrEmpty(problem.ScreenshotObjectName),
-            ScreenshotUrl = !string.IsNullOrEmpty(problem.ScreenshotObjectName) 
-                ? $"/api/reportedproblems/{problem.Id}/screenshot" 
-                : null,
-            CreatedAt = problem.CreatedAt
-        };
     }
 }

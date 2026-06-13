@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -86,7 +87,7 @@ export default function ErrorCodesPage() {
         setTotalCount(0)
       }
     } catch (error) {
-      console.error('Failed to load error codes:', error)
+      logger.error('Failed to load error codes:', error)
       setErrorCodes([])
       setTotalPages(1)
       setTotalCount(0)
@@ -105,11 +106,10 @@ export default function ErrorCodesPage() {
         setAirConditioners(response.items)
       }
     } catch (error) {
-      console.error('Failed to load air conditioners:', error)
+      logger.error('Failed to load air conditioners:', error)
     }
   }
   
-  // Filter error codes safely
   const filteredErrorCodes = (errorCodes || []).filter(ec => {
     if (!ec) return false
     const matchesSearch = 
@@ -122,8 +122,6 @@ export default function ErrorCodesPage() {
     return matchesSearch && matchesAc
   })
 
-  
-  // Handlers
   const handleCreate = async () => {
     if (!formData.error_code || !formData.air_conditioner_id) {
       toast.error(t('error_codes.validation_error', 'Please fill in all required fields'))
@@ -224,7 +222,6 @@ export default function ErrorCodesPage() {
         ) : undefined}
       />
       
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <StatCard
           icon={AlertCircle}
@@ -249,7 +246,6 @@ export default function ErrorCodesPage() {
         />
       </div>
       
-      {/* Filters - Desktop Only */}
       <div className="hidden md:flex gap-4 mb-6">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -275,7 +271,6 @@ export default function ErrorCodesPage() {
         </Select>
       </div>
 
-      {/* Mobile Filter Button - Bottom Left */}
       <Dialog>
         <DialogTrigger asChild>
           <Button 
@@ -322,7 +317,6 @@ export default function ErrorCodesPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Error Codes Grid */}
       <Card className="glass-card">
         <CardHeader>
           <CardTitle className="text-foreground flex items-center gap-2">
@@ -404,7 +398,6 @@ export default function ErrorCodesPage() {
         </CardContent>
       </Card>
       
-      {/* Create/Edit Dialog */}
       <Dialog open={isCreateDialogOpen || isEditDialogOpen} onOpenChange={(open) => {
         if (!open) {
           setIsCreateDialogOpen(false)
@@ -494,7 +487,6 @@ export default function ErrorCodesPage() {
         </DialogContent>
       </Dialog>
       
-      {/* View Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -506,7 +498,6 @@ export default function ErrorCodesPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {/* Error Code - Prominent Display */}
             <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20 text-center">
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
                 {t('error_codes.code', 'Error Code')}
@@ -519,24 +510,21 @@ export default function ErrorCodesPage() {
                 {getAcName(selectedErrorCode?.air_conditioner_id || '')}
               </p>
             </div>
-            
-            {/* Error Name */}
+
             {selectedErrorCode?.error_name && (
               <div>
                 <h4 className="text-sm font-medium text-muted-foreground mb-2">{t('error_codes.error_name', 'Error Name')}</h4>
                 <p className="text-foreground font-medium">{selectedErrorCode.error_name}</p>
               </div>
             )}
-            
-            {/* Description */}
+
             {selectedErrorCode?.description && (
               <div>
                 <h4 className="text-sm font-medium text-muted-foreground mb-2">{t('error_codes.description', 'Description')}</h4>
                 <p className="text-foreground">{selectedErrorCode.description}</p>
               </div>
             )}
-            
-            {/* Solution */}
+
             {selectedErrorCode?.solution && (
               <div className="p-4 rounded-xl bg-green-500/5 border border-green-500/20">
                 <h4 className="text-sm font-medium text-green-500 mb-2 flex items-center gap-2">
@@ -562,7 +550,6 @@ export default function ErrorCodesPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Delete Confirmation */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>

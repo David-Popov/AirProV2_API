@@ -102,14 +102,12 @@ export default function CompaniesPage() {
     }
   }
   
-  // Filter companies by search
   const filteredCompanies = companies.filter(company =>
     (company.company_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (company.bulstat || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (company.city || '').toLowerCase().includes(searchTerm.toLowerCase())
   )
-  
-  // Handlers
+
   const handleCreate = async () => {
     try {
       await companyService.create(formData)
@@ -265,7 +263,6 @@ export default function CompaniesPage() {
 
   return (
     <div className="min-h-screen bg-background pt-14 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300">
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t('companies.title', 'Companies')}</h1>
@@ -283,7 +280,6 @@ export default function CompaniesPage() {
       </div>
       
       <div className="flex flex-col lg:block">
-        {/* Stats Cards - Order 2 on mobile */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8 order-2 lg:order-none mt-6 lg:mt-0">
         <Card className="glass-card">
           <CardContent className="p-6">
@@ -337,7 +333,6 @@ export default function CompaniesPage() {
         </Card>
       </div>
       
-      {/* Search - Order 1 on mobile */}
       <div className="mb-6 order-1 lg:order-none">
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -350,7 +345,6 @@ export default function CompaniesPage() {
         </div>
       </div>
       
-      {/* Companies Table - Order 1 on mobile */}
       <Card className="glass-card order-1 lg:order-none">
         <CardHeader>
           <CardTitle className="text-foreground flex items-center gap-2">
@@ -417,7 +411,7 @@ export default function CompaniesPage() {
                         <div className="flex items-center justify-end gap-1">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                              <Button variant="ghost" size="icon" aria-label={t('common.actions')} className="h-8 w-8 text-muted-foreground hover:text-foreground">
                                 <MoreVertical className="w-4 h-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -457,7 +451,6 @@ export default function CompaniesPage() {
             </div>
           )}
           
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-6 pt-4 border-t border-border/50">
               <p className="text-sm text-sm sm:text-base text-muted-foreground">
@@ -487,7 +480,6 @@ export default function CompaniesPage() {
       </Card>
       </div>
       
-      {/* Create/Edit Dialog */}
       <Dialog open={isCreateDialogOpen || isEditDialogOpen} onOpenChange={(open) => {
         if (!open) {
           setIsCreateDialogOpen(false)
@@ -609,7 +601,6 @@ export default function CompaniesPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -629,7 +620,6 @@ export default function CompaniesPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Users Dialog */}
       <Dialog open={isUsersDialogOpen} onOpenChange={setIsUsersDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -673,7 +663,6 @@ export default function CompaniesPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Subscription Dialog */}
       <Dialog open={isSubscriptionDialogOpen} onOpenChange={setIsSubscriptionDialogOpen}>
         <DialogContent>
           <DialogHeader>

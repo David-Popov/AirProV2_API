@@ -1,5 +1,4 @@
 
-// Company Types
 export type CompanyType = 
   | 'SoleProprietorship'
   | 'LLC'
@@ -21,7 +20,6 @@ export const COMPANY_TYPE_OPTIONS: { value: CompanyType; label: string }[] = [
   { value: 'Other', label: 'Other (Друго)' },
 ];
 
-// Pagination
 export interface PagedList<T> {
   items: T[];
   page: number;
@@ -32,7 +30,6 @@ export interface PagedList<T> {
   hasPreviousPage: boolean;
 }
 
-// API Response types
 export interface ApiError {
   message?: string;
   errors?: string[];

@@ -25,8 +25,7 @@ public static class ServiceExtensions
         services.AddScoped<IMontagePhotoService, MontagePhotoService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IReportedProblemService, ReportedProblemService>();
-        
-        // Background services
+
         services.AddHostedService<API.Services.Background.TrialCleanupService>();
 
         return services;

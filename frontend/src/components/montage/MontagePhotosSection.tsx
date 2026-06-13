@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
@@ -69,7 +70,7 @@ export function MontagePhotosSection({
       const info = await montagePhotoService.getValidationInfo();
       setValidationInfo(info);
     } catch (error) {
-      console.error('Failed to fetch validation info:', error);
+      logger.error('Failed to fetch validation info:', error);
     }
   };
 
@@ -80,7 +81,7 @@ export function MontagePhotosSection({
       const data = await montagePhotoService.getPhotosByMontage(montageId);
       setPhotos(data);
     } catch (error) {
-      console.error('Failed to fetch photos:', error);
+      logger.error('Failed to fetch photos:', error);
     } finally {
       setIsLoading(false);
     }
@@ -112,8 +113,6 @@ export function MontagePhotosSection({
   const handleUpload = async () => {
     if (selectedFiles.length === 0) return;
     const trimmedDescription = description.trim();
-    // A2: backend requires a description — guard here so we never round-trip
-    // for a 400. UI also disables the Upload button until this is satisfied.
     if (!trimmedDescription) {
       toast.error(t('montages.photos.description_required'));
       return;
@@ -149,7 +148,7 @@ export function MontagePhotosSection({
       setDescription('');
       onPhotosChange?.();
     } catch (error) {
-      console.error('Failed to upload photos:', error);
+      logger.error('Failed to upload photos:', error);
       toast.error(error instanceof Error ? error.message : t('common.unknown_error'));
     } finally {
       setIsUploading(false);
@@ -176,10 +175,9 @@ export function MontagePhotosSection({
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      // Revoke after the click has been processed so the download isn't cancelled.
       setTimeout(() => URL.revokeObjectURL(url), 0);
     } catch (error) {
-      console.error('Failed to download photo:', error);
+      logger.error('Failed to download photo:', error);
       toast.error(t('common.unknown_error'));
     }
   };
@@ -192,7 +190,7 @@ export function MontagePhotosSection({
       toast.success(t('montages.photos.delete_success'));
       onPhotosChange?.();
     } catch (error) {
-      console.error('Failed to delete photo:', error);
+      logger.error('Failed to delete photo:', error);
       toast.error(t('common.unknown_error'));
     }
   };
@@ -272,13 +270,23 @@ export function MontagePhotosSection({
                   className="w-full h-full object-cover transition-transform group-hover:scale-105"
                   containerClassName="w-full h-full"
                 />
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <Button size="icon" variant="ghost" className="text-white hover:bg-white/20">
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label={t('montages.photos.view', 'View photo')}
+                    className="text-white hover:bg-white/20"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedPhoto(photo);
+                    }}
+                  >
                     <ZoomIn className="w-5 h-5" />
                   </Button>
                   <Button
                     size="icon"
                     variant="ghost"
+                    aria-label={t('common.delete')}
                     className="text-white hover:bg-red-500/50"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -291,7 +299,6 @@ export function MontagePhotosSection({
               </div>
             ))}
 
-            {/* Add more photos placeholder */}
             {canAddMorePhotos && (
               <div
                 className="aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 transition-colors flex flex-col items-center justify-center cursor-pointer bg-muted/10 hover:bg-muted/20"
@@ -316,14 +323,11 @@ export function MontagePhotosSection({
         )}
       </CardContent>
 
-      {/* Upload Dialog */}
       <Dialog
         open={showUploadDialog}
         onOpenChange={(open) => {
           setShowUploadDialog(open);
           if (!open) {
-            // Reset transient form state on close so a fresh open isn't
-            // pre-filled with the previous attempt.
             setDescription('');
             setSelectedFiles([]);
           }
@@ -341,7 +345,7 @@ export function MontagePhotosSection({
             <div className="flex flex-wrap gap-2">
               {selectedFiles.map((file, index) => (
                 <div
-                  key={index}
+                  key={`${file.name}-${file.size}-${index}`}
                   className="relative w-20 h-20 rounded-lg overflow-hidden border border-border"
                 >
                   <img
@@ -399,14 +403,11 @@ export function MontagePhotosSection({
         </DialogContent>
       </Dialog>
 
-      {/* Photo Preview Dialog - Clean Lightbox like Technomarket */}
       <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
         <DialogContent className="max-w-[85vw] w-[85vw] max-h-[90vh] h-auto p-0 border-0 bg-transparent shadow-none [&>button]:hidden">
           {selectedPhoto && (
             <div className="relative">
-              {/* Main white container */}
               <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-2xl overflow-hidden">
-                {/* Close button - top right corner */}
                 <button
                   onClick={() => setSelectedPhoto(null)}
                   className="absolute top-3 right-3 z-50 p-2 rounded-full bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors shadow-md"
@@ -415,7 +416,6 @@ export function MontagePhotosSection({
                   <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                 </button>
 
-                {/* Image container */}
                 <div className="flex items-center justify-center p-8 bg-gray-50 dark:bg-zinc-800/50 min-h-[60vh]">
                   <AuthenticatedImage
                     endpoint={montagePhotoService.getPhotoDownloadPath(selectedPhoto.id)}
@@ -425,7 +425,6 @@ export function MontagePhotosSection({
                   />
                 </div>
 
-                {/* Minimal bottom bar with actions */}
                 <div className="px-6 py-4 bg-white dark:bg-zinc-900 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-between">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-gray-900 dark:text-white truncate">

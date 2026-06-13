@@ -11,7 +11,6 @@ export function ModeToggle() {
       const isDark = document.documentElement.classList.contains("dark")
       const nextTheme = isDark ? "light" : "dark"
 
-      // Fallback for browsers without View Transitions or reduced-motion preference
       if (
         !document.startViewTransition ||
         window.matchMedia("(prefers-reduced-motion: reduce)").matches

@@ -32,7 +32,6 @@ public class RefreshTokenCleanupService : BackgroundService
                 _logger.LogError(ex, "Error occurred while cleaning up expired refresh tokens");
             }
 
-            // Run once every 24 hours
             await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
         }
     }

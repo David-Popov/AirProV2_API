@@ -38,17 +38,14 @@ public class AdminMontageDto
     public decimal? TotalPrice { get; set; }
     public decimal? PaidAmount { get; set; }
     public string? Notes { get; set; }
-    
-    // User info
+
     public string? UserId { get; set; }
     public string? UserName { get; set; }
     public string? UserEmail { get; set; }
-    
-    // Company info
+
     public Guid? CompanyId { get; set; }
     public string? CompanyName { get; set; }
-    
-    // AC info
+
     public Guid? AirConditionerId { get; set; }
     public string? AirConditionerBrand { get; set; }
     public string? AirConditionerModel { get; set; }

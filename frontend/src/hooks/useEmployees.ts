@@ -7,7 +7,7 @@ export function useEmployees(enabled = true) {
   return useQuery({
     queryKey: queryKeys.employees.list(),
     queryFn: () => employeeService.getAll(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
     enabled,
   })
 }
