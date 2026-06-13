@@ -1,3 +1,5 @@
+import { formatCurrency } from '@/lib/formatters'
+import { logger } from '@/lib/logger'
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -39,6 +41,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BackButton } from '@/components/shared'
+import { useStatusLabels } from '@/hooks/useStatusLabels'
 
 import { toast } from 'sonner'
 import { montageService, inventoryService, montageInventoryService } from '@/services'
@@ -50,6 +53,7 @@ export default function MontageDetailsPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const { getStatusLabel, getPaymentStatusLabel } = useStatusLabels()
   const [montage, setMontage] = useState<Montage | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   
@@ -81,7 +85,7 @@ export default function MontageDetailsPage() {
         setMontage(data)
       } catch (error) {
         toast.error(t('common.unknown_error'))
-        console.error(error)
+        logger.error(error)
       } finally {
         setIsLoading(false)
       }
@@ -97,7 +101,7 @@ export default function MontageDetailsPage() {
           const result = await inventoryService.getAll(1, 100)
           setAvailableItems(result.items.filter(i => (i.quantity ?? 0) > 0))
         } catch (error) {
-          console.error('Failed to load inventory', error)
+          logger.error('Failed to load inventory', error)
           toast.error(t('inventory.error_loading', 'Failed to load inventory items'))
         }
       }
@@ -127,7 +131,7 @@ export default function MontageDetailsPage() {
       const updatedMontage = await montageService.getById(montage.id)
       setMontage(updatedMontage)
     } catch (error: any) {
-      console.error(error)
+      logger.error(error)
       toast.error(t('montages.material_add_failed', 'Failed to add material'))
     } finally {
       setIsSubmittingMaterial(false)
@@ -144,7 +148,7 @@ export default function MontageDetailsPage() {
       const updatedMontage = await montageService.getById(montage.id)
       setMontage(updatedMontage)
     } catch (error) {
-      console.error(error)
+      logger.error(error)
       toast.error(t('montages.material_remove_failed', 'Failed to remove material'))
     }
   }
@@ -159,7 +163,7 @@ export default function MontageDetailsPage() {
       const updatedMontage = await montageService.getById(montage.id)
       setMontage(updatedMontage)
     } catch (error) {
-       console.error(error)
+       logger.error(error)
        toast.error(t('montages.material_update_failed', 'Failed to update material'))
     } finally {
        setIsSubmittingMaterial(false)
@@ -229,37 +233,6 @@ export default function MontageDetailsPage() {
     )
   }
 
-  const statusColors: Record<string, string> = {
-    'Planned': 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-    'InProgress': 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
-    'Completed': 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
-    'Canceled': 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
-    'Overdue': 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
-  }
-
-  const getStatusLabel = (val?: string | null) => {
-    if (!val) return t('montages.status_planned', 'Planned')
-    const statusMap: Record<string, string> = {
-      'Planned': t('montages.status_planned', 'Planned'),
-      'InProgress': t('montages.status_in_progress', 'In Progress'),
-      'Completed': t('montages.status_completed', 'Completed'),
-      'Canceled': t('montages.status_canceled', 'Cancelled'),
-      'Overdue': t('montages.status_overdue', 'Overdue')
-    }
-    return statusMap[val] || val
-  }
-  
-  const getPaymentStatusLabel = (val?: string | null) => {
-    if (!val) return t('montages.payment_not_paid', 'Not Paid')
-    const paymentStatusMap: Record<string, string> = {
-      'NotPaid': t('montages.payment_not_paid', 'Not Paid'),
-      'PartiallyPaid': t('montages.payment_partially_paid', 'Partially Paid'),
-      'Paid': t('montages.payment_paid', 'Paid'),
-      'Overdue': t('montages.payment_overdue', 'Overdue')
-    }
-    return paymentStatusMap[val] || val
-  }
-
   return (
     <div className="min-h-screen bg-background pt-14 pr-4 pb-4 pl-4 sm:p-6 lg:p-8 lg:ml-60 lg:pt-8 transition-colors duration-300">
       <BackButton onClick={() => navigate('/montages')} />
@@ -270,8 +243,6 @@ export default function MontageDetailsPage() {
           <StatusNavigator
             currentStatus={montage.status || 'Planned'}
             onStatusChange={handleStatusChange}
-            statusColors={statusColors}
-            getStatusLabel={getStatusLabel}
           />
         </div>
       </div>
@@ -402,11 +373,11 @@ export default function MontageDetailsPage() {
              <div className="grid grid-cols-2 gap-4">
                <div>
                 <p className="text-muted-foreground text-sm mb-1">{t('montages.total_price')}</p>
-                <p className="text-foreground text-xl font-bold">€{montage.total_price || 0}</p>
+                <p className="text-foreground text-xl font-bold">{formatCurrency(montage.total_price || 0)}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-sm mb-1">{t('montages.paid_amount')}</p>
-                <p className="text-xl font-bold text-green-500">€{montage.paid_amount || 0}</p>
+                <p className="text-xl font-bold text-green-500">{formatCurrency(montage.paid_amount || 0)}</p>
               </div>
               <div className="col-span-2 flex items-center gap-4">
                 <p className="text-muted-foreground text-sm shrink-0">{t('montages.payment_status')}</p>
@@ -415,7 +386,6 @@ export default function MontageDetailsPage() {
                   totalPrice={montage.total_price || 0}
                   paidAmount={montage.paid_amount || 0}
                   onStatusChange={handlePaymentStatusChange}
-                  getPaymentStatusLabel={getPaymentStatusLabel}
                 />
               </div>
             </div>

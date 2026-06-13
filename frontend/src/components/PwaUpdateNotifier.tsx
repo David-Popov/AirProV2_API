@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 import { useEffect } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { toast } from 'sonner'
@@ -9,7 +10,7 @@ export function PwaUpdateNotifier() {
     updateServiceWorker,
   } = useRegisterSW({
     onRegisterError(error) {
-      console.error('SW registration error:', error)
+      logger.error('SW registration error:', error)
     },
   })
 

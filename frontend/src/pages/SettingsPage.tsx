@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
@@ -39,7 +40,7 @@ import {
 import { useAuth } from '@/context'
 import { useTheme } from '@/components/theme-provider'
 import { companyService, employeeService, authService } from '@/services'
-import type { Company } from '@/types'
+import type { Company, CompanyType } from '@/types'
 import { SubscriptionSection } from '@/components/subscription'
 import {
   Dialog,
@@ -165,7 +166,7 @@ export default function SettingsPage() {
         email: data.email || '',
       })
     } catch {
-      console.error('Failed to load company')
+      logger.error('Failed to load company')
     } finally {
       setLoading(false)
     }
@@ -177,7 +178,7 @@ export default function SettingsPage() {
       setSaving(true)
       await companyService.update(company.id, {
         company_name: companyForm.company_name,
-        company_type: companyForm.company_type as any,
+        company_type: companyForm.company_type as CompanyType,
         bulstat: companyForm.bulstat || null,
         vat_number: companyForm.vat_number || null,
         address: companyForm.address || null,

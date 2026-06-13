@@ -1,3 +1,5 @@
+import { formatCurrency } from '@/lib/formatters'
+import { logger } from '@/lib/logger'
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -45,7 +47,7 @@ export default function SubscriptionSection() {
       setSubscriptionInfo(statusData)
       setEmployeeLimits(limitsData)
     } catch (error) {
-      console.error('Failed to fetch subscription data:', error)
+      logger.error('Failed to fetch subscription data:', error)
       toast.error(t('common.unknown_error'))
     } finally {
       setIsLoading(false)
@@ -62,7 +64,7 @@ export default function SubscriptionSection() {
     try {
       await stripeService.redirectToCheckout()
     } catch (error) {
-      console.error('Failed to redirect to checkout:', error)
+      logger.error('Failed to redirect to checkout:', error)
       toast.error(t('subscription.checkout_error'))
       setIsRedirecting(false)
     }
@@ -73,7 +75,7 @@ export default function SubscriptionSection() {
     try {
       await stripeService.redirectToPortal()
     } catch (error) {
-      console.error('Failed to redirect to portal:', error)
+      logger.error('Failed to redirect to portal:', error)
       toast.error(t('subscription.portal_error'))
       setIsRedirecting(false)
     }
@@ -291,7 +293,7 @@ export default function SubscriptionSection() {
               {t('subscription.perfect_for_business')}
             </CardDescription>
             <div className="mt-6">
-              <span className="text-5xl font-bold text-foreground">€{plan.price}</span>
+              <span className="text-5xl font-bold text-foreground">{formatCurrency(plan.price)}</span>
               <span className="text-muted-foreground text-lg">/{t('subscription.month')}</span>
             </div>
           </CardHeader>

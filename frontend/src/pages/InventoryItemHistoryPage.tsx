@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -73,7 +74,7 @@ export default function InventoryItemHistoryPage() {
           const itemData = await inventoryService.getById(id);
           setItem(itemData);
         } catch (error) {
-          console.error("Failed to load item", error);
+          logger.error("Failed to load item", error);
         }
       }
 
@@ -82,7 +83,7 @@ export default function InventoryItemHistoryPage() {
       setTotalPages(historyData.total_pages);
       
     } catch (error) {
-      console.error('Failed to load history', error);
+      logger.error('Failed to load history', error);
       toast.error(t('inventory.error_loading', 'Failed to load inventory history'));
     } finally {
       setIsLoading(false);

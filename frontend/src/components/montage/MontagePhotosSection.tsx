@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
@@ -69,7 +70,7 @@ export function MontagePhotosSection({
       const info = await montagePhotoService.getValidationInfo();
       setValidationInfo(info);
     } catch (error) {
-      console.error('Failed to fetch validation info:', error);
+      logger.error('Failed to fetch validation info:', error);
     }
   };
 
@@ -80,7 +81,7 @@ export function MontagePhotosSection({
       const data = await montagePhotoService.getPhotosByMontage(montageId);
       setPhotos(data);
     } catch (error) {
-      console.error('Failed to fetch photos:', error);
+      logger.error('Failed to fetch photos:', error);
     } finally {
       setIsLoading(false);
     }
@@ -147,7 +148,7 @@ export function MontagePhotosSection({
       setDescription('');
       onPhotosChange?.();
     } catch (error) {
-      console.error('Failed to upload photos:', error);
+      logger.error('Failed to upload photos:', error);
       toast.error(error instanceof Error ? error.message : t('common.unknown_error'));
     } finally {
       setIsUploading(false);
@@ -176,7 +177,7 @@ export function MontagePhotosSection({
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 0);
     } catch (error) {
-      console.error('Failed to download photo:', error);
+      logger.error('Failed to download photo:', error);
       toast.error(t('common.unknown_error'));
     }
   };
@@ -189,7 +190,7 @@ export function MontagePhotosSection({
       toast.success(t('montages.photos.delete_success'));
       onPhotosChange?.();
     } catch (error) {
-      console.error('Failed to delete photo:', error);
+      logger.error('Failed to delete photo:', error);
       toast.error(t('common.unknown_error'));
     }
   };
@@ -269,13 +270,23 @@ export function MontagePhotosSection({
                   className="w-full h-full object-cover transition-transform group-hover:scale-105"
                   containerClassName="w-full h-full"
                 />
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <Button size="icon" variant="ghost" className="text-white hover:bg-white/20">
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label={t('montages.photos.view', 'View photo')}
+                    className="text-white hover:bg-white/20"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedPhoto(photo);
+                    }}
+                  >
                     <ZoomIn className="w-5 h-5" />
                   </Button>
                   <Button
                     size="icon"
                     variant="ghost"
+                    aria-label={t('common.delete')}
                     className="text-white hover:bg-red-500/50"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -334,7 +345,7 @@ export function MontagePhotosSection({
             <div className="flex flex-wrap gap-2">
               {selectedFiles.map((file, index) => (
                 <div
-                  key={index}
+                  key={`${file.name}-${file.size}-${index}`}
                   className="relative w-20 h-20 rounded-lg overflow-hidden border border-border"
                 >
                   <img

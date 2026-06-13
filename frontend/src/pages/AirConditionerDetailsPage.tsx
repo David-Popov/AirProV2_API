@@ -1,3 +1,4 @@
+import { formatCurrency } from '@/lib/formatters'
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -110,7 +111,7 @@ export default function AirConditionerDetailsPage() {
                     {t("air_conditioners.price")}
                   </p>
                   <p className="text-green-500 font-bold text-lg">
-                    €{ac.price}
+                    {formatCurrency(ac.price ?? 0)}
                   </p>
                 </div>
                 <div>

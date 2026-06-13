@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -40,7 +41,7 @@ export default function AdminCompaniesPage() {
       setTotalPages(result.totalPages)
     } catch (error) {
       toast.error(t('common.error'))
-      console.error(error)
+      logger.error(error)
     } finally {
       setLoading(false)
     }
@@ -79,7 +80,7 @@ export default function AdminCompaniesPage() {
       fetchCompanies()
     } catch (error) {
       toast.error(t('common.error'))
-      console.error(error)
+      logger.error(error)
     }
   }
 
@@ -92,7 +93,7 @@ export default function AdminCompaniesPage() {
       fetchCompanies()
     } catch (error) {
       toast.error(t('common.error'))
-      console.error(error)
+      logger.error(error)
     }
   }
 
@@ -103,7 +104,7 @@ export default function AdminCompaniesPage() {
       fetchCompanies()
     } catch (error) {
       toast.error(t('common.error'))
-      console.error(error)
+      logger.error(error)
     }
   }
 

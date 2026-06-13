@@ -1,3 +1,5 @@
+import { formatCurrency } from '@/lib/formatters'
+import { logger } from '@/lib/logger'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -51,8 +53,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { PageHeader, SearchBar, Pagination, EmptyState, ConfirmDialog, FieldMessage } from '@/components/shared'
-import { useFieldValidation } from '@/hooks'
+import { PageHeader, SearchBar, Pagination, EmptyState, ConfirmDialog, FieldMessage, MontageStatusBadge } from '@/components/shared'
+import { useFieldValidation, useStatusLabels } from '@/hooks'
 import { useEmployees } from '@/hooks/useEmployees'
 import { useAuth } from '@/context'
 import { required, minLength, optional, bulgarianPhone, email } from '@/lib/validation-rules'
@@ -94,6 +96,7 @@ interface MontageFormState extends CreateMontageRequest {
 export default function MontagesPage() {
   usePageTitle('Montages')
   const { t } = useTranslation()
+  const { getPaymentStatusLabel } = useStatusLabels()
   const navigate = useNavigate()
   const [items, setItems] = useState<Montage[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -239,14 +242,6 @@ export default function MontagesPage() {
   const [itemToDelete, setItemToDelete] = useState<Montage | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const statusColors: Record<string, string> = {
-    'Planned':    'bg-primary/10 text-primary border-primary/20 border-l-2 border-l-primary/50',
-    'InProgress': 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 border-l-2 border-l-amber-500/60',
-    'Completed':  'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 border-l-2 border-l-emerald-500/60',
-    'Canceled':   'bg-muted text-muted-foreground border-border border-l-2 border-l-muted-foreground/30',
-    'Overdue':    'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20 border-l-2 border-l-orange-500/60',
-  }
-
   const loadMaintenanceReminders = async () => {
     try {
       const today = new Date()
@@ -278,7 +273,7 @@ export default function MontagesPage() {
 
       setMaintenanceReminders(reminders)
     } catch (error) {
-      console.error('Failed to load maintenance reminders:', error)
+      logger.error('Failed to load maintenance reminders:', error)
     }
   }
 
@@ -295,7 +290,7 @@ export default function MontagesPage() {
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
-      console.error(error)
+      logger.error(error)
     } finally {
       setIsLoading(false)
     }
@@ -315,7 +310,7 @@ export default function MontagesPage() {
       const response = await airConditionerService.getAll(1, 100)
       setAirConditioners(response.items)
     } catch (error) {
-      console.error('Failed to load air conditioners:', error)
+      logger.error('Failed to load air conditioners:', error)
     } finally {
       setIsLoadingACs(false)
     }
@@ -427,7 +422,7 @@ export default function MontagesPage() {
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknown_error')
       toast.error(message)
-      console.error(error)
+      logger.error(error)
     } finally {
       setIsSaving(false)
     }
@@ -455,29 +450,6 @@ export default function MontagesPage() {
       setDeleteDialogOpen(false)
       setItemToDelete(null)
     }
-  }
-
-  const getStatusLabel = (val?: string | null) => {
-    if (!val) return t('montages.status_planned', 'Planned')
-    const statusMap: Record<string, string> = {
-      'Planned': t('montages.status_planned', 'Planned'),
-      'InProgress': t('montages.status_in_progress', 'In Progress'),
-      'Completed': t('montages.status_completed', 'Completed'),
-      'Canceled': t('montages.status_canceled', 'Cancelled'),
-      'Overdue': t('montages.status_overdue', 'Overdue')
-    }
-    return statusMap[val] || val
-  }
-  
-  const getPaymentStatusLabel = (val?: string | null) => {
-    if (!val) return t('montages.payment_not_paid', 'Not Paid')
-    const paymentStatusMap: Record<string, string> = {
-      'NotPaid': t('montages.payment_not_paid', 'Not Paid'),
-      'PartiallyPaid': t('montages.payment_partially_paid', 'Partially Paid'),
-      'Paid': t('montages.payment_paid', 'Paid'),
-      'Overdue': t('montages.payment_overdue', 'Overdue')
-    }
-    return paymentStatusMap[val] || val
   }
 
   return (
@@ -591,7 +563,7 @@ export default function MontagesPage() {
       {totalCount > 0 && (
         <div className="flex justify-end mb-2">
           <span className="text-xs text-muted-foreground">
-            Showing {(page - 1) * 10 + 1}–{Math.min(page * 10, totalCount)} of {totalCount} montages
+            {t('montages.showing_count', { start: (page - 1) * 10 + 1, end: Math.min(page * 10, totalCount), total: totalCount, defaultValue: 'Showing {{start}}–{{end}} of {{total}} montages' })}
           </span>
         </div>
       )}
@@ -679,7 +651,7 @@ export default function MontagesPage() {
                               toast.success(t('montages.status_updated', 'Status updated'))
                               loadItems()
                             } catch (error) {
-                              console.error('Status update error:', error)
+                              logger.error('Status update error:', error)
                               toast.error(error instanceof Error ? error.message : t('common.unknown_error'))
                             }
                           }
@@ -689,9 +661,7 @@ export default function MontagesPage() {
                         <ChevronLeft className="w-3 h-3" />
                       </Button>
 
-                      <Badge variant="outline" className={statusColors[item.status || 'Planned'] || statusColors['Planned']}>
-                        {getStatusLabel(item.status)}
-                      </Badge>
+                      <MontageStatusBadge status={item.status} />
 
                       <Button
                         variant="ghost"
@@ -707,7 +677,7 @@ export default function MontagesPage() {
                               toast.success(t('montages.status_updated', 'Status updated'))
                               loadItems()
                             } catch (error) {
-                              console.error('Status update error:', error)
+                              logger.error('Status update error:', error)
                               toast.error(error instanceof Error ? error.message : t('common.unknown_error'))
                             }
                           }
@@ -722,7 +692,7 @@ export default function MontagesPage() {
                      <div className="flex flex-col">
                       <div className="flex items-center gap-1 text-foreground font-medium">
                         <CreditCard className="w-3 h-3 text-green-500" />
-                        €{item.total_price || 0}
+                        {formatCurrency(item.total_price || 0)}
                       </div>
                         <span className={`text-xs ${item.payment_status === 'Paid' ? 'text-green-500' : 'text-yellow-500'}`}>
                         {getPaymentStatusLabel(item.payment_status)}
@@ -732,7 +702,7 @@ export default function MontagesPage() {
                   <TableCell className="text-center">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                        <Button variant="ghost" size="icon" aria-label={t('common.actions')} className="h-8 w-8 text-muted-foreground hover:text-foreground">
                           <MoreVertical className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -783,9 +753,7 @@ export default function MontagesPage() {
                       </p>
                     )}
                   </div>
-                  <Badge variant="outline" className={statusColors[item.status || 'Planned'] || statusColors['Planned']}>
-                    {getStatusLabel(item.status)}
-                  </Badge>
+                  <MontageStatusBadge status={item.status} />
                 </div>
 
                 <div className="space-y-2 text-sm">
@@ -805,7 +773,7 @@ export default function MontagesPage() {
                   )}
                   <div className="flex items-center gap-2 text-foreground font-medium">
                     <CreditCard className="w-3 h-3 shrink-0 text-green-500" />
-                    <span>€{item.total_price || 0}</span>
+                    <span>{formatCurrency(item.total_price || 0)}</span>
                     <span className={`text-xs ml-auto ${item.payment_status === 'Paid' ? 'text-green-500' : 'text-yellow-500'}`}>
                       {getPaymentStatusLabel(item.payment_status)}
                     </span>

@@ -26,12 +26,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { ModeToggle } from '@/components/mode-toggle'
 import { SubscriptionExpiredModal } from '@/components/SubscriptionExpiredModal'
 import { ReportProblemModal } from '@/components/ReportProblemModal'
-
-function getInitials(fullName: string): string {
-  const parts = fullName.trim().split(' ')
-  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-  return fullName.slice(0, 2).toUpperCase()
-}
+import { getInitials } from '@/lib/avatar'
 
 export default function DashboardLayout() {
   const { user, logout, refreshUser } = useAuth()

@@ -153,8 +153,12 @@ export function ReportProblemModal({ isOpen, onClose }: ReportProblemModalProps)
             
             {!screenshot ? (
               <div
-                className="border-2 border-dashed border-muted rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                role="button"
+                tabIndex={0}
+                aria-label={t('problem_reports.click_to_upload')}
+                className="border-2 border-dashed border-muted rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
                 onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click(); } }}
               >
                 <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
                 <p className="text-sm text-muted-foreground">{t('problem_reports.click_to_upload')}</p>
@@ -179,6 +183,7 @@ export function ReportProblemModal({ isOpen, onClose }: ReportProblemModalProps)
                   <Button
                     variant="ghost"
                     size="icon"
+                    aria-label={t('common.remove')}
                     onClick={handleRemoveScreenshot}
                     className="shrink-0"
                   >

@@ -1,3 +1,4 @@
+import { formatCurrency } from '@/lib/formatters'
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -397,7 +398,7 @@ export default function AirConditionersPage() {
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                      <DropdownMenu>
                        <DropdownMenuTrigger asChild>
-                         <Button variant="secondary" size="icon" className="h-8 w-8 bg-black/50 hover:bg-black/70 text-white border-0">
+                         <Button variant="secondary" size="icon" aria-label={t('common.actions')} className="h-8 w-8 bg-black/50 hover:bg-black/70 text-white border-0">
                            <MoreVertical className="w-4 h-4" />
                          </Button>
                        </DropdownMenuTrigger>
@@ -430,7 +431,7 @@ export default function AirConditionersPage() {
                     {item.kilowatts || '-'} kW
                   </div>
                   <span className="text-green-500 font-bold">
-                    €{item.price}
+                    {formatCurrency(item.price ?? 0)}
                   </span>
                 </div>
               </CardContent>

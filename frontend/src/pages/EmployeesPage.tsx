@@ -49,30 +49,9 @@ import { validatePasswordRules, isValidEmail } from '@/lib/validators'
 import { TrialActivationModal, PremiumUpgradeModal } from '@/components/subscription'
 import { useAuth } from '@/context'
 import { usePageTitle } from '@/hooks/usePageTitle'
+import { getInitials, getAvatarColor } from '@/lib/avatar'
 
 const MAX_EXPECTED_MONTAGES = 5
-
-function getInitials(fullName: string): string {
-  const parts = fullName.trim().split(' ')
-  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-  return fullName.slice(0, 2).toUpperCase()
-}
-
-function getAvatarColor(name: string): string {
-  const colors = [
-    'bg-violet-500/20 text-violet-500',
-    'bg-blue-500/20 text-blue-500',
-    'bg-green-500/20 text-green-500',
-    'bg-amber-500/20 text-amber-500',
-    'bg-pink-500/20 text-pink-500',
-    'bg-cyan-500/20 text-cyan-500',
-    'bg-orange-500/20 text-orange-500',
-    'bg-indigo-500/20 text-indigo-500',
-  ]
-  let hash = 0
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
-  return colors[Math.abs(hash) % colors.length]
-}
 
 function getWorkloadColor(pct: number): string {
   if (pct >= 90) return 'bg-red-500'
@@ -308,7 +287,7 @@ export default function EmployeesPage() {
                       {emp.id !== user?.id && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                            <Button variant="ghost" size="icon" aria-label={t('common.actions')} className="h-8 w-8 text-muted-foreground hover:text-foreground">
                               <MoreVertical className="w-4 h-4" />
                             </Button>
                           </DropdownMenuTrigger>

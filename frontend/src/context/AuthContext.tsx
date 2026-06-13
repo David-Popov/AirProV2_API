@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { authService } from '@/services';
 import { safeStorage } from '@/lib/safe-storage';
@@ -42,7 +43,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
         }
       } catch (error) {
-        console.error('Failed to initialize auth:', error instanceof Error ? error.message : String(error));
+        logger.error('Failed to initialize auth:', error instanceof Error ? error.message : String(error));
         logout();
       } finally {
         setIsLoading(false);
@@ -74,7 +75,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(fetchedUser);
       safeStorage.set('user', JSON.stringify(fetchedUser));
     } catch (error) {
-      console.error('Failed to refresh user:', error instanceof Error ? error.message : String(error));
+      logger.error('Failed to refresh user:', error instanceof Error ? error.message : String(error));
       logout();
     }
   }, [logout]);

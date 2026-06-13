@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -86,7 +87,7 @@ export default function ErrorCodesPage() {
         setTotalCount(0)
       }
     } catch (error) {
-      console.error('Failed to load error codes:', error)
+      logger.error('Failed to load error codes:', error)
       setErrorCodes([])
       setTotalPages(1)
       setTotalCount(0)
@@ -105,7 +106,7 @@ export default function ErrorCodesPage() {
         setAirConditioners(response.items)
       }
     } catch (error) {
-      console.error('Failed to load air conditioners:', error)
+      logger.error('Failed to load air conditioners:', error)
     }
   }
   

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -55,7 +56,7 @@ export function RecentInventoryActivity() {
       const data = await inventoryAuditService.getRecentActivity(6);
       setActivities(data);
     } catch (error) {
-      console.error('Failed to load recent inventory activity:', error);
+      logger.error('Failed to load recent inventory activity:', error);
     } finally {
       setLoading(false);
     }
