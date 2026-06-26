@@ -35,6 +35,15 @@ public class ApplicationUser : IdentityUser, ISoftDeletable
     [Column("deleted_at")]
     public DateTime? DeletedAt { get; set; }
 
+    [Column("must_change_password")]
+    public bool MustChangePassword { get; set; } = false;
+
+    [Column("last_login_at")]
+    public DateTime? LastLoginAt { get; set; }
+
+    [Column("created_at")]
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
     [ForeignKey("CompanyId")]
     public virtual Company? Company { get; set; }
 }

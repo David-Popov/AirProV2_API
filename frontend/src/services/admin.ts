@@ -14,7 +14,7 @@ import type {
   PagedResult,
 } from '@/types/admin';
 
-const BASE_URL = '/api/admin';
+const BASE_URL = '/admin';
 
 function buildQueryString(filter: object): string {
   const params = new URLSearchParams();
@@ -67,6 +67,10 @@ export const adminService = {
 
   async changeUserRole(id: string, data: AdminChangeRole): Promise<void> {
     return apiClient.put(`${BASE_URL}/users/${id}/role`, data);
+  },
+
+  async requestUserEmailChange(id: string, newEmail: string): Promise<void> {
+    return apiClient.post(`${BASE_URL}/users/${id}/change-email/request`, { new_email: newEmail });
   },
 
   async deleteUser(id: string): Promise<void> {

@@ -16,6 +16,7 @@ public interface IAdminService
     Task<AdminUserDto?> UpdateUserAsync(string userId, AdminUpdateUserDto dto);
     Task<bool> ChangeUserPasswordAsync(string userId, AdminChangePasswordDto dto);
     Task<bool> ChangeUserRoleAsync(string userId, AdminChangeRoleDto dto);
+    Task RequestUserEmailChangeAsync(string userId, string newEmail);
     Task<bool> SoftDeleteUserAsync(string userId);
     Task<bool> RestoreUserAsync(string userId);
     

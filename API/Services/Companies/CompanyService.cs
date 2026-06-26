@@ -7,6 +7,7 @@ using API.Models;
 using API.Repositories;
 using API.Repositories.Companies;
 using API.Services.Email;
+using API.Services.Subscriptions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Mapster;
@@ -55,8 +56,8 @@ public class CompanyService : ICompanyService
                 throw new ValidationException("Invalid company type");
             }
 
-            var subscriptionPlan = string.IsNullOrEmpty(dto.SubscriptionPlan) 
-                ? SubscriptionPlan.FreeTrial 
+            var subscriptionPlan = string.IsNullOrEmpty(dto.SubscriptionPlan)
+                ? SubscriptionPlan.Free
                 : Enum.Parse<SubscriptionPlan>(dto.SubscriptionPlan);
 
             var company = new Company
@@ -73,6 +74,7 @@ public class CompanyService : ICompanyService
                 Email = dto.Email,
                 IsCompanyOwner = dto.IsCompanyOwner,
                 SubscriptionPlan = subscriptionPlan,
+                SubscriptionStatus = SubscriptionStatus.Active,
                 IsSubscriptionActive = true,
                 IsActive = true
             };
@@ -285,25 +287,50 @@ public class CompanyService : ICompanyService
     {
         try
         {
-            var company = await _repository.GetByIdAsync(companyId);
+            if (!Enum.TryParse<SubscriptionPlan>(dto.SubscriptionPlan, ignoreCase: true, out var subscriptionPlan))
+            {
+                throw new ValidationException("Invalid subscription plan");
+            }
+
+            var company = await _context.Companies.FirstOrDefaultAsync(c => c.Id == companyId);
             if (company == null)
             {
                 throw new NotFoundException("Company not found");
             }
 
-            if (!Enum.TryParse<SubscriptionPlan>(dto.SubscriptionPlan, out var subscriptionPlan))
-            {
-                throw new ValidationException("Invalid subscription plan");
-            }
+            var oldPlan = company.SubscriptionPlan;
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
 
             company.SubscriptionPlan = subscriptionPlan;
             company.IsSubscriptionActive = dto.IsSubscriptionActive;
 
-            await _repository.UpdateCompanyAsync(company);
-
-            if (dto.IsSubscriptionActive)
+            if (!string.IsNullOrWhiteSpace(dto.SubscriptionStatus))
             {
-                await RenewSubscriptionForAllUsersAsync(companyId);
+                if (!Enum.TryParse<SubscriptionStatus>(dto.SubscriptionStatus, ignoreCase: true, out var subscriptionStatus))
+                {
+                    throw new ValidationException("Invalid subscription status");
+                }
+                company.SubscriptionStatus = subscriptionStatus;
+            }
+
+            company.UpdatedAt = DateTime.UtcNow;
+
+            var deactivatedCount = 0;
+            if (oldPlan == SubscriptionPlan.Premium && subscriptionPlan == SubscriptionPlan.Free)
+            {
+                deactivatedCount = await SubscriptionEmployeeManager.DeactivateExcessEmployeesAsync(
+                    _context, companyId, SubscriptionLimits.GetMaxEmployees(SubscriptionPlan.Free));
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            if (deactivatedCount > 0)
+            {
+                _logger.LogInformation(
+                    "Company {CompanyId} downgraded Premium -> Free. Deactivated {Count} employee(s) to fit the Free limit.",
+                    companyId, deactivatedCount);
             }
         }
         catch (Exception e)

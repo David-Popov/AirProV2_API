@@ -25,6 +25,7 @@ import { useAuth } from '@/context'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { ModeToggle } from '@/components/mode-toggle'
 import { SubscriptionExpiredModal } from '@/components/SubscriptionExpiredModal'
+import { ForcedPasswordChangeModal } from '@/components/ForcedPasswordChangeModal'
 import { ReportProblemModal } from '@/components/ReportProblemModal'
 import { getInitials } from '@/lib/avatar'
 
@@ -282,6 +283,8 @@ export default function DashboardLayout() {
       <Outlet />
 
       <SubscriptionExpiredModal isOpen={!!isSubscriptionExpired} />
+
+      <ForcedPasswordChangeModal isOpen={!!user?.must_change_password} />
 
       <ReportProblemModal
         isOpen={isReportModalOpen}
