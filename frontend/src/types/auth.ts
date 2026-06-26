@@ -51,6 +51,7 @@ export interface AuthUser {
   subscription_status?: string | null;
   trial_end_date?: string | null;
   has_used_trial?: boolean;
+  must_change_password?: boolean;
   roles: string[];
 }
 

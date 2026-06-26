@@ -60,10 +60,10 @@ public class Company
     public bool IsCompanyOwner { get; set; }
 
     [Column("subscription_plan")]
-    public SubscriptionPlan SubscriptionPlan { get; set; } = SubscriptionPlan.FreeTrial;
+    public SubscriptionPlan SubscriptionPlan { get; set; } = SubscriptionPlan.Free;
 
     [Column("subscription_status")]
-    public SubscriptionStatus SubscriptionStatus { get; set; } = SubscriptionStatus.Trial;
+    public SubscriptionStatus SubscriptionStatus { get; set; } = SubscriptionStatus.Active;
 
     [Column("trial_start_date")]
     public DateTime? TrialStartDate { get; set; }
