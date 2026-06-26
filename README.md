@@ -63,8 +63,6 @@
 ### Infrastructure
 - **Docker / Docker Compose** for local infra and full‑stack runs
 - **PostgreSQL**, **MinIO** (file storage), **pgAdmin** (DB UI)
-- **Data scraper** (`scraper/`) — a Python tool that generates the air‑conditioner & error‑code seed data (see [Seeding Real Catalog Data](#-seeding-real-catalog-data))
-
 ---
 
 ## ✅ Prerequisites
@@ -74,7 +72,6 @@ Install these before you start:
 - **.NET 10 SDK** — https://dotnet.microsoft.com/download
 - **Node.js 20+** and npm — https://nodejs.org
 - **Docker Desktop** — https://www.docker.com/products/docker-desktop
-- (Optional, for the data scraper) **Python 3.11+**
 
 Verify:
 ```bash
@@ -278,5 +275,3 @@ Detailed docs live in [`docs/`](docs/):
 | [USER_GUIDE.md](docs/USER_GUIDE.md) | End‑user documentation |
 
 ---
-
-*Built with ❤️ by the AirPro Team*
