@@ -10,11 +10,21 @@ public class UpdateSubscriptionDtoValidator : AbstractValidator<UpdateSubscripti
     {
         RuleFor(x => x.SubscriptionPlan)
             .NotEmpty().WithMessage("Subscription plan is required")
-            .Must(BeValidSubscriptionPlan).WithMessage("Invalid subscription plan");
+            .Must(BeAdminSelectablePlan).WithMessage("Plan must be either 'Free' or 'Premium'");
+
+        RuleFor(x => x.SubscriptionStatus)
+            .Must(BeValidSubscriptionStatus).WithMessage("Invalid subscription status")
+            .When(x => !string.IsNullOrWhiteSpace(x.SubscriptionStatus));
     }
 
-    private bool BeValidSubscriptionPlan(string subscriptionPlan)
+    private bool BeAdminSelectablePlan(string subscriptionPlan)
     {
-        return Enum.TryParse<SubscriptionPlan>(subscriptionPlan, out _);
+        return Enum.TryParse<SubscriptionPlan>(subscriptionPlan, ignoreCase: true, out var plan)
+            && plan is SubscriptionPlan.Free or SubscriptionPlan.Premium;
+    }
+
+    private bool BeValidSubscriptionStatus(string? subscriptionStatus)
+    {
+        return Enum.TryParse<SubscriptionStatus>(subscriptionStatus, ignoreCase: true, out _);
     }
 }

@@ -1,6 +1,7 @@
 using ValidationException = FluentValidation.ValidationException;
 using API.Common;
 using API.DTOs.Admin;
+using API.DTOs.Auth;
 using API.Services.Admin;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,9 +22,6 @@ public class AdminController : ControllerBase
 
     #region Company Endpoints
 
-    /// <summary>
-    /// Get all companies with filters (Admin only)
-    /// </summary>
     [HttpGet("companies")]
     public async Task<IActionResult> GetAllCompanies([FromQuery] AdminCompanyFilterDto filter)
     {
@@ -31,9 +29,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Get company by ID (Admin only)
-    /// </summary>
     [HttpGet("companies/{id:guid}")]
     public async Task<IActionResult> GetCompanyById(Guid id)
     {
@@ -42,9 +37,6 @@ public class AdminController : ControllerBase
         return Ok(company);
     }
 
-    /// <summary>
-    /// Update company subscription (Admin only)
-    /// </summary>
     [HttpPut("companies/{id:guid}/subscription")]
     public async Task<IActionResult> UpdateCompanySubscription(Guid id, [FromBody] AdminUpdateSubscriptionDto dto)
     {
@@ -53,9 +45,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Soft delete company (Admin only)
-    /// </summary>
     [HttpDelete("companies/{id:guid}")]
     public async Task<IActionResult> DeleteCompany(Guid id)
     {
@@ -64,9 +53,6 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>
-    /// Restore soft-deleted company (Admin only)
-    /// </summary>
     [HttpPost("companies/{id:guid}/restore")]
     public async Task<IActionResult> RestoreCompany(Guid id)
     {
@@ -79,9 +65,6 @@ public class AdminController : ControllerBase
 
     #region User Endpoints
 
-    /// <summary>
-    /// Get all users with filters (Admin only)
-    /// </summary>
     [HttpGet("users")]
     public async Task<IActionResult> GetAllUsers([FromQuery] AdminUserFilterDto filter)
     {
@@ -89,9 +72,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Get user by ID (Admin only)
-    /// </summary>
     [HttpGet("users/{id}")]
     public async Task<IActionResult> GetUserById(string id)
     {
@@ -100,9 +80,6 @@ public class AdminController : ControllerBase
         return Ok(user);
     }
 
-    /// <summary>
-    /// Update user attributes (Admin only)
-    /// </summary>
     [HttpPut("users/{id}")]
     public async Task<IActionResult> UpdateUser(string id, [FromBody] AdminUpdateUserDto dto)
     {
@@ -111,9 +88,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Change user password (Admin only)
-    /// </summary>
     [HttpPut("users/{id}/password")]
     public async Task<IActionResult> ChangeUserPassword(string id, [FromBody] AdminChangePasswordDto dto)
     {
@@ -122,9 +96,6 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>
-    /// Change user role (Admin only) - Only Manager <-> User allowed
-    /// </summary>
     [HttpPut("users/{id}/role")]
     public async Task<IActionResult> ChangeUserRole(string id, [FromBody] AdminChangeRoleDto dto)
     {
@@ -138,9 +109,13 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>
-    /// Soft delete user (Admin only)
-    /// </summary>
+    [HttpPost("users/{id}/change-email/request")]
+    public async Task<IActionResult> RequestUserEmailChange(string id, [FromBody] RequestEmailChangeDto dto)
+    {
+        await _adminService.RequestUserEmailChangeAsync(id, dto.NewEmail);
+        return NoContent();
+    }
+
     [HttpDelete("users/{id}")]
     public async Task<IActionResult> DeleteUser(string id)
     {
@@ -149,9 +124,6 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>
-    /// Restore soft-deleted user (Admin only)
-    /// </summary>
     [HttpPost("users/{id}/restore")]
     public async Task<IActionResult> RestoreUser(string id)
     {
@@ -164,9 +136,6 @@ public class AdminController : ControllerBase
 
     #region Montage Endpoints
 
-    /// <summary>
-    /// Get all montages with filters (Admin only)
-    /// </summary>
     [HttpGet("montages")]
     public async Task<IActionResult> GetAllMontages([FromQuery] AdminMontageFilterDto filter)
     {
@@ -174,9 +143,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Get montage by ID (Admin only)
-    /// </summary>
     [HttpGet("montages/{id:guid}")]
     public async Task<IActionResult> GetMontageById(Guid id)
     {
@@ -185,9 +151,6 @@ public class AdminController : ControllerBase
         return Ok(montage);
     }
 
-    /// <summary>
-    /// Create montage (Admin only)
-    /// </summary>
     [HttpPost("montages")]
     public async Task<IActionResult> CreateMontage([FromBody] AdminCreateMontageDto dto)
     {
@@ -195,9 +158,6 @@ public class AdminController : ControllerBase
         return CreatedAtAction(nameof(GetMontageById), new { id = result.Id }, result);
     }
 
-    /// <summary>
-    /// Update montage (Admin only)
-    /// </summary>
     [HttpPut("montages/{id:guid}")]
     public async Task<IActionResult> UpdateMontage(Guid id, [FromBody] AdminCreateMontageDto dto)
     {
@@ -206,9 +166,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Delete montage (Admin only)
-    /// </summary>
     [HttpDelete("montages/{id:guid}")]
     public async Task<IActionResult> DeleteMontage(Guid id)
     {

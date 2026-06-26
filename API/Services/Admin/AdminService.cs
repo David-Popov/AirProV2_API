@@ -3,6 +3,7 @@ using API.Data;
 using API.Data.Entities;
 using API.DTOs.Admin;
 using API.Models;
+using API.Services.Auth;
 using API.Services.Email;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -15,17 +16,20 @@ public class AdminService : IAdminService
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IBackgroundEmailQueue _backgroundEmailQueue;
+    private readonly IAuthService _authService;
     private readonly ILogger<AdminService> _logger;
 
     public AdminService(
         ApplicationDbContext context,
         UserManager<ApplicationUser> userManager,
         IBackgroundEmailQueue backgroundEmailQueue,
+        IAuthService authService,
         ILogger<AdminService> logger)
     {
         _context = context;
         _userManager = userManager;
         _backgroundEmailQueue = backgroundEmailQueue;
+        _authService = authService;
         _logger = logger;
     }
 
@@ -327,20 +331,22 @@ public class AdminService : IAdminService
 
         if (!result.Succeeded)
         {
-            _logger.LogError("Failed to change password for user {UserId}: {Errors}", 
+            _logger.LogError("Failed to change password for user {UserId}: {Errors}",
                 userId, string.Join(", ", result.Errors.Select(e => e.Description)));
             return false;
         }
 
-        if (dto.SendEmailNotification && user.Company != null)
+        user.MustChangePassword = true;
+        await _userManager.UpdateAsync(user);
+
+        if (dto.SendEmailNotification)
         {
             var pwUser = user;
-            var pwCompany = user.Company;
             var pwPassword = dto.NewPassword;
             _backgroundEmailQueue.QueueEmail(async sp =>
             {
                 var emailService = sp.GetRequiredService<IEmailService>();
-                await emailService.SendNewEmployeeWelcomeEmailAsync(pwUser, pwCompany, pwPassword);
+                await emailService.SendTemporaryPasswordEmailAsync(pwUser, pwPassword);
             });
         }
 
@@ -373,6 +379,9 @@ public class AdminService : IAdminService
 
         return true;
     }
+
+    public Task RequestUserEmailChangeAsync(string userId, string newEmail)
+        => _authService.RequestEmailChangeAsync(userId, newEmail);
 
     public async Task<bool> SoftDeleteUserAsync(string userId)
     {

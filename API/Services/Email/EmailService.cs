@@ -125,6 +125,21 @@ public class EmailService : IEmailService
         await SendEmailAsync(toEmail, userName, "Confirm Email Change - AirPro", htmlBody);
     }
 
+    public async Task SendTemporaryPasswordEmailAsync(ApplicationUser user, string tempPassword)
+    {
+        var userName = $"{user.FirstName} {user.LastName}".Trim();
+        var content = await LoadTemplateAsync("temporary-password.html");
+        content = Render(content, new Dictionary<string, string>
+        {
+            ["{{UserName}}"]     = HtmlEncoder.Default.Encode(userName),
+            ["{{TempPassword}}"] = HtmlEncoder.Default.Encode(tempPassword),
+            ["{{LoginUrl}}"]     = $"{_emailSettings.WebsiteUrl}/login"
+        });
+
+        var htmlBody = await WrapInBaseTemplateAsync("Your Password Was Reset", content);
+        await SendEmailAsync(user.Email!, userName, "Your AirPro Password Was Reset", htmlBody);
+    }
+
 
     private async Task<string> BuildWelcomeEmailTemplateAsync(ApplicationUser user, Company company)
     {

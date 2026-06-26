@@ -2,9 +2,6 @@ using System.Text.Json.Serialization;
 
 namespace API.DTOs;
 
-/// <summary>
-/// Response DTO for authentication (login/register)
-/// </summary>
 public class AuthResponseDto
 {
     [JsonPropertyName("token")]
@@ -20,9 +17,6 @@ public class AuthResponseDto
     public AuthUserDto User { get; set; } = new();
 }
 
-/// <summary>
-/// User information returned after authentication
-/// </summary>
 public class AuthUserDto
 {
     [JsonPropertyName("id")]
@@ -60,7 +54,10 @@ public class AuthUserDto
 
     [JsonPropertyName("trial_end_date")]
     public DateTime? TrialEndDate { get; set; }
-    
+
+    [JsonPropertyName("must_change_password")]
+    public bool MustChangePassword { get; set; }
+
     [JsonPropertyName("roles")]
     public List<string> Roles { get; set; } = new();
 }

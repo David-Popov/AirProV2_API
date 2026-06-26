@@ -166,7 +166,10 @@ public class AuthService : IAuthService
                 throw new ValidationException("Your account has been deactivated. Please contact your manager.");
             }
 
-            var company = user.CompanyId.HasValue 
+            user.LastLoginAt = DateTime.UtcNow;
+            await _userManager.UpdateAsync(user);
+
+            var company = user.CompanyId.HasValue
                 ? await _context.Companies.FindAsync(user.CompanyId.Value)
                 : null;
 
@@ -196,6 +199,7 @@ public class AuthService : IAuthService
                     SubscriptionPlan = company?.SubscriptionPlan.ToString(),
                     SubscriptionStatus = company?.SubscriptionStatus.ToString(),
                     TrialEndDate = company?.TrialEndDate,
+                    MustChangePassword = user.MustChangePassword,
                     Roles = roles.ToList()
                 }
             };
@@ -237,6 +241,7 @@ public class AuthService : IAuthService
                 SubscriptionPlan = company?.SubscriptionPlan.ToString(),
                 SubscriptionStatus = company?.SubscriptionStatus.ToString(),
                 TrialEndDate = company?.TrialEndDate,
+                MustChangePassword = user.MustChangePassword,
                 Roles = roles.ToList()
             };
         }
@@ -1113,6 +1118,12 @@ public class AuthService : IAuthService
         {
             await _userManager.ResetAccessFailedCountAsync(user);
             await _userManager.SetLockoutEndDateAsync(user, null);
+
+            if (user.MustChangePassword)
+            {
+                user.MustChangePassword = false;
+                await _userManager.UpdateAsync(user);
+            }
         }
 
         return result;
@@ -1127,7 +1138,15 @@ public class AuthService : IAuthService
         }
 
         var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
-        return await _userManager.ResetPasswordAsync(user, resetToken, newPassword);
+        var result = await _userManager.ResetPasswordAsync(user, resetToken, newPassword);
+
+        if (result.Succeeded && user.MustChangePassword)
+        {
+            user.MustChangePassword = false;
+            await _userManager.UpdateAsync(user);
+        }
+
+        return result;
     }
 
     public async Task RequestEmailChangeAsync(string userId, string newEmail)

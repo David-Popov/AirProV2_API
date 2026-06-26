@@ -14,7 +14,9 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
-  MoreVertical
+  MoreVertical,
+  Moon,
+  AlertTriangle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -41,9 +43,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { CompanyUsersDialog } from '@/components/admin/CompanyUsersDialog'
 import { companyService } from '@/services'
-import type { Company, CreateCompanyRequest, UpdateCompanyRequest, CompanyUser } from '@/types'
+import type { Company, CreateCompanyRequest, UpdateCompanyRequest } from '@/types'
 import { COMPANY_TYPE_OPTIONS, SUBSCRIPTION_PLANS, SUBSCRIPTION_STATUSES } from '@/types'
+
+const IDLE_THRESHOLD_DAYS = 30
+const isCompanyIdle = (lastActivityAt?: string | null): boolean => {
+  if (!lastActivityAt) return true
+  const last = new Date(lastActivityAt).getTime()
+  return Number.isFinite(last) && Date.now() - last > IDLE_THRESHOLD_DAYS * 24 * 60 * 60 * 1000
+}
 
 export default function CompaniesPage() {
   const { t } = useTranslation()
@@ -62,8 +74,7 @@ export default function CompaniesPage() {
   const [isSubscriptionDialogOpen, setIsSubscriptionDialogOpen] = useState(false)
   
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
-  const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([])
-  
+
   const [formData, setFormData] = useState<CreateCompanyRequest>({
     company_name: '',
     company_type: 'LLC',
@@ -78,10 +89,9 @@ export default function CompaniesPage() {
   })
 
   const [subscriptionForm, setSubscriptionForm] = useState({
-    subscription_plan: 'Basic',
+    subscription_plan: 'Free',
     subscription_status: 'Active',
-    start_date: '',
-    end_date: ''
+    is_subscription_active: true,
   })
   
   useEffect(() => {
@@ -146,25 +156,18 @@ export default function CompaniesPage() {
     }
   }
   
-  const handleViewUsers = async (company: Company) => {
-    try {
-      setSelectedCompany(company)
-      const users = await companyService.getUsers(company.id)
-      setCompanyUsers(users)
-      setIsUsersDialogOpen(true)
-    } catch {
-      toast.error(t('companies.error_loading_users', 'Failed to load company users'))
-    }
+  const handleViewUsers = (company: Company) => {
+    setSelectedCompany(company)
+    setIsUsersDialogOpen(true)
   }
-  
+
   const handleUpdateSubscription = async () => {
     if (!selectedCompany) return
     try {
       await companyService.updateSubscription(selectedCompany.id, {
         subscription_plan: subscriptionForm.subscription_plan,
         subscription_status: subscriptionForm.subscription_status,
-        start_date: subscriptionForm.start_date || null,
-        end_date: subscriptionForm.end_date || null
+        is_subscription_active: subscriptionForm.is_subscription_active,
       })
       toast.success(t('companies.subscription_updated', 'Subscription updated successfully'))
       setIsSubscriptionDialogOpen(false)
@@ -204,10 +207,9 @@ export default function CompaniesPage() {
   const openSubscriptionDialog = (company: Company) => {
     setSelectedCompany(company)
     setSubscriptionForm({
-      subscription_plan: company.subscription_plan || 'Basic',
+      subscription_plan: company.subscription_plan === 'Premium' ? 'Premium' : 'Free',
       subscription_status: company.subscription_status || 'Active',
-      start_date: company.subscription_start_date || '',
-      end_date: company.subscription_end_date || ''
+      is_subscription_active: company.is_subscription_active ?? true,
     })
     setIsSubscriptionDialogOpen(true)
   }
@@ -234,28 +236,28 @@ export default function CompaniesPage() {
     }
     switch (status) {
       case 'Active':
-        return <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Active</Badge>
+        return <Badge className="bg-green-500/10 text-green-500 border-green-500/20">{t('companies.status_active', 'Active')}</Badge>
       case 'Trial':
-        return <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20">Trial</Badge>
+        return <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20">{t('companies.status_trial', 'Trial')}</Badge>
       case 'Expired':
-        return <Badge variant="destructive" className="bg-orange-500/10 text-orange-500 border-orange-500/20">Expired</Badge>
+        return <Badge variant="destructive" className="bg-orange-500/10 text-orange-500 border-orange-500/20">{t('companies.status_expired', 'Expired')}</Badge>
       case 'Cancelled':
-        return <Badge variant="destructive" className="bg-red-500/10 text-red-500 border-red-500/20">Cancelled</Badge>
+        return <Badge variant="destructive" className="bg-red-500/10 text-red-500 border-red-500/20">{t('companies.status_cancelled', 'Cancelled')}</Badge>
+      case 'Suspended':
+        return <Badge variant="destructive" className="bg-amber-500/10 text-amber-500 border-amber-500/20">{t('companies.status_suspended', 'Suspended')}</Badge>
       default:
-        return <Badge variant="secondary">Unknown</Badge>
+        return <Badge variant="secondary">{t('companies.status_unknown', 'Unknown')}</Badge>
     }
   }
-  
+
   const getPlanBadge = (plan: string | null | undefined) => {
     switch (plan) {
       case 'FreeTrial':
-        return <Badge variant="outline" className="border-blue-500/50 text-blue-400">Free Trial</Badge>
-      case 'Basic':
-        return <Badge variant="outline" className="border-green-500/50 text-green-400">Basic</Badge>
+        return <Badge variant="outline" className="border-blue-500/50 text-blue-400">{t('companies.plan_free_trial', 'Free Trial')}</Badge>
       case 'Premium':
-        return <Badge variant="outline" className="border-purple-500/50 text-purple-400">Premium</Badge>
-      case 'Enterprise':
-        return <Badge variant="outline" className="border-amber-500/50 text-amber-400">Enterprise</Badge>
+        return <Badge variant="outline" className="border-purple-500/50 text-purple-400">{t('companies.plan_premium', 'Premium')}</Badge>
+      case 'Free':
+        return <Badge variant="outline" className="border-green-500/50 text-green-400">{t('companies.plan_free', 'Free')}</Badge>
       default:
         return <Badge variant="outline">N/A</Badge>
     }
@@ -405,7 +407,19 @@ export default function CompaniesPage() {
                         {getPlanBadge(company.subscription_plan)}
                       </td>
                       <td className="py-4 px-4">
-                        {getStatusBadge(company.subscription_status, company.is_active)}
+                        <div className="flex flex-wrap items-center gap-2">
+                          {!company.is_active
+                            ? getStatusBadge(company.subscription_status, false)
+                            : company.subscription_plan === 'Free'
+                              ? (!isCompanyIdle(company.last_activity_at) && <span className="text-muted-foreground">—</span>)
+                              : getStatusBadge(company.subscription_status, true)}
+                          {isCompanyIdle(company.last_activity_at) && (
+                            <Badge variant="outline" className="border-amber-500/50 text-amber-500 gap-1">
+                              <Moon className="w-3 h-3" />
+                              {t('companies.idle', 'Idle')}
+                            </Badge>
+                          )}
+                        </div>
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center justify-end gap-1">
@@ -620,49 +634,12 @@ export default function CompaniesPage() {
         </DialogContent>
       </Dialog>
       
-      <Dialog open={isUsersDialogOpen} onOpenChange={setIsUsersDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              {t('companies.users_for', 'Users for')} {selectedCompany?.company_name}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="max-h-[400px] overflow-y-auto">
-            {companyUsers.length === 0 ? (
-              <p className="text-center py-8 text-sm sm:text-base text-muted-foreground">
-                {t('companies.no_users', 'No users found')}
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {companyUsers.map(user => (
-                  <div key={user.id} className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-background/50">
-                    <div>
-                      <p className="font-medium text-foreground">{user.full_name}</p>
-                      <p className="text-sm text-sm sm:text-base text-muted-foreground">{user.email}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {user.roles && user.roles.map(role => (
-                        <Badge key={role} variant="secondary">{role}</Badge>
-                      ))}
-                      {user.is_active ? (
-                        <Badge className="bg-green-500/10 text-green-500">Active</Badge>
-                      ) : (
-                        <Badge variant="destructive">Inactive</Badge>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsUsersDialogOpen(false)}>
-              {t('common.close', 'Close')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
+      <CompanyUsersDialog
+        open={isUsersDialogOpen}
+        onOpenChange={setIsUsersDialogOpen}
+        company={selectedCompany}
+      />
+
       <Dialog open={isSubscriptionDialogOpen} onOpenChange={setIsSubscriptionDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -707,24 +684,21 @@ export default function CompaniesPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-foreground">{t('companies.start_date', 'Start Date')}</label>
-                <Input
-                  type="date"
-                  value={subscriptionForm.start_date?.split('T')[0] || ''}
-                  onChange={(e) => setSubscriptionForm({...subscriptionForm, start_date: e.target.value})}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground">{t('companies.end_date', 'End Date')}</label>
-                <Input
-                  type="date"
-                  value={subscriptionForm.end_date?.split('T')[0] || ''}
-                  onChange={(e) => setSubscriptionForm({...subscriptionForm, end_date: e.target.value})}
-                />
-              </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                checked={subscriptionForm.is_subscription_active}
+                onCheckedChange={(checked) => setSubscriptionForm({ ...subscriptionForm, is_subscription_active: checked })}
+              />
+              <Label>{t('companies.subscription_active', 'Subscription active')}</Label>
             </div>
+            {selectedCompany?.subscription_plan === 'Premium' && subscriptionForm.subscription_plan === 'Free' && (
+              <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-600 dark:text-amber-400">
+                <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>
+                  {t('companies.downgrade_warning', 'Switching to Free will deactivate employees beyond the 2-employee limit (the most recently active 2 are kept).')}
+                </span>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsSubscriptionDialogOpen(false)}>

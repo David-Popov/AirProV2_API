@@ -42,10 +42,19 @@ public class CompanyDto
 
     [JsonPropertyName("subscription_plan")]
     public string SubscriptionPlan { get; set; } = string.Empty;
-    
+
+    [JsonPropertyName("subscription_status")]
+    public string SubscriptionStatus { get; set; } = string.Empty;
+
+    [JsonPropertyName("trial_end_date")]
+    public DateTime? TrialEndDate { get; set; }
+
     [JsonPropertyName("is_subscription_active")]
     public bool? IsSubscriptionActive { get; set; }
-    
+
+    [JsonPropertyName("last_activity_at")]
+    public DateTime? LastActivityAt { get; set; }
+
     [JsonPropertyName("is_active")]
     public bool? IsActive { get; set; }
     

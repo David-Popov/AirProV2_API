@@ -12,6 +12,8 @@ public class CompanyMappingRegister : IRegister
             .Map(d => d.Id, s => s.Id.ToString())
             .Map(d => d.CompanyType, s => s.CompanyType.ToString())
             .Map(d => d.SubscriptionPlan, s => s.SubscriptionPlan.ToString())
+            .Map(d => d.SubscriptionStatus, s => s.SubscriptionStatus.ToString())
+            .Map(d => d.LastActivityAt, s => s.Users.Max(u => (DateTime?)u.LastLoginAt))
             .Map(d => d.UsersCount, s => s.Users.Count);
 
         config.NewConfig<ApplicationUser, UserDto>()

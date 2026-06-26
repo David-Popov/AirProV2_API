@@ -10,8 +10,7 @@ public class UpdateSubscriptionDtoValidatorTests
     [Theory]
     [InlineData("Free")]
     [InlineData("Premium")]
-    [InlineData("FreeTrial")]
-    public void Valid_Plans_Pass(string plan)
+    public void AdminSelectable_Plans_Pass(string plan)
     {
         _validator.Validate(new UpdateSubscriptionDto
         {
@@ -20,16 +19,50 @@ public class UpdateSubscriptionDtoValidatorTests
         }).IsValid.Should().BeTrue();
     }
 
-    [Fact]
-    public void Unknown_Plan_Fails()
+    [Theory]
+    [InlineData("FreeTrial")]
+    [InlineData("Platinum")]
+    [InlineData("")]
+    public void NonSelectable_Or_Unknown_Plans_Fail(string plan)
     {
         var result = _validator.Validate(new UpdateSubscriptionDto
         {
-            SubscriptionPlan = "Platinum",
+            SubscriptionPlan = plan,
             IsSubscriptionActive = true
         });
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(UpdateSubscriptionDto.SubscriptionPlan));
+    }
+
+    [Theory]
+    [InlineData("Trial")]
+    [InlineData("Active")]
+    [InlineData("Expired")]
+    [InlineData("Cancelled")]
+    [InlineData("Suspended")]
+    [InlineData(null)]
+    public void Valid_Or_Absent_Statuses_Pass(string? status)
+    {
+        _validator.Validate(new UpdateSubscriptionDto
+        {
+            SubscriptionPlan = "Free",
+            SubscriptionStatus = status,
+            IsSubscriptionActive = true
+        }).IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Unknown_Status_Fails()
+    {
+        var result = _validator.Validate(new UpdateSubscriptionDto
+        {
+            SubscriptionPlan = "Free",
+            SubscriptionStatus = "Frozen",
+            IsSubscriptionActive = true
+        });
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == nameof(UpdateSubscriptionDto.SubscriptionStatus));
     }
 }

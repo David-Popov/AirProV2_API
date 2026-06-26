@@ -5,6 +5,7 @@ using API.Data.Entities;
 using API.DTOs.Stripe;
 using API.Models;
 using API.Services.Email;
+using API.Services.Subscriptions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -137,36 +138,8 @@ public class StripeService : IStripeService
 
         await using var transaction = await _context.Database.BeginTransactionAsync();
 
-        var employeesWithRoles = await (
-            from user in _context.Users
-            where user.CompanyId == company.Id
-            join userRole in _context.UserRoles on user.Id equals userRole.UserId into urj
-            from ur in urj.DefaultIfEmpty()
-            join role in _context.Roles on ur.RoleId equals role.Id into rj
-            from r in rj.DefaultIfEmpty()
-            select new { User = user, RoleName = r != null ? r.Name : null }
-        ).ToListAsync();
-
-        var perUser = employeesWithRoles
-            .GroupBy(x => x.User.Id)
-            .Select(g => new
-            {
-                User = g.First().User,
-                Roles = g.Select(x => x.RoleName).Where(n => n != null).ToHashSet()
-            })
-            .ToList();
-
-        var deactivatedCount = 0;
-        foreach (var entry in perUser)
-        {
-            if (entry.Roles.Contains(AppRoles.Manager) || entry.Roles.Contains(AppRoles.Admin))
-            {
-                continue;
-            }
-
-            entry.User.IsActive = false;
-            deactivatedCount++;
-        }
+        var deactivatedCount = await SubscriptionEmployeeManager.DeactivateExcessEmployeesAsync(
+            _context, company.Id, SubscriptionLimits.GetMaxEmployees(SubscriptionPlan.Free));
 
         company.SubscriptionPlan = SubscriptionPlan.Free;
         company.SubscriptionStatus = SubscriptionStatus.Active;
@@ -182,7 +155,7 @@ public class StripeService : IStripeService
 
         return new MessageResponseDto
         {
-            Message = "Successfully returned to Free plan. All non-manager employees have been deactivated."
+            Message = "Successfully returned to Free plan. Employees beyond the Free plan limit have been deactivated."
         };
     }
 
