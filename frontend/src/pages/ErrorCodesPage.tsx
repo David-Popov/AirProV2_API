@@ -2,6 +2,7 @@ import { logger } from '@/lib/logger'
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { notifyApiError } from '@/lib/apiErrors'
 import {
   AlertCircle,
   Plus,
@@ -34,7 +35,7 @@ import {
 } from '@/components/ui/select'
 import { airConditionerService } from '@/services'
 import { useAuth } from '@/context'
-import type { ErrorCode, CreateErrorCodeRequest, AirConditioner } from '@/types'
+import type { ErrorCode, ErrorCodeStats, CreateErrorCodeRequest, AirConditioner } from '@/types'
 
 export default function ErrorCodesPage() {
   const { t } = useTranslation()
@@ -42,6 +43,7 @@ export default function ErrorCodesPage() {
   const isAdmin = user?.roles.includes('Admin')
   
   const [errorCodes, setErrorCodes] = useState<ErrorCode[]>([])
+  const [stats, setStats] = useState<ErrorCodeStats | null>(null)
   const [airConditioners, setAirConditioners] = useState<AirConditioner[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -97,6 +99,16 @@ export default function ErrorCodesPage() {
     } finally {
       setLoading(false)
     }
+    loadStats()
+  }
+
+  const loadStats = async () => {
+    try {
+      const result = await airConditionerService.getErrorCodeStats()
+      if (result) setStats(result)
+    } catch (error) {
+      logger.error('Failed to load error code stats:', error)
+    }
   }
   
   const loadAirConditioners = async () => {
@@ -135,7 +147,7 @@ export default function ErrorCodesPage() {
       resetForm()
       loadData()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('error_codes.error_creating', 'Failed to create error code'))
+      notifyApiError(error, t, t('error_codes.error_creating', 'Failed to create error code'))
     }
   }
   
@@ -154,7 +166,7 @@ export default function ErrorCodesPage() {
       resetForm()
       loadData()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('error_codes.error_updating', 'Failed to update error code'))
+      notifyApiError(error, t, t('error_codes.error_updating', 'Failed to update error code'))
     }
   }
   
@@ -167,7 +179,7 @@ export default function ErrorCodesPage() {
       setSelectedErrorCode(null)
       loadData()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('error_codes.error_deleting', 'Failed to delete error code'))
+      notifyApiError(error, t, t('error_codes.error_deleting', 'Failed to delete error code'))
     }
   }
   
@@ -201,9 +213,14 @@ export default function ErrorCodesPage() {
     setSelectedErrorCode(null)
   }
   
-  const getAcName = (acId: string) => {
-    const ac = airConditioners.find(a => a.id === acId)
-    return ac ? `${ac.brand || ''} ${ac.name}`.trim() : 'Unknown'
+  const getAcName = (errorCode?: Pick<ErrorCode, 'air_conditioner_id' | 'air_conditioner_name'> | null) => {
+    if (!errorCode) return t('error_codes.unknown_ac', 'Unknown')
+    // The backend resolves a brand-prefixed AC label (e.g. "Daikin FTXM35", covers
+    // all 187 ACs); fall back to the locally-loaded list only if it's missing.
+    const fromBackend = errorCode.air_conditioner_name?.trim()
+    if (fromBackend) return fromBackend
+    const ac = airConditioners.find(a => a.id === errorCode.air_conditioner_id)
+    return ac ? `${ac.brand ? `${ac.brand} ` : ''}${ac.name}`.trim() : t('error_codes.unknown_ac', 'Unknown')
   }
 
   return (
@@ -228,21 +245,21 @@ export default function ErrorCodesPage() {
           iconClassName="text-red-500"
           bgClassName="bg-red-500/10"
           label={t('error_codes.total', 'Total Error Codes')}
-          value={totalCount}
+          value={stats?.total ?? totalCount}
         />
         <StatCard
           icon={Lightbulb}
           iconClassName="text-green-500"
           bgClassName="bg-green-500/10"
           label={t('error_codes.with_solutions', 'With Solutions')}
-          value={(errorCodes || []).filter(ec => ec?.solution).length}
+          value={stats?.with_solutions ?? 0}
         />
         <StatCard
           icon={Snowflake}
           iconClassName="text-blue-500"
           bgClassName="bg-blue-500/10"
           label={t('error_codes.air_conditioners', 'Air Conditioners')}
-          value={new Set((errorCodes || []).map(ec => ec?.air_conditioner_id).filter(Boolean)).size}
+          value={stats?.air_conditioners ?? 0}
         />
       </div>
       
@@ -280,7 +297,7 @@ export default function ErrorCodesPage() {
             <Search className="w-5 h-5" />
           </Button>
         </DialogTrigger>
-        <DialogContent className="bg-card border-border text-card-foreground max-w-[95vw] sm:max-w-[425px]">
+        <DialogContent className="bg-card border-border text-card-foreground max-w-[95vw] sm:max-w-106.25">
           <DialogHeader>
             <DialogTitle>{t('common.filters', 'Filters')}</DialogTitle>
           </DialogHeader>
@@ -373,7 +390,7 @@ export default function ErrorCodesPage() {
                   </p>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Snowflake className="w-3 h-3" />
-                    <span className="truncate">{getAcName(errorCode.air_conditioner_id)}</span>
+                    <span className="truncate">{getAcName(errorCode)}</span>
                   </div>
                   {errorCode.solution && (
                     <div className="mt-2 flex items-center gap-1 text-xs text-green-500">
@@ -414,7 +431,7 @@ export default function ErrorCodesPage() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-foreground">{t('error_codes.code', 'Error Code')} *</label>
+                <Label className="text-foreground">{t('error_codes.code', 'Error Code')} *</Label>
                 <Input
                   value={formData.error_code}
                   onChange={(e) => setFormData({...formData, error_code: e.target.value.toUpperCase()})}
@@ -423,7 +440,7 @@ export default function ErrorCodesPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground">{t('error_codes.air_conditioner', 'Air Conditioner')} *</label>
+                <Label className="text-foreground">{t('error_codes.air_conditioner', 'Air Conditioner')} *</Label>
                 <Select
                   value={formData.air_conditioner_id}
                   onValueChange={(value) => setFormData({...formData, air_conditioner_id: value})}
@@ -443,7 +460,7 @@ export default function ErrorCodesPage() {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">{t('error_codes.error_name', 'Error Name')}</label>
+              <Label className="text-foreground">{t('error_codes.error_name', 'Error Name')}</Label>
               <Input
                 value={formData.error_name || ''}
                 onChange={(e) => setFormData({...formData, error_name: e.target.value})}
@@ -451,7 +468,7 @@ export default function ErrorCodesPage() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">{t('error_codes.description', 'Description')}</label>
+              <Label className="text-foreground">{t('error_codes.description', 'Description')}</Label>
               <Textarea
                 value={formData.description || ''}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
@@ -460,10 +477,10 @@ export default function ErrorCodesPage() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Label className="text-foreground">
                 <Lightbulb className="w-4 h-4 text-green-500" />
                 {t('error_codes.solution', 'Solution')}
-              </label>
+              </Label>
               <Textarea
                 value={formData.solution || ''}
                 onChange={(e) => setFormData({...formData, solution: e.target.value})}
@@ -507,7 +524,7 @@ export default function ErrorCodesPage() {
               </p>
               <p className="text-sm text-muted-foreground mt-2 flex items-center justify-center gap-2">
                 <Snowflake className="w-4 h-4" />
-                {getAcName(selectedErrorCode?.air_conditioner_id || '')}
+                {getAcName(selectedErrorCode)}
               </p>
             </div>
 

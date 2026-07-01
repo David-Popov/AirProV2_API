@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
+import { notifyApiError } from '@/lib/apiErrors'
 import {
   Settings,
   User,
@@ -109,7 +110,7 @@ export default function SettingsPage() {
       authService.logout()
       window.location.href = '/login'
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('common.unknown_error'))
+      notifyApiError(error, t)
     } finally {
       setIsDeletingAccount(false)
     }
@@ -293,8 +294,8 @@ export default function SettingsPage() {
                     onClick={() => setActiveTab(tab.id)}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-left ${
                       activeTab === tab.id
-                        ? 'bg-primary/10 text-primary border-l-2 border-primary pl-[10px]'
-                        : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground border-l-2 border-transparent pl-[10px]'
+                        ? 'bg-primary/10 text-primary border-l-2 border-primary pl-2.5'
+                        : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground border-l-2 border-transparent pl-2.5'
                     }`}
                   >
                     <tab.icon className="w-4 h-4 shrink-0" />
@@ -486,7 +487,7 @@ export default function SettingsPage() {
                                 setIsChangingPassword(false)
                                 setPasswordForm({ newPassword: '', confirmPassword: '' })
                               } catch (err) {
-                                toast.error(err instanceof Error ? err.message : t('settings.password_change_failed', 'Failed to change password.'))
+                                notifyApiError(err, t, t('settings.password_change_failed', 'Failed to change password.'))
                               } finally {
                                 setSavingSecurity(false)
                               }
@@ -555,7 +556,7 @@ export default function SettingsPage() {
                                 setIsChangingEmail(false)
                                 setNewEmailValue('')
                               } catch (err) {
-                                toast.error(err instanceof Error ? err.message : t('settings.email_change_failed', 'Failed to request email change.'))
+                                notifyApiError(err, t)
                               } finally {
                                 setSavingSecurity(false)
                               }

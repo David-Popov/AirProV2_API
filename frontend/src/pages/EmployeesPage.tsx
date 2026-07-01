@@ -11,6 +11,7 @@ import {
   Trash
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { notifyApiError } from '@/lib/apiErrors'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/ui/password-input'
@@ -59,6 +60,11 @@ function getWorkloadColor(pct: number): string {
   return 'bg-green-500'
 }
 
+/** Active montages for an employee as a 0–100% of the expected max. */
+function getWorkloadPercent(activeMontageCount: number): number {
+  return Math.min(Math.round((activeMontageCount / MAX_EXPECTED_MONTAGES) * 100), 100)
+}
+
 export default function EmployeesPage() {
   usePageTitle('Employees')
   const { t } = useTranslation()
@@ -85,7 +91,7 @@ export default function EmployeesPage() {
 
   const { data: employees = [], isLoading } = useEmployees()
   const { data: employeeLimits = null } = useEmployeeLimits()
-  const { data: montagesData } = useMontages(1, 500)
+  const { data: montagesData } = useMontages(1, 100)
   const createEmployee = useCreateEmployee()
   const deleteEmployee = useDeleteEmployee()
   const activateEmployee = useActivateEmployee()
@@ -95,9 +101,15 @@ export default function EmployeesPage() {
     const allMontages = montagesData?.items ?? []
     const map: Record<string, number> = {}
     for (const m of allMontages) {
-      if ((m.status === 'InProgress' || m.status === 'Planned') && m.user_id) {
-        map[m.user_id] = (map[m.user_id] ?? 0) + 1
+      if (m.status !== 'InProgress' && m.status !== 'Planned') continue
+      // Count the montage toward everyone working on it: the creator and every
+      // assigned worker (deduped, so a creator who is also assigned isn't counted twice).
+      const involved = new Set<string>()
+      if (m.user_id) involved.add(m.user_id)
+      for (const u of m.assigned_users ?? []) {
+        if (u?.id) involved.add(u.id)
       }
+      involved.forEach((id) => { map[id] = (map[id] ?? 0) + 1 })
     }
     return map
   }, [montagesData])
@@ -143,7 +155,7 @@ export default function EmployeesPage() {
       toast.success(t('employees.created_success', 'Employee created successfully'))
       setIsDialogOpen(false)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('common.unknown_error'))
+      notifyApiError(error, t)
     }
   }
 
@@ -154,7 +166,7 @@ export default function EmployeesPage() {
       await deleteEmployee.mutateAsync(employeeToDelete.id)
       toast.success(t('employees.deleted_success', 'Employee deleted successfully'))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('common.unknown_error'))
+      notifyApiError(error, t)
     } finally {
       setDeleteDialogOpen(false)
       setEmployeeToDelete(null)
@@ -171,7 +183,7 @@ export default function EmployeesPage() {
       await activateEmployee.mutateAsync(employee.id)
       toast.success(t('employees.activated_success', 'Employee activated successfully'))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('common.unknown_error'))
+      notifyApiError(error, t)
     }
   }
 
@@ -181,7 +193,7 @@ export default function EmployeesPage() {
       await deactivateEmployee.mutateAsync(employee.id)
       toast.success(t('employees.deactivated_success', 'Employee deactivated successfully'))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('common.unknown_error'))
+      notifyApiError(error, t)
     }
   }
 
@@ -214,7 +226,7 @@ export default function EmployeesPage() {
               <TableHead className="text-muted-foreground">{t('employees.role')}</TableHead>
               <TableHead className="text-muted-foreground">{t('common.status')}</TableHead>
               <TableHead className="text-muted-foreground">{t('auth.phone')}</TableHead>
-              <TableHead className="text-muted-foreground">Workload</TableHead>
+              <TableHead className="text-muted-foreground">{t('employees.workload', 'Workload')}</TableHead>
               <TableHead className="text-center text-muted-foreground">{t('common.actions')}</TableHead>
             </TableRow>
           </TableHeader>
@@ -230,7 +242,7 @@ export default function EmployeesPage() {
             ) : (
               filteredEmployees.map((emp) => {
                 const activeMontageCount = workloadMap[emp.id] ?? 0
-                const workloadPct = Math.min(Math.round((activeMontageCount / MAX_EXPECTED_MONTAGES) * 100), 100)
+                const workloadPct = getWorkloadPercent(activeMontageCount)
                 const avatarColor = getAvatarColor(emp.full_name)
                 const workloadIndicator = getWorkloadColor(workloadPct)
                 return (
@@ -335,7 +347,7 @@ export default function EmployeesPage() {
         ) : (
           filteredEmployees.map((emp, index) => {
             const activeMontageCount = workloadMap[emp.id] ?? 0
-            const workloadPct = Math.min(Math.round((activeMontageCount / MAX_EXPECTED_MONTAGES) * 100), 100)
+            const workloadPct = getWorkloadPercent(activeMontageCount)
             const avatarColor = getAvatarColor(emp.full_name)
             const workloadIndicator = getWorkloadColor(workloadPct)
             return (
@@ -386,7 +398,7 @@ export default function EmployeesPage() {
                     {activeMontageCount > 0 && (
                       <div className="space-y-1">
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>Workload</span>
+                          <span>{t('employees.workload', 'Workload')}</span>
                           <span>{workloadPct}%</span>
                         </div>
                         <Progress value={workloadPct} indicatorClassName={workloadIndicator} className="h-1.5" />

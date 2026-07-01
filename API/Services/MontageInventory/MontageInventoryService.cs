@@ -77,6 +77,11 @@ public class MontageInventoryService : IMontageInventoryService
                     throw new ValidationException($"Inventory item {material.InventoryItemId} not found");
                 }
 
+                if (!inventoryItem.IsActive)
+                {
+                    throw new ValidationException($"Cannot add material: inventory item '{inventoryItem.Name}' is deactivated.");
+                }
+
                 if (inventoryItem.Quantity < material.QuantityUsed)
                 {
                     throw new ValidationException($"Insufficient stock for {inventoryItem.Name}. Available: {inventoryItem.Quantity}, Requested: {material.QuantityUsed}");
@@ -120,7 +125,8 @@ public class MontageInventoryService : IMontageInventoryService
                     CreatedAt = montageInventoryItem.CreatedAt,
                     ItemName = inventoryItem.Name,
                     ItemSku = inventoryItem.Sku,
-                    UnitOfMeasure = inventoryItem.UnitOfMeasure.ToString()
+                    UnitOfMeasure = inventoryItem.UnitOfMeasure.ToString(),
+                    ItemIsActive = inventoryItem.IsActive
                 });
 
                 _logger.LogInformation("Added material {ItemName} (qty: {Qty}) to montage {MontageId}", 
@@ -191,7 +197,12 @@ public class MontageInventoryService : IMontageInventoryService
             {
                 throw new NotFoundException("Inventory item no longer exists");
             }
-            
+
+            if (!montageItem.InventoryItem.IsActive)
+            {
+                throw new ValidationException($"Cannot edit material: inventory item '{montageItem.InventoryItem.Name}' is deactivated.");
+            }
+
             decimal diff = newQuantity - montageItem.QuantityUsed;
             
             if (Math.Abs(diff) < 0.001m) return;
@@ -240,7 +251,8 @@ public class MontageInventoryService : IMontageInventoryService
                 CreatedAt = x.CreatedAt,
                 ItemName = x.InventoryItem != null ? x.InventoryItem.Name : null,
                 ItemSku = x.InventoryItem != null ? x.InventoryItem.Sku : null,
-                UnitOfMeasure = x.InventoryItem != null ? x.InventoryItem.UnitOfMeasure.ToString() : null
+                UnitOfMeasure = x.InventoryItem != null ? x.InventoryItem.UnitOfMeasure.ToString() : null,
+                ItemIsActive = x.InventoryItem != null ? x.InventoryItem.IsActive : (bool?)null
             })
             .ToListAsync();
     }

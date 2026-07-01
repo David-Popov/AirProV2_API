@@ -9,5 +9,8 @@ public static class SeedDataManager
         UserSeedData.SeedDataToDb(serviceProvider);
         AirConditionerSeedData.SeedDataToDb(serviceProvider);
         ErrorCodeSeedData.SeedDataToDb(serviceProvider);
+        InventoryItemSeedData.SeedDataToDb(serviceProvider);
+        MontageSeedData.SeedDataToDb(serviceProvider);
+        ReportedProblemSeedData.SeedDataToDb(serviceProvider);
     }
 }

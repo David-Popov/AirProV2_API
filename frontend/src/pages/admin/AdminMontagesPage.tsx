@@ -1,4 +1,6 @@
 import { logger } from '@/lib/logger'
+import { formatDateISO } from '@/lib/formatters'
+import { ADMIN_MONTAGE_STATUS_VARIANT } from '@/lib/status-maps'
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -77,7 +79,7 @@ export default function AdminMontagesPage() {
     setSelectedMontage(null)
     setEditForm({
       clientName: '', clientPhone: '', clientEmail: '', clientAddress: '', clientCity: '',
-      installationDate: new Date().toISOString().split('T')[0], status: 0, paymentStatus: 0, notes: ''
+      installationDate: formatDateISO(), status: 0, paymentStatus: 0, notes: ''
     })
     setIsEditOpen(true)
   }
@@ -128,14 +130,9 @@ export default function AdminMontagesPage() {
     }
   }
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'Completed': return <Badge variant="success">{status}</Badge>
-      case 'InProgress': return <Badge variant="warning">{status}</Badge>
-      case 'Canceled': return <Badge variant="destructive">{status}</Badge>
-      default: return <Badge variant="info">{status}</Badge>
-    }
-  }
+  const getStatusBadge = (status: string) => (
+    <Badge variant={ADMIN_MONTAGE_STATUS_VARIANT[status] ?? 'info'}>{status}</Badge>
+  )
 
   const FilterPanel = () => (
     <div className="space-y-4">

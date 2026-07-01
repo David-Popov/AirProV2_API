@@ -26,6 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AuthenticatedImage } from '@/components/shared';
 import { toast } from 'sonner';
+import { notifyApiError } from '@/lib/apiErrors';
 import { montagePhotoService } from '@/services/montage-photos';
 import { apiClient } from '@/services/api';
 import { queryKeys } from '@/lib/queryKeys';
@@ -149,7 +150,7 @@ export function MontagePhotosSection({
       onPhotosChange?.();
     } catch (error) {
       logger.error('Failed to upload photos:', error);
-      toast.error(error instanceof Error ? error.message : t('common.unknown_error'));
+      notifyApiError(error, t);
     } finally {
       setIsUploading(false);
     }

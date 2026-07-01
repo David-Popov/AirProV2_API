@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { AuthLayout } from '@/components/layout/AuthLayout';
 import { Button } from '@/components/ui/button';
 import { authService } from '@/services';
+import { translateApiError } from '@/lib/apiErrors';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 
 export default function ConfirmEmailChangePage() {
@@ -29,7 +30,7 @@ export default function ConfirmEmailChangePage() {
         setStatus('success');
       } catch (err: unknown) {
         setStatus('error');
-        const message = err instanceof Error ? err.message : t('auth.email_change_failed', 'Email change failed. The link may have expired.');
+        const message = err instanceof Error ? translateApiError(err.message) : t('auth.email_change_failed', 'Email change failed. The link may have expired.');
         setErrorMessage(message);
       }
     };

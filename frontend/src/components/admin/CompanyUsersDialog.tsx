@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { notifyApiError } from '@/lib/apiErrors'
 import {
   ArrowLeft,
   Edit2,
@@ -128,7 +129,7 @@ export function CompanyUsersDialog({ open, onOpenChange, company }: CompanyUsers
       await fetchUsers()
       backToList()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t('common.error', 'Something went wrong'))
+      notifyApiError(e, t, t('common.error', 'Something went wrong'))
     } finally { setSaving(false) }
   }
 
@@ -140,7 +141,7 @@ export function CompanyUsersDialog({ open, onOpenChange, company }: CompanyUsers
       toast.success(t('companies.temp_password_set', 'Temporary password set. The user must change it at next login.'))
       backToList()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t('common.error', 'Something went wrong'))
+      notifyApiError(e, t, t('common.error', 'Something went wrong'))
     } finally { setSaving(false) }
   }
 
@@ -153,7 +154,7 @@ export function CompanyUsersDialog({ open, onOpenChange, company }: CompanyUsers
       await fetchUsers()
       backToList()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t('common.error', 'Something went wrong'))
+      notifyApiError(e, t, t('common.error', 'Something went wrong'))
     } finally { setSaving(false) }
   }
 
@@ -165,7 +166,7 @@ export function CompanyUsersDialog({ open, onOpenChange, company }: CompanyUsers
       toast.success(t('companies.email_change_requested', 'A confirmation link was sent to the new address.'))
       backToList()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t('common.error', 'Something went wrong'))
+      notifyApiError(e, t, t('common.error', 'Something went wrong'))
     } finally { setSaving(false) }
   }
 
@@ -178,7 +179,7 @@ export function CompanyUsersDialog({ open, onOpenChange, company }: CompanyUsers
       await fetchUsers()
       backToList()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t('common.error', 'Something went wrong'))
+      notifyApiError(e, t, t('common.error', 'Something went wrong'))
     } finally { setSaving(false) }
   }
 
@@ -222,7 +223,7 @@ export function CompanyUsersDialog({ open, onOpenChange, company }: CompanyUsers
         </DialogHeader>
 
         {mode === 'list' && (
-          <div className="max-h-[420px] overflow-y-auto">
+          <div className="max-h-105 overflow-y-auto">
             {loading ? (
               <p className="text-center py-8 text-muted-foreground">{t('common.loading', 'Loading...')}</p>
             ) : users.length === 0 ? (

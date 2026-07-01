@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { translateApiError } from '@/lib/apiErrors'
 import { Mail, Lock, Loader2, RefreshCw, AlertTriangle, ShieldAlert } from 'lucide-react'
 import { ArrowRight } from 'lucide-react'
 import { motion } from 'motion/react'
@@ -77,7 +78,7 @@ export default function LoginPage() {
       } else if (message.toLowerCase().includes('locked')) {
         setAccountLocked(true)
       } else {
-        toast.error(message)
+        toast.error(translateApiError(message))
       }
     } finally {
       setIsLoading(false)

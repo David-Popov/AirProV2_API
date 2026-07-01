@@ -97,7 +97,7 @@ docker compose -f docker-compose.local.yml up --build -d
 
 Then open:
 - **Frontend** → http://localhost:3000
-- **Backend API / Scalar docs** → http://localhost:5209/api/v1/scalar
+- **Backend API / Scalar docs** → http://localhost:5209/scalar
 
 Reset everything (wipe data and reseed fresh):
 ```bash
@@ -137,14 +137,22 @@ npm run dev           # http://localhost:5173
 
 ## 🔑 Default Login Credentials (dev only)
 
-These accounts are seeded automatically in **Development** (both run options). They are **never** created in production.
+These accounts are seeded automatically in **Development** (both run options). They are **never** created in production. All three demo companies are on the **Free** plan; each has one Manager (owner) plus exactly two `User` employees (the Free-tier limit — Managers don't count toward it). Each company has its own inventory and montages assigned to its employees.
 
-| Email | Password | Role |
-|---|---|---|
-| `admin@airprov2.com` | `Admin@Dev123!` | Admin |
-| `manager@airprov2.com` | `Manager@Dev123!` | Manager |
-| `ivan.dimitrov@airprov2.com` | `User@Dev123!` | User |
-| `maria.petrova@airprov2.com` | `User@Dev123!` | User |
+| Email | Password | Role | Company |
+|---|---|---|---|
+| `admin@airprov2.com` | `Admin@Dev123!` | Admin | — |
+| `manager@airprov2.com` | `Manager@Dev123!` | Manager | АйрПро ЕООД (София) |
+| `ivan.dimitrov@airprov2.com` | `Manager@Dev123!` | Manager | Климат Сървис ООД (Пловдив) |
+| `atanas.petrov@airprov2.com` | `Manager@Dev123!` | Manager | Техно Климат ЕТ (Варна) |
+| `petar.ivanov@airprov2.com` | `User@Dev123!` | User | АйрПро ЕООД |
+| `stoyan.kolev@airprov2.com` | `User@Dev123!` | User | АйрПро ЕООД |
+| `nikolay.todorov@airprov2.com` | `User@Dev123!` | User | Климат Сървис ООД |
+| `dimitar.marinov@airprov2.com` | `User@Dev123!` | User | Климат Сървис ООД |
+| `kiril.todorov@airprov2.com` | `User@Dev123!` | User | Техно Климат ЕТ |
+| `vasil.marinov@airprov2.com` | `User@Dev123!` | User | Техно Климат ЕТ |
+
+> Passwords come from the `SEED_ADMIN_PASSWORD` / `SEED_MANAGER_PASSWORD` / `SEED_USER_PASSWORD` env vars; the values above are the defaults (used by `docker-compose.local.yml`).
 
 ---
 
@@ -155,7 +163,7 @@ These accounts are seeded automatically in **Development** (both run options). T
 | Frontend (Vite dev — Option B) | http://localhost:5173 |
 | Frontend (Docker — Option A) | http://localhost:3000 |
 | Backend API | http://localhost:5209 (host) / `8080` (in‑container) |
-| API docs (Scalar) | http://localhost:5209/api/v1/scalar |
+| API docs (Scalar) | http://localhost:5209/scalar |
 | OpenAPI JSON | http://localhost:5209/openapi/v1.json |
 | PostgreSQL | `localhost:5432` (db `AirProV2`, user `user`, pass `12345`) |
 | pgAdmin | http://localhost:8888 |

@@ -1,6 +1,6 @@
-import { formatCurrency } from '@/lib/formatters'
+import { formatCurrency, formatDate } from '@/lib/formatters'
 import { logger } from '@/lib/logger'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -17,7 +17,8 @@ import {
   Plus,
   Trash2,
   Search,
-  Edit
+  Edit,
+  Ban
 } from 'lucide-react'
 import {
   Dialog,
@@ -40,10 +41,14 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { BackButton } from '@/components/shared'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { BackButton, InfoField } from '@/components/shared'
 import { useStatusLabels } from '@/hooks/useStatusLabels'
 
 import { toast } from 'sonner'
+import { translateApiError } from '@/lib/apiErrors'
+import { useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/queryKeys'
 import { montageService, inventoryService, montageInventoryService } from '@/services'
 import { type Montage, type InventoryItem, type MontageInventoryItem } from '@/types'
 import { MontagePhotosSection, MontageLocationMap, StatusNavigator, PaymentStatusNavigator } from '@/components/montage'
@@ -53,7 +58,16 @@ export default function MontageDetailsPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const { getStatusLabel, getPaymentStatusLabel } = useStatusLabels()
+
+  // Materials change inventory stock + create audit entries, so invalidate the
+  // shared caches that other views read (Dashboard inventory tile, low-stock
+  // count, Recent Inventory Activity widget) after each material mutation.
+  const invalidateInventoryCaches = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all })
+    queryClient.invalidateQueries({ queryKey: queryKeys.inventoryAudit.all })
+  }
   const [montage, setMontage] = useState<Montage | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   
@@ -64,6 +78,7 @@ export default function MontageDetailsPage() {
   const [notes, setNotes] = useState('')
   const [isSubmittingMaterial, setIsSubmittingMaterial] = useState(false)
   const [materialSearch, setMaterialSearch] = useState('')
+  const [materialError, setMaterialError] = useState<string | null>(null)
   const [editingMaterial, setEditingMaterial] = useState<MontageInventoryItem | null>(null)
   const [editQuantity, setEditQuantity] = useState(0)
 
@@ -71,10 +86,12 @@ export default function MontageDetailsPage() {
     if (!materialSearch.trim()) return true
     const search = materialSearch.toLowerCase()
     return (
-      item.name.toLowerCase().includes(search) ||
-      (item.sku && item.sku.toLowerCase().includes(search))
+      (item.name ?? '').toLowerCase().includes(search) ||
+      (item.sku ? item.sku.toLowerCase().includes(search) : false)
     )
   })
+
+  const selectedItem = availableItems.find(i => i.id === selectedItemId)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -94,23 +111,43 @@ export default function MontageDetailsPage() {
     fetchData()
   }, [id])
 
-  useEffect(() => {
-    if (isAddingMaterial && availableItems.length === 0) {
-      const fetchItems = async () => {
-        try {
-          const result = await inventoryService.getAll(1, 100)
-          setAvailableItems(result.items.filter(i => (i.quantity ?? 0) > 0))
-        } catch (error) {
-          logger.error('Failed to load inventory', error)
-          toast.error(t('inventory.error_loading', 'Failed to load inventory items'))
-        }
-      }
-      fetchItems()
+  // Always pull fresh stock — a material added in a previous open of this modal
+  // (or stock changed elsewhere) deducts the inventory quantity on the backend,
+  // so caching the list across opens would show a stale "available" amount.
+  const fetchAvailableItems = useCallback(async () => {
+    try {
+      const result = await inventoryService.getAll(1, 100)
+      setAvailableItems(result.items.filter(i => i.is_active && (i.quantity ?? 0) > 0))
+    } catch (error) {
+      logger.error('Failed to load inventory', error)
+      toast.error(t('inventory.error_loading', 'Failed to load inventory items'))
     }
-  }, [isAddingMaterial])
+  }, [t])
+
+  useEffect(() => {
+    if (isAddingMaterial) {
+      fetchAvailableItems()
+    }
+  }, [isAddingMaterial, fetchAvailableItems])
 
   const handleAddMaterial = async () => {
-    if (!montage?.id || !selectedItemId) return
+    if (!montage?.id || !selectedItemId || !selectedItem) return
+
+    // Client-side validation — run BEFORE firing the request so the modal stays
+    // open and no network call is made when the input is invalid.
+    if (quantity <= 0) {
+      setMaterialError(t('montages.quantity_must_be_positive'))
+      return
+    }
+    if (quantity > selectedItem.quantity) {
+      setMaterialError(t('montages.insufficient_stock_for', {
+        name: selectedItem.name,
+        available: selectedItem.quantity,
+        requested: quantity,
+      }))
+      return
+    }
+    setMaterialError(null)
 
     setIsSubmittingMaterial(true)
     try {
@@ -119,20 +156,22 @@ export default function MontageDetailsPage() {
         quantity_used: quantity,
         notes: notes
       }])
-      
+
       toast.success(t('montages.material_added'))
       setIsAddingMaterial(false)
-      
+
       setSelectedItemId('')
       setQuantity(1)
       setNotes('')
       setMaterialSearch('')
-      
+      setMaterialError(null)
+
       const updatedMontage = await montageService.getById(montage.id)
       setMontage(updatedMontage)
+      invalidateInventoryCaches()
     } catch (error: any) {
       logger.error(error)
-      toast.error(t('montages.material_add_failed', 'Failed to add material'))
+      toast.error(translateApiError(error?.message) || t('montages.material_add_failed', 'Failed to add material'))
     } finally {
       setIsSubmittingMaterial(false)
     }
@@ -144,9 +183,10 @@ export default function MontageDetailsPage() {
     try {
       await montageInventoryService.removeMaterial(materialId)
       toast.success(t('montages.material_removed', 'Material removed successfully'))
-      
+
       const updatedMontage = await montageService.getById(montage.id)
       setMontage(updatedMontage)
+      invalidateInventoryCaches()
     } catch (error) {
       logger.error(error)
       toast.error(t('montages.material_remove_failed', 'Failed to remove material'))
@@ -162,15 +202,21 @@ export default function MontageDetailsPage() {
       setEditingMaterial(null)
       const updatedMontage = await montageService.getById(montage.id)
       setMontage(updatedMontage)
-    } catch (error) {
+      invalidateInventoryCaches()
+    } catch (error: any) {
        logger.error(error)
-       toast.error(t('montages.material_update_failed', 'Failed to update material'))
+       toast.error(translateApiError(error?.message) || t('montages.material_update_failed', 'Failed to update material'))
     } finally {
        setIsSubmittingMaterial(false)
     }
   }
 
   const openEditDialog = (item: MontageInventoryItem) => {
+    // Editing is not allowed once the referenced inventory item is deactivated.
+    if (item.item_is_active === false) {
+      toast.error(t('montages.material_item_deactivated', { name: item.item_name }))
+      return
+    }
     setEditingMaterial(item)
     setEditQuantity(item.quantity_used)
   }
@@ -186,11 +232,7 @@ export default function MontageDetailsPage() {
       const updated = await montageService.getById(montage.id)
       setMontage(updated)
     } catch (error: any) {
-      const message = error?.response?.data?.message 
-        || error?.response?.data 
-        || error?.message 
-        || t('montages.status_update_failed')
-      toast.error(message)
+      toast.error(error?.message ? translateApiError(error.message) : t('montages.status_update_failed'))
     }
   }
 
@@ -212,7 +254,7 @@ export default function MontageDetailsPage() {
       const updated = await montageService.getById(montage.id)
       setMontage(updated)
     } catch (error: any) {
-      toast.error(t('montages.payment_status_update_failed'))
+      toast.error(error?.message ? translateApiError(error.message) : t('montages.payment_status_update_failed'))
     }
   }
 
@@ -258,35 +300,26 @@ export default function MontageDetailsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-muted-foreground text-sm mb-1">{t('montages.client_name')}</p>
-                <p className="text-foreground">{montage.client_name}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-sm mb-1">{t('auth.phone')}</p>
+              <InfoField label={t('montages.client_name')} value={montage.client_name} />
+              <InfoField label={t('auth.phone')}>
                 <div className="flex items-center gap-2 text-foreground">
-                    <Phone className="w-3 h-3 text-muted-foreground" />
-                    {montage.client_phone || '-'}
+                  <Phone className="w-3 h-3 text-muted-foreground" />
+                  {montage.client_phone || '-'}
                 </div>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-sm mb-1">{t('auth.email')}</p>
-                 <div className="flex items-center gap-2 text-foreground">
-                    <Mail className="w-3 h-3 text-muted-foreground" />
-                    {montage.client_email || '-'}
-                </div>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-sm mb-1">{t('montages.client_city')}</p>
+              </InfoField>
+              <InfoField label={t('auth.email')}>
                 <div className="flex items-center gap-2 text-foreground">
-                    <MapPin className="w-3 h-3 text-muted-foreground" />
-                    {montage.client_city || '-'}
+                  <Mail className="w-3 h-3 text-muted-foreground" />
+                  {montage.client_email || '-'}
                 </div>
-              </div>
-               <div className="col-span-2">
-                <p className="text-muted-foreground text-sm mb-1">{t('montages.client_address')}</p>
-                <p className="text-foreground">{montage.client_address || '-'}</p>
-              </div>
+              </InfoField>
+              <InfoField label={t('montages.client_city')}>
+                <div className="flex items-center gap-2 text-foreground">
+                  <MapPin className="w-3 h-3 text-muted-foreground" />
+                  {montage.client_city || '-'}
+                </div>
+              </InfoField>
+              <InfoField className="col-span-2" label={t('montages.client_address')} value={montage.client_address || '-'} />
             </div>
           </CardContent>
         </Card>
@@ -300,21 +333,17 @@ export default function MontageDetailsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
              <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-muted-foreground text-sm mb-1">{t('common.date')}</p>
+              <InfoField label={t('common.date')}>
                 <div className="flex items-center gap-2 text-foreground">
-                    <Calendar className="w-3 h-3 text-muted-foreground" />
-                    {new Date(montage.installation_date).toLocaleDateString()}
+                  <Calendar className="w-3 h-3 text-muted-foreground" />
+                  {formatDate(montage.installation_date)}
                 </div>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-sm mb-1">{t('montages.completion_date')}</p>
-                <p className="text-foreground">
-                   {montage.completion_date ? new Date(montage.completion_date).toLocaleDateString() : '-'}
-                </p>
-              </div>
-              <div className="col-span-2">
-                <p className="text-muted-foreground text-sm mb-1">{t('montages.ac_unit')}</p>
+              </InfoField>
+              <InfoField
+                label={t('montages.completion_date')}
+                value={montage.completion_date ? formatDate(montage.completion_date) : '-'}
+              />
+              <InfoField className="col-span-2" label={t('montages.ac_unit')}>
                 <p className="text-foreground font-medium">
                   {montage.air_conditioner ? (
                     `${montage.air_conditioner.brand || ''} ${montage.air_conditioner.model || ''} - ${montage.air_conditioner.name}`
@@ -328,23 +357,20 @@ export default function MontageDetailsPage() {
                     '-'
                   )}
                 </p>
-              </div>
-               <div>
-                <p className="text-muted-foreground text-sm mb-1">{t('montages.indoor_serial')}</p>
+              </InfoField>
+              <InfoField label={t('montages.indoor_serial')}>
                 <div className="flex items-center gap-2 text-foreground font-mono text-sm">
-                    <Barcode className="w-3 h-3 text-muted-foreground" />
-                    {montage.indoor_unit_serial || '-'}
+                  <Barcode className="w-3 h-3 text-muted-foreground" />
+                  {montage.indoor_unit_serial || '-'}
                 </div>
-              </div>
-               <div>
-                <p className="text-muted-foreground text-sm mb-1">{t('montages.outdoor_serial')}</p>
+              </InfoField>
+              <InfoField label={t('montages.outdoor_serial')}>
                 <div className="flex items-center gap-2 text-foreground font-mono text-sm">
-                    <Barcode className="w-3 h-3 text-muted-foreground" />
-                    {montage.outdoor_unit_serial || '-'}
+                  <Barcode className="w-3 h-3 text-muted-foreground" />
+                  {montage.outdoor_unit_serial || '-'}
                 </div>
-              </div>
-              <div className="col-span-2">
-                <p className="text-muted-foreground text-sm mb-1">{t('montages.assigned_workers', 'Assigned Workers')}</p>
+              </InfoField>
+              <InfoField className="col-span-2" label={t('montages.assigned_workers', 'Assigned Workers')}>
                 {montage.assigned_users && montage.assigned_users.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {montage.assigned_users.map((u) => (
@@ -357,7 +383,7 @@ export default function MontageDetailsPage() {
                 ) : (
                   <p className="text-foreground">{t('montages.no_workers_assigned', 'No workers assigned')}</p>
                 )}
-              </div>
+              </InfoField>
             </div>
           </CardContent>
         </Card>
@@ -371,14 +397,16 @@ export default function MontageDetailsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
              <div className="grid grid-cols-2 gap-4">
-               <div>
-                <p className="text-muted-foreground text-sm mb-1">{t('montages.total_price')}</p>
-                <p className="text-foreground text-xl font-bold">{formatCurrency(montage.total_price || 0)}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-sm mb-1">{t('montages.paid_amount')}</p>
-                <p className="text-xl font-bold text-green-500">{formatCurrency(montage.paid_amount || 0)}</p>
-              </div>
+              <InfoField
+                label={t('montages.total_price')}
+                value={formatCurrency(montage.total_price || 0)}
+                valueClassName="text-xl font-bold"
+              />
+              <InfoField
+                label={t('montages.paid_amount')}
+                value={formatCurrency(montage.paid_amount || 0)}
+                valueClassName="text-xl font-bold text-green-500"
+              />
               <div className="col-span-2 flex items-center gap-4">
                 <p className="text-muted-foreground text-sm shrink-0">{t('montages.payment_status')}</p>
                 <PaymentStatusNavigator
@@ -409,7 +437,19 @@ export default function MontageDetailsPage() {
               <Package className="w-5 h-5 text-blue-500" />
               {t('montages.materials')}
             </CardTitle>
-            <Dialog open={isAddingMaterial} onOpenChange={setIsAddingMaterial}>
+            <Dialog open={isAddingMaterial} onOpenChange={(open) => {
+              setIsAddingMaterial(open)
+              if (!open) {
+                setMaterialError(null)
+                setSelectedItemId('')
+                setQuantity(1)
+                setNotes('')
+                setMaterialSearch('')
+                // Drop the cached list so the next open shows freshly-fetched
+                // stock rather than briefly flashing the previous amount.
+                setAvailableItems([])
+              }
+            }}>
               <DialogTrigger asChild>
                 <Button size="sm" variant="outline" className="gap-2">
                   <Plus className="w-4 h-4" />
@@ -433,11 +473,11 @@ export default function MontageDetailsPage() {
                         className="pl-9 mb-2"
                       />
                     </div>
-                    <Select value={selectedItemId} onValueChange={setSelectedItemId}>
+                    <Select value={selectedItemId} onValueChange={(v) => { setSelectedItemId(v); setMaterialError(null) }}>
                       <SelectTrigger>
                         <SelectValue placeholder={t('montages.select_materials')} />
                       </SelectTrigger>
-                      <SelectContent className="max-h-[200px]">
+                      <SelectContent className="max-h-50">
                         {filteredItems.length === 0 ? (
                           <div className="py-6 text-center text-sm text-muted-foreground">
                             {t('common.no_results', 'No items found')}
@@ -445,7 +485,7 @@ export default function MontageDetailsPage() {
                         ) : (
                           filteredItems.map((item) => (
                             <SelectItem key={item.id} value={item.id}>
-                              {item.name} ({item.sku}) - {item.quantity} {item.unit_of_measure} available
+                              {item.name} ({item.sku}) · {item.quantity} {t(`inventory.units.${(item.unit_of_measure ?? '').toLowerCase()}`, item.unit_of_measure ?? '')}
                             </SelectItem>
                           ))
                         )}
@@ -461,9 +501,20 @@ export default function MontageDetailsPage() {
                       step="0.1"
                       value={quantity || ''}
                       onFocus={() => { if (quantity === 0) setQuantity('' as unknown as number) }}
-                      onChange={(e) => setQuantity(e.target.value === '' ? 0 : Number(e.target.value))}
+                      onChange={(e) => { setQuantity(e.target.value === '' ? 0 : Number(e.target.value)); setMaterialError(null) }}
                       placeholder="0"
                     />
+                    {selectedItem && (
+                      <p className="text-xs text-muted-foreground">
+                        {t('montages.available_stock', {
+                          quantity: selectedItem.quantity,
+                          unit: t(`inventory.units.${(selectedItem.unit_of_measure ?? '').toLowerCase()}`, selectedItem.unit_of_measure ?? ''),
+                        })}
+                      </p>
+                    )}
+                    {materialError && (
+                      <p className="text-sm text-destructive">{materialError}</p>
+                    )}
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="notes">{t('common.notes')}</Label>
@@ -512,7 +563,7 @@ export default function MontageDetailsPage() {
                 </div>
                 <DialogFooter>
                    <Button variant="outline" onClick={() => setEditingMaterial(null)}>{t('common.cancel')}</Button>
-                   <Button onClick={handleEditSave} disabled={isSubmittingMaterial}>
+                   <Button onClick={handleEditSave} disabled={isSubmittingMaterial || editQuantity <= 0}>
                      {isSubmittingMaterial && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                      {t('common.save')}
                    </Button>
@@ -523,26 +574,60 @@ export default function MontageDetailsPage() {
           <CardContent>
              {montage.used_materials && montage.used_materials.length > 0 ? (
                <div className="space-y-4">
-                 {montage.used_materials.map((item) => (
+                 {montage.used_materials.map((item) => {
+                   const isInactive = item.item_is_active === false
+                   return (
                    <div key={item.id} className="flex justify-between items-start border-b border-border pb-3 last:border-0 last:pb-0">
                      <div>
-                       <p className="font-medium text-foreground">{item.item_name || 'Unknown Item'}</p>
+                       <div className="flex items-center gap-2 flex-wrap">
+                         <p className="font-medium text-foreground">{item.item_name || 'Unknown Item'}</p>
+                         {isInactive && (
+                           <Badge variant="outline" className="text-muted-foreground border-muted-foreground/30 gap-1">
+                             <Ban className="w-3 h-3" />
+                             {t('common.inactive')}
+                           </Badge>
+                         )}
+                       </div>
                        <p className="text-sm text-muted-foreground">{item.item_sku}</p>
                        {item.notes && <p className="text-sm italic text-muted-foreground mt-1">"{item.notes}"</p>}
                      </div>
                      <div className="flex items-center gap-2">
                        <div className="text-right">
-                         <p className="font-bold text-foreground">{item.quantity_used} {item.unit_of_measure}</p>
-                         <p className="text-xs text-muted-foreground">{new Date(item.created_at).toLocaleDateString()}</p>
+                         <p className="font-bold text-foreground">{item.quantity_used} {t(`inventory.units.${(item.unit_of_measure ?? '').toLowerCase()}`, item.unit_of_measure ?? '')}</p>
+                         <p className="text-xs text-muted-foreground">{formatDate(item.created_at)}</p>
                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-muted-foreground hover:text-primary"
-                          onClick={() => openEditDialog(item)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
+                        {isInactive ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              {/* A disabled button doesn't fire pointer events, so the
+                                  tooltip trigger wraps a span that does. */}
+                              <span className="inline-flex cursor-not-allowed">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-muted-foreground disabled:opacity-40 disabled:pointer-events-none"
+                                  disabled
+                                  aria-label={t('montages.material_item_deactivated', { name: item.item_name })}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {t('montages.material_item_deactivated', { name: item.item_name })}
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground hover:text-primary"
+                            aria-label={t('common.edit', 'Edit')}
+                            onClick={() => openEditDialog(item)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        )}
                        <Button
                          variant="ghost"
                          size="icon"
@@ -553,7 +638,8 @@ export default function MontageDetailsPage() {
                        </Button>
                      </div>
                    </div>
-                 ))}
+                   )
+                 })}
                </div>
              ) : (
                <div className="text-center py-6 text-muted-foreground">

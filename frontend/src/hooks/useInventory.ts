@@ -79,7 +79,7 @@ export function useAdjustQuantity() {
       inventoryService.adjustQuantity(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all })
-      queryClient.invalidateQueries({ queryKey: queryKeys.inventoryAudit.recent() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.inventoryAudit.all })
     },
   })
 }

@@ -1,11 +1,9 @@
-import { logger } from '@/lib/logger'
-import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { inventoryAuditService } from '@/services/inventoryAuditService';
+import { useRecentAuditActivity } from '@/hooks/useInventoryAudit';
 import type { InventoryAuditLog } from '@/types/inventory';
 import { 
   Package, 
@@ -43,24 +41,10 @@ const ACTION_COLORS = {
 export function RecentInventoryActivity() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const [activities, setActivities] = useState<InventoryAuditLog[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadRecentActivity();
-  }, []);
-
-  const loadRecentActivity = async () => {
-    try {
-      setLoading(true);
-      const data = await inventoryAuditService.getRecentActivity(6);
-      setActivities(data);
-    } catch (error) {
-      logger.error('Failed to load recent inventory activity:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Driven by React Query so inventory mutations (stock adjustments, materials
+  // used on a montage, archive/restore) invalidate queryKeys.inventoryAudit.all
+  // and refresh this widget without a page reload.
+  const { data: activities = [], isLoading: loading } = useRecentAuditActivity(6);
 
   const getActionLabel = (action: InventoryAuditLog['action']) => {
     const labels = {

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { translateApiError } from '@/lib/apiErrors'
 import {
   Dialog,
   DialogContent,
@@ -47,7 +48,7 @@ export function TrialActivationModal({
           t('subscription.trial_already_used', 'Trial period has already been used. Please upgrade to Premium.')
         )
       } else {
-        toast.error(message)
+        toast.error(translateApiError(message))
       }
       logger.error(error)
     } finally {

@@ -66,7 +66,7 @@ export function PremiumUpgradeModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <div className="mx-auto mb-4 w-16 h-16 bg-gradient-to-br from-violet-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-500/30">
+          <div className="mx-auto mb-4 w-16 h-16 bg-linear-to-br from-violet-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-500/30">
             <Sparkles className="w-8 h-8 text-white" />
           </div>
           <DialogTitle className="text-center text-2xl">
@@ -105,7 +105,7 @@ export function PremiumUpgradeModal({
           <Button
             onClick={handleUpgrade}
             disabled={isRedirecting}
-            className="w-full sm:w-auto bg-gradient-to-r from-violet-500 via-purple-500 to-violet-600 hover:from-violet-600 hover:via-purple-600 hover:to-violet-700"
+            className="w-full sm:w-auto bg-linear-to-r from-violet-500 via-purple-500 to-violet-600 hover:from-violet-600 hover:via-purple-600 hover:to-violet-700"
           >
             {isRedirecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t('subscription.upgrade_now', 'Upgrade Now')}

@@ -26,4 +26,6 @@ public interface IAirConditionerService
     Task<PagedList<ErrorCodeDto>> GetErrorCodesByAirConditionerIdAsync(Guid airConditionerId, PageParameters pageParameters);
     
     Task<PagedList<ErrorCodeDto>> GetAllErrorCodesAsync(PageParameters pageParameters);
+
+    Task<ErrorCodeStatsDto> GetErrorCodeStatsAsync();
 }

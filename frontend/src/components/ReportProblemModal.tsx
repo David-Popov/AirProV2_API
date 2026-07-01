@@ -22,6 +22,7 @@ import {
 import { problemReportsService } from '@/services/problem-reports'
 import { ProblemCategory, PROBLEM_CATEGORY_OPTIONS } from '@/types'
 import { toast } from 'sonner'
+import { notifyApiError } from '@/lib/apiErrors'
 
 interface ReportProblemModalProps {
   isOpen: boolean
@@ -84,7 +85,7 @@ export function ReportProblemModal({ isOpen, onClose }: ReportProblemModalProps)
       toast.success(t('problem_reports.submitted_success'))
       handleClose()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('problem_reports.submit_error'))
+      notifyApiError(error, t, t('problem_reports.submit_error'))
     } finally {
       setIsSubmitting(false)
     }
@@ -101,7 +102,7 @@ export function ReportProblemModal({ isOpen, onClose }: ReportProblemModalProps)
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-125">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Bug className="w-5 h-5 text-destructive" />

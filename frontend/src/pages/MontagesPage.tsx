@@ -1,4 +1,4 @@
-import { formatCurrency } from '@/lib/formatters'
+import { formatCurrency, formatDate, formatDateISO } from '@/lib/formatters'
 import { logger } from '@/lib/logger'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -26,6 +26,7 @@ import {
   X
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { notifyApiError } from '@/lib/apiErrors'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -54,7 +55,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { PageHeader, SearchBar, Pagination, EmptyState, ConfirmDialog, FieldMessage, MontageStatusBadge } from '@/components/shared'
-import { useFieldValidation, useStatusLabels } from '@/hooks'
+import { useFieldValidation, useStatusLabels, useDebounce } from '@/hooks'
 import { useEmployees } from '@/hooks/useEmployees'
 import { useAuth } from '@/context'
 import { required, minLength, optional, bulgarianPhone, email } from '@/lib/validation-rules'
@@ -66,6 +67,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { SkeletonTableRows, SkeletonMobileCards } from '@/components/skeletons'
+import { useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/queryKeys'
 import { montageService, type MontageFilters } from '@/services/montages'
 import { airConditionerService } from '@/services/air-conditioner'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -98,6 +101,7 @@ export default function MontagesPage() {
   const { t } = useTranslation()
   const { getPaymentStatusLabel } = useStatusLabels()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [items, setItems] = useState<Montage[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -120,7 +124,7 @@ export default function MontagesPage() {
     client_email: '',
     client_address: '',
     client_city: '',
-    installation_date: new Date().toISOString().split('T')[0],
+    installation_date: formatDateISO(),
     completion_date: null,
     status: 'Planned',
     notes: '',
@@ -169,6 +173,7 @@ export default function MontagesPage() {
   }, [formData.paid_amount, formData.total_price])
 
   const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearch = useDebounce(searchTerm, 500)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [activeFilters, setActiveFilters] = useState<MontageFilters>({})
   const [tempFilters, setTempFilters] = useState<MontageFilters>({})
@@ -231,12 +236,10 @@ export default function MontagesPage() {
     montageValidation.validateField(fieldName, value)
   }, [montageValidation])
 
+  // Reset to the first page whenever the debounced search or filters change.
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setPage(1)
-    }, 500)
-    return () => clearTimeout(timer)
-  }, [searchTerm, activeFilters])
+    setPage(1)
+  }, [debouncedSearch, activeFilters])
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<Montage | null>(null)
@@ -282,18 +285,26 @@ export default function MontagesPage() {
     try {
       const response = await montageService.getAll(page, 10, {
         ...activeFilters,
-        clientName: searchTerm
+        clientName: debouncedSearch
       })
       setItems(response.items)
       setTotalPages(response.totalPages)
       setTotalCount(response.totalCount)
     } catch (error) {
-      const message = error instanceof Error ? error.message : t('common.unknown_error')
-      toast.error(message)
+      notifyApiError(error, t)
       logger.error(error)
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // After any montage mutation: refresh this page's own list + maintenance
+  // reminders (both held in local state) AND invalidate the shared montages
+  // cache so other views (e.g. the Dashboard) don't show stale figures.
+  const refreshAfterMutation = () => {
+    loadItems()
+    loadMaintenanceReminders()
+    queryClient.invalidateQueries({ queryKey: queryKeys.montages.all })
   }
 
   useEffect(() => {
@@ -302,7 +313,7 @@ export default function MontagesPage() {
 
   useEffect(() => {
     loadItems()
-  }, [page, activeFilters, searchTerm])
+  }, [page, activeFilters, debouncedSearch])
 
   const loadAirConditioners = async () => {
     setIsLoadingACs(true)
@@ -418,10 +429,9 @@ export default function MontagesPage() {
         toast.success(t('montages.created_success', 'Montage created successfully'))
       }
       setIsDialogOpen(false)
-      loadItems()
+      refreshAfterMutation()
     } catch (error) {
-      const message = error instanceof Error ? error.message : t('common.unknown_error')
-      toast.error(message)
+      notifyApiError(error, t)
       logger.error(error)
     } finally {
       setIsSaving(false)
@@ -441,10 +451,9 @@ export default function MontagesPage() {
     try {
       await montageService.delete(itemToDelete.id)
       toast.success(t('montages.deleted_success', 'Montage deleted successfully'))
-      loadItems()
+      refreshAfterMutation()
     } catch (error) {
-      const message = error instanceof Error ? error.message : t('common.unknown_error')
-      toast.error(message)
+      notifyApiError(error, t)
     } finally {
       setIsDeleting(false)
       setDeleteDialogOpen(false)
@@ -545,7 +554,7 @@ export default function MontagesPage() {
                     }
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    {maintenanceDate.toLocaleDateString()}
+                    {formatDate(maintenanceDate)}
                   </div>
                 </div>
               ))}
@@ -612,7 +621,7 @@ export default function MontagesPage() {
                   <TableCell className="text-foreground/80">
                     <div className="flex items-center gap-2">
                        <Calendar className="w-3 h-3 text-muted-foreground" />
-                       {new Date(item.installation_date).toLocaleDateString()}
+                       {formatDate(item.installation_date)}
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground w-55">
@@ -649,10 +658,10 @@ export default function MontagesPage() {
                             try {
                               await montageService.updateStatus(item.id, newStatus)
                               toast.success(t('montages.status_updated', 'Status updated'))
-                              loadItems()
+                              refreshAfterMutation()
                             } catch (error) {
                               logger.error('Status update error:', error)
-                              toast.error(error instanceof Error ? error.message : t('common.unknown_error'))
+                              notifyApiError(error, t)
                             }
                           }
                         }}
@@ -675,10 +684,10 @@ export default function MontagesPage() {
                             try {
                               await montageService.updateStatus(item.id, newStatus)
                               toast.success(t('montages.status_updated', 'Status updated'))
-                              loadItems()
+                              refreshAfterMutation()
                             } catch (error) {
                               logger.error('Status update error:', error)
-                              toast.error(error instanceof Error ? error.message : t('common.unknown_error'))
+                              notifyApiError(error, t)
                             }
                           }
                         }}
@@ -759,7 +768,7 @@ export default function MontagesPage() {
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Calendar className="w-3 h-3 shrink-0" />
-                    <span className="truncate">{new Date(item.installation_date).toLocaleDateString()}</span>
+                    <span className="truncate">{formatDate(item.installation_date)}</span>
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <MapPin className="w-3 h-3 shrink-0" />
@@ -1237,7 +1246,7 @@ export default function MontagesPage() {
         onConfirm={handleDeleteConfirm}
         title={t('common.confirm_delete_title', 'Delete Montage')}
         description={t('montages.delete_confirmation', 'Are you sure you want to delete this montage? This action cannot be undone.')}
-        itemName={itemToDelete ? `${itemToDelete.client_name} - ${new Date(itemToDelete.installation_date).toLocaleDateString()}` : undefined}
+        itemName={itemToDelete ? `${itemToDelete.client_name} - ${formatDate(itemToDelete.installation_date)}` : undefined}
         confirmLabel={t('common.delete', 'Delete')}
         cancelLabel={t('common.cancel', 'Cancel')}
         isLoading={isDeleting}

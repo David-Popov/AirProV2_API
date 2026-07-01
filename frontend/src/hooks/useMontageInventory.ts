@@ -20,6 +20,7 @@ export function useAddMaterials() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.montageInventory.byMontage(variables.montageId) })
       queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.inventoryAudit.all })
     },
   })
 }
@@ -32,6 +33,7 @@ export function useUpdateMaterialQuantity() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.montageInventory.byMontage(variables.montageId) })
       queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.inventoryAudit.all })
     },
   })
 }
@@ -44,6 +46,7 @@ export function useRemoveMaterial() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.montageInventory.byMontage(variables.montageId) })
       queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.inventoryAudit.all })
     },
   })
 }

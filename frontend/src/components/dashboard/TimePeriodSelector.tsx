@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { formatDate } from '@/lib/formatters'
 import { useTranslation } from 'react-i18next'
 import { CalendarIcon } from 'lucide-react'
 import type { DateRange as RDPDateRange } from 'react-day-picker'
@@ -97,7 +98,7 @@ export function TimePeriodSelector({
             <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5">
               <CalendarIcon className="w-3.5 h-3.5" />
               {customRange
-                ? `${customRange.startDate.toLocaleDateString()} - ${customRange.endDate.toLocaleDateString()}`
+                ? `${formatDate(customRange.startDate)} - ${formatDate(customRange.endDate)}`
                 : t('dashboard.select_range')}
             </Button>
           </PopoverTrigger>

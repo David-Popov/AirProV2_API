@@ -16,6 +16,7 @@ import {
   Trash
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { notifyApiError } from '@/lib/apiErrors'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -167,8 +168,7 @@ export default function InventoryPage() {
       const lowStockRes = await inventoryService.getLowStock(1, 100)
       setLowStockItems(lowStockRes.items)
     } catch (error) {
-      const message = error instanceof Error ? error.message : t('common.unknown_error')
-      toast.error(message)
+      notifyApiError(error, t)
     } finally {
       setIsLoading(false)
     }
@@ -259,8 +259,7 @@ export default function InventoryPage() {
       setIsDialogOpen(false)
       loadItems()
     } catch (error) {
-      const message = error instanceof Error ? error.message : t('common.unknown_error')
-      toast.error(message)
+      notifyApiError(error, t)
       logger.error(error)
     } finally {
       setIsSaving(false)
@@ -276,7 +275,7 @@ export default function InventoryPage() {
       toast.success(t('inventory.item_deleted'))
       loadItems()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('common.unknown_error'))
+      notifyApiError(error, t)
     } finally {
       setIsDeleting(false); setDeleteDialogOpen(false); setItemToDelete(null)
     }
@@ -288,7 +287,7 @@ export default function InventoryPage() {
       setItems(items.map(i => i.id === item.id ? { ...i, is_active: isActive } : i))
       toast.success(isActive ? t('inventory.item_activated') : t('inventory.item_deactivated'))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('common.unknown_error'))
+      notifyApiError(error, t)
     }
   }
 
@@ -412,7 +411,7 @@ export default function InventoryPage() {
                     <TableCell className="font-medium text-foreground">{item.name}</TableCell>
                     <TableCell className="text-muted-foreground font-mono text-xs">{item.sku || '—'}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2 min-w-[100px]">
+                      <div className="flex items-center gap-2 min-w-25">
                         <Progress value={stockPct} indicatorClassName={indicatorCls} className="h-1.5 w-20" />
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
                           {item.quantity} {t(`inventory.units.${item.unit_of_measure.toLowerCase()}`, item.unit_of_measure)}
@@ -572,7 +571,7 @@ export default function InventoryPage() {
       />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-card border-border text-card-foreground max-w-[95vw] sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-card border-border text-card-foreground max-w-[95vw] sm:max-w-106.25 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isEditing ? t('inventory.edit_item') : t('inventory.new_item')}</DialogTitle>
           </DialogHeader>

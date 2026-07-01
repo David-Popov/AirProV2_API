@@ -51,7 +51,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
 
       <div className="flex flex-1 overflow-hidden">
         <div className="hidden lg:flex lg:w-1/2 relative flex-col overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-violet-600/10" />
+          <div className="absolute inset-0 bg-linear-to-br from-primary/20 via-background to-violet-600/10" />
 
           <motion.div
             className="absolute top-1/4 -left-20 w-80 h-80 bg-primary/20 rounded-full blur-3xl pointer-events-none"
@@ -156,7 +156,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, type: "tween" as const }}
         >
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/3 via-transparent to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-linear-to-b from-primary/3 via-transparent to-transparent pointer-events-none" />
           <div className="relative w-full max-w-lg px-6 py-10 sm:px-10">
             {children}
           </div>

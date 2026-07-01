@@ -11,6 +11,9 @@ public class ErrorCodeDto
     [JsonPropertyName("air_conditioner_id")]
     public Guid? AirConditionerId { get; set; }
 
+    [JsonPropertyName("air_conditioner_name")]
+    public string? AirConditionerName { get; set; }
+
     [Required]
     [JsonPropertyName("error_code")]
     public string Code { get; set; } = string.Empty;

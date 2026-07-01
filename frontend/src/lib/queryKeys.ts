@@ -57,6 +57,7 @@ export const queryKeys = {
     byMontage: (montageId: string) => ['montage-inventory', montageId] as const,
   },
   inventoryAudit: {
+    all: ['inventory-audit'] as const,
     byItem: (itemId: string, page: number, pageSize: number) =>
       ['inventory-audit', 'item', itemId, { page, pageSize }] as const,
     recent: (count?: number) => ['inventory-audit', 'recent', { count }] as const,

@@ -65,9 +65,34 @@ public class InventoryController : ApiControllerBase
     }
 
     /// <summary>
+    /// Search inventory items for the current user's company
+    /// </summary>
+    [HttpGet("search")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<PagedList<InventoryItemDto>>> Search(
+        [FromQuery] string searchTerm,
+        [FromQuery] PageParameters pageParameters)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            throw new ValidationException("Search term is required");
+        }
+
+        var companyId = GetCurrentUserCompanyId();
+        if (companyId == null)
+        {
+            throw new ValidationException("User is not associated with a company");
+        }
+
+        var result = await _service.SearchByCompanyIdAsync(companyId.Value, searchTerm, pageParameters);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Get inventory item by ID
     /// </summary>
-    [HttpGet("{id}")]
+    [HttpGet("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]

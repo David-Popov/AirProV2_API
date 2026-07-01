@@ -41,6 +41,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
+import { notifyApiError } from '@/lib/apiErrors'
+import { formatDate } from '@/lib/formatters'
 import { useEmployee, useUpdateEmployee, useDeleteEmployee, useResetEmployeePassword, useEmployeeMontages } from '@/hooks'
 import { validatePasswordRules } from '@/lib/validators'
 import { EmployeeDetailsSkeleton } from '@/components/skeletons'
@@ -113,8 +115,7 @@ export default function EmployeeDetailsPage() {
       setIsEditing(false)
       toast.success(t('employees.updated_success', 'Employee updated successfully'))
     } catch (error) {
-      const message = error instanceof Error ? error.message : t('common.unknown_error')
-      toast.error(message)
+      notifyApiError(error, t)
     }
   }
 
@@ -126,8 +127,7 @@ export default function EmployeeDetailsPage() {
       toast.success(t('employees.deleted_success', 'Employee deleted successfully'))
       navigate('/employees')
     } catch (error) {
-      const message = error instanceof Error ? error.message : t('common.unknown_error')
-      toast.error(message)
+      notifyApiError(error, t)
     } finally {
       setDeleteDialogOpen(false)
     }
@@ -161,8 +161,7 @@ export default function EmployeeDetailsPage() {
       setIsResettingPassword(false)
       setPasswordForm({ password: '', confirmPassword: '' })
     } catch (error) {
-      const message = error instanceof Error ? error.message : t('common.unknown_error')
-      toast.error(message)
+      notifyApiError(error, t)
     }
   }
 
@@ -292,7 +291,7 @@ export default function EmployeeDetailsPage() {
                       <div>
                         <p className="font-medium text-foreground">{montage.client_name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {new Date(montage.installation_date).toLocaleDateString()}
+                          {formatDate(montage.installation_date)}
                         </p>
                       </div>
                       <Badge variant="outline" className={
@@ -349,7 +348,7 @@ export default function EmployeeDetailsPage() {
                   <div>
                     <p className="text-sm text-muted-foreground">{t('employees.joined', 'Joined')}</p>
                     <p className="text-sm font-medium text-foreground">
-                      {new Date(employee.created_at).toLocaleDateString()}
+                      {formatDate(employee.created_at)}
                     </p>
                   </div>
                 </div>
@@ -383,7 +382,7 @@ export default function EmployeeDetailsPage() {
       </div>
 
       <Dialog open={isEditing} onOpenChange={setIsEditing}>
-        <DialogContent className="bg-card border-border text-card-foreground sm:max-w-[425px]">
+        <DialogContent className="bg-card border-border text-card-foreground sm:max-w-106.25">
           <DialogHeader>
             <DialogTitle>{t('employees.edit_employee', 'Edit Employee')}</DialogTitle>
           </DialogHeader>
@@ -469,7 +468,7 @@ export default function EmployeeDetailsPage() {
       </AlertDialog>
 
       <Dialog open={isResettingPassword} onOpenChange={setIsResettingPassword}>
-        <DialogContent className="bg-card border-border text-card-foreground sm:max-w-[425px]">
+        <DialogContent className="bg-card border-border text-card-foreground sm:max-w-106.25">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <KeyRound className="w-5 h-5 text-primary" />

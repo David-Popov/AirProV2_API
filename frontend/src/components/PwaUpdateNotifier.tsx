@@ -1,9 +1,11 @@
 import { logger } from '@/lib/logger'
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { toast } from 'sonner'
 
 export function PwaUpdateNotifier() {
+  const { t } = useTranslation()
   const {
     offlineReady: [offlineReady, setOfflineReady],
     needRefresh: [needRefresh, setNeedRefresh],
@@ -16,7 +18,7 @@ export function PwaUpdateNotifier() {
 
   useEffect(() => {
     if (offlineReady) {
-      toast.success('AirPro is ready to work offline', {
+      toast.success(t('pwa.offline_ready'), {
         duration: 4000,
         onDismiss: () => setOfflineReady(false),
       })
@@ -25,11 +27,11 @@ export function PwaUpdateNotifier() {
 
   useEffect(() => {
     if (needRefresh) {
-      toast.info('Update available', {
-        description: 'A new version of AirPro is ready.',
+      toast.info(t('pwa.update_available'), {
+        description: t('pwa.update_description'),
         duration: Infinity,
         action: {
-          label: 'Update',
+          label: t('pwa.update_action'),
           onClick: () => {
             updateServiceWorker(true)
             setNeedRefresh(false)

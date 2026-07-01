@@ -126,6 +126,19 @@ public class AirConditionersController : ControllerBase
     }
 
     /// <summary>
+    /// Get aggregate error-code statistics across the whole catalog
+    /// (total, how many have a solution, how many distinct air conditioners are covered).
+    /// </summary>
+    [HttpGet("error-codes/stats")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<ErrorCodeStatsDto>> GetErrorCodeStats()
+    {
+        var result = await _service.GetErrorCodeStatsAsync();
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Get error codes by air conditioner ID
     /// </summary>
     [HttpGet("{airConditionerId}/error-codes")]
@@ -140,7 +153,7 @@ public class AirConditionersController : ControllerBase
     /// <summary>
     /// Get error code by ID
     /// </summary>
-    [HttpGet("error-codes/{errorCodeId}")]
+    [HttpGet("error-codes/{errorCodeId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]

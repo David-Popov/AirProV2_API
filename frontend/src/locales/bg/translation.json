@@ -316,6 +316,7 @@
     "subtitle": "Управление на кодовете за грешки на климатиците и решенията",
     "total": "Общо Кодове за Грешки",
     "with_solutions": "С Решения",
+    "unknown_ac": "Неизвестен",
     "air_conditioners": "Климатици",
     "add_error_code": "Добави Код за Грешка",
     "search": "Търси по код или описание...",
@@ -438,6 +439,7 @@
     "delete_confirmation": "Сигурни ли сте, че искате да изтриете този артикул? Това действие е необратимо.",
     "error_loading": "Неуспешно зареждане на артикулите от склада",
     "view_history": "Виж История",
+    "history": "История",
     "cannot_delete": "Не може да изтриете този артикул. Използван е в монтажи или е по-стар от 30 дни. Можете да го деактивирате вместо това.",
     "units": {
       "pieces": "Бройки",
@@ -525,6 +527,8 @@
     "edit_material": "Редактирай материал",
     "material_updated": "Материалът е обновен успешно",
     "insufficient_stock": "Недостатъчна наличност",
+    "available_stock": "Налично: {{quantity}} {{unit}}",
+    "quantity_must_be_positive": "Количеството трябва да е по-голямо от 0",
     "photos": {
       "title": "Снимки",
       "view": "Преглед на снимка",
@@ -539,7 +543,12 @@
       "add_more": "Добави още {{count}}",
       "description_placeholder": "Опишете какво показва тази снимка...",
       "description_required": "Описанието е задължително",
-      "validation_info": "Макс. {{maxSize}}MB на файл. Формати: {{formats}}"
+      "validation_info": "Макс. {{maxSize}}MB на файл. Формати: {{formats}}",
+      "error_too_many": "Не може да качите {{count}} снимка(и). Може да добавите още само {{remaining}} (макс. {{max}} на монтаж).",
+      "error_file_size": "Размерът на файла надвишава максимално допустимия {{maxSize}}MB.",
+      "error_file_type": "Невалиден тип файл. Разрешени типове: {{types}}.",
+      "error_file_extension": "Невалидно разширение на файла. Разрешени разширения: {{extensions}}.",
+      "error_file_named": "Файл '{{name}}': {{error}}"
     },
     "location": "Местоположение",
     "no_address": "Няма въведен адрес",
@@ -560,6 +569,13 @@
     "material_add_failed": "Неуспешно добавяне на материал",
     "material_remove_failed": "Неуспешно премахване на материал",
     "material_update_failed": "Неуспешно обновяване на материал",
+    "error_amount_less_than_total_params": "Не може да завършите: Платената сума ({{paid}}) е по-малка от общата цена ({{total}})",
+    "insufficient_stock_for": "Недостатъчна наличност за {{name}}. Налично: {{available}}, Заявено: {{requested}}",
+    "insufficient_stock_needed": "Недостатъчна наличност. Налично: {{available}}, нужни допълнително: {{needed}}",
+    "inventory_item_not_found": "Складовият артикул {{id}} не е намерен",
+    "material_item_deactivated": "Не може да редактирате: артикулът '{{name}}' е деактивиран.",
+    "material_item_add_deactivated": "Не може да добавите: артикулът '{{name}}' е деактивиран.",
+    "error_duplicate_montage": "Вече съществува монтаж със същата фирма, имейл на клиент, дата на монтаж и климатик.",
     "status_planned": "Планиран",
     "status_in_progress": "В Процес",
     "status_completed": "Завършен",
@@ -570,11 +586,19 @@
     "payment_paid": "Платен",
     "payment_overdue": "Просрочен"
   },
+  "pwa": {
+    "offline_ready": "AirPro вече работи офлайн",
+    "update_available": "Налична е актуализация",
+    "update_description": "Готова е нова версия на AirPro.",
+    "update_action": "Актуализирай"
+  },
   "employees": {
     "title": "Служители",
     "subtitle": "Управление на екипа и достъпа",
     "add_employee": "Добави Служител",
     "search_placeholder": "Търси служители...",
+    "member": "Служител",
+    "workload": "Натовареност",
     "role": "Роля",
     "no_employees": "Няма намерени служители.",
     "create_account": "Създай Акаунт",

@@ -1,4 +1,4 @@
-import { formatCurrency } from '@/lib/formatters'
+import { formatCurrency, formatDate } from '@/lib/formatters'
 import { logger } from '@/lib/logger'
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -123,14 +123,14 @@ export default function SubscriptionPage() {
                   {subscriptionInfo.currentPeriodEnd && (
                     <span className="text-sm text-muted-foreground">
                       {t('subscription.renews_on', { 
-                        date: new Date(subscriptionInfo.currentPeriodEnd).toLocaleDateString() 
+                        date: formatDate(subscriptionInfo.currentPeriodEnd) 
                       })}
                     </span>
                   )}
                   {subscriptionInfo.trialEndDate && !subscriptionInfo.hasStripeSubscription && (
                     <span className="text-sm text-muted-foreground">
                       {t('subscription.trial_ends', { 
-                        date: new Date(subscriptionInfo.trialEndDate).toLocaleDateString() 
+                        date: formatDate(subscriptionInfo.trialEndDate) 
                       })}
                     </span>
                   )}
@@ -163,7 +163,7 @@ export default function SubscriptionPage() {
             </div>
             
             <CardHeader className="text-center pb-4">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center text-white">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-linear-to-br from-violet-500 to-purple-500 flex items-center justify-center text-white">
                 <Sparkles className="w-8 h-8" />
               </div>
               <CardTitle className="text-3xl">{plan.name}</CardTitle>
@@ -187,7 +187,7 @@ export default function SubscriptionPage() {
               </ul>
               
               <Button 
-                className="w-full bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 h-12 text-base font-medium"
+                className="w-full bg-linear-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 h-12 text-base font-medium"
                 disabled={isPremiumSubscriber || isRedirecting || !plan.priceId}
                 onClick={handleSubscribe}
               >

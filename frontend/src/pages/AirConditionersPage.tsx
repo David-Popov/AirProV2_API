@@ -13,6 +13,7 @@ import {
   Filter
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { notifyApiError } from '@/lib/apiErrors'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -32,7 +33,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useAirConditioners, useCreateAirConditioner, useUpdateAirConditioner, useDeleteAirConditioner } from '@/hooks'
+import { useAirConditioners, useCreateAirConditioner, useUpdateAirConditioner, useDeleteAirConditioner, useDebounce } from '@/hooks'
 import { useAuth } from '@/context'
 import type { AirConditioner, CreateAirConditionerRequest } from '@/types'
 import { usePageTitle } from '@/hooks/usePageTitle'
@@ -60,7 +61,7 @@ export default function AirConditionersPage() {
   const { user } = useAuth()
   const isAdmin = user?.roles.includes('Admin')
   const [searchTerm, setSearchTerm] = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const debouncedSearch = useDebounce(searchTerm, 500)
   const [page, setPage] = useState(1)
 
   const [activeFilters, setActiveFilters] = useState({
@@ -80,13 +81,10 @@ export default function AirConditionersPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<AirConditioner | null>(null)
 
+  // Reset to the first page whenever the debounced search settles.
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm)
-      setPage(1)
-    }, 500)
-    return () => clearTimeout(timer)
-  }, [searchTerm])
+    setPage(1)
+  }, [debouncedSearch])
 
   const queryFilters = {
     searchTerm: debouncedSearch,
@@ -242,8 +240,7 @@ export default function AirConditionersPage() {
       }
       setIsDialogOpen(false)
     } catch (error) {
-      const message = error instanceof Error ? error.message : t('common.unknown_error')
-      toast.error(message)
+      notifyApiError(error, t)
     }
   }
 
@@ -260,8 +257,7 @@ export default function AirConditionersPage() {
       await deleteAirConditioner.mutateAsync(itemToDelete.id)
       toast.success(t('air_conditioners.ac_deleted'))
     } catch (error) {
-      const message = error instanceof Error ? error.message : t('common.unknown_error')
-      toast.error(message)
+      notifyApiError(error, t)
     } finally {
       setDeleteDialogOpen(false)
       setItemToDelete(null)
@@ -305,7 +301,7 @@ export default function AirConditionersPage() {
       </SearchBar>
 
       <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-        <DialogContent className="bg-card border-border text-card-foreground sm:max-w-[425px] overflow-y-auto max-h-[85vh]">
+        <DialogContent className="bg-card border-border text-card-foreground sm:max-w-106.25 overflow-y-auto max-h-[85vh]">
           <DialogHeader>
             <DialogTitle>{t('air_conditioners.filter_title', 'Filter Air Conditioners')}</DialogTitle>
           </DialogHeader>
@@ -451,7 +447,7 @@ export default function AirConditionersPage() {
       />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-card border-border text-card-foreground sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
+        <DialogContent className="bg-card border-border text-card-foreground sm:max-w-175 max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isEditing ? t('air_conditioners.edit_ac') : t('air_conditioners.new_ac')}</DialogTitle>
           </DialogHeader>

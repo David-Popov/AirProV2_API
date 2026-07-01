@@ -1,4 +1,5 @@
 import { apiClient } from './api';
+import i18n from '@/i18n';
 import type { MontagePhoto, PhotoValidationInfo } from '@/types';
 
 const BASE_URL = '/MontagePhotos';
@@ -116,14 +117,14 @@ export const montagePhotoService = {
     if (file.size > validationInfo.maxFileSizeBytes) {
       return {
         isValid: false,
-        error: `File size exceeds the maximum allowed size of ${validationInfo.maxFileSizeMB}MB`,
+        error: i18n.t('montages.photos.error_file_size', { maxSize: validationInfo.maxFileSizeMB }) as string,
       };
     }
 
     if (!validationInfo.allowedContentTypes.includes(file.type.toLowerCase())) {
       return {
         isValid: false,
-        error: `Invalid file type. Allowed types: ${validationInfo.allowedExtensions.join(', ')}`,
+        error: i18n.t('montages.photos.error_file_type', { types: validationInfo.allowedExtensions.join(', ') }) as string,
       };
     }
 
@@ -131,7 +132,7 @@ export const montagePhotoService = {
     if (!validationInfo.allowedExtensions.includes(extension)) {
       return {
         isValid: false,
-        error: `Invalid file extension. Allowed extensions: ${validationInfo.allowedExtensions.join(', ')}`,
+        error: i18n.t('montages.photos.error_file_extension', { extensions: validationInfo.allowedExtensions.join(', ') }) as string,
       };
     }
 
@@ -151,7 +152,11 @@ export const montagePhotoService = {
       const remaining = validationInfo.maxPhotosPerMontage - currentPhotoCount;
       return {
         isValid: false,
-        error: `Cannot upload ${files.length} photos. Only ${remaining} more photo(s) can be added (max ${validationInfo.maxPhotosPerMontage} per montage)`,
+        error: i18n.t('montages.photos.error_too_many', {
+          count: files.length,
+          remaining,
+          max: validationInfo.maxPhotosPerMontage,
+        }) as string,
       };
     }
 
@@ -160,7 +165,7 @@ export const montagePhotoService = {
       if (!result.isValid) {
         return {
           isValid: false,
-          error: `File '${file.name}': ${result.error}`,
+          error: i18n.t('montages.photos.error_file_named', { name: file.name, error: result.error }) as string,
         };
       }
     }

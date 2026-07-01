@@ -5,6 +5,7 @@ import type {
   UpdateAirConditionerRequest,
   PagedList,
   ErrorCode,
+  ErrorCodeStats,
   CreateErrorCodeRequest,
   UpdateErrorCodeRequest
 } from '@/types';
@@ -55,6 +56,10 @@ export const airConditionerService = {
     return await apiClient.get<PagedList<ErrorCode>>(
       `/AirConditioners/error-codes?PageNumber=${page}&PageSize=${pageSize}`
     );
+  },
+
+  getErrorCodeStats: async () => {
+    return await apiClient.get<ErrorCodeStats>('/AirConditioners/error-codes/stats');
   },
 
   getErrorCodeById: async (errorCodeId: string) => {

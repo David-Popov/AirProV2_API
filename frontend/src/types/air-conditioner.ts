@@ -32,8 +32,17 @@ export interface ErrorCode {
   error_name?: string | null;
   description?: string | null;
   air_conditioner_id: string;
+  /** Display name of the linked air conditioner, resolved by the backend. */
+  air_conditioner_name?: string | null;
   solution?: string | null;
   severity?: string | null;
+}
+
+/** Aggregate error-code statistics across the whole catalog (not a single page). */
+export interface ErrorCodeStats {
+  total: number;
+  with_solutions: number;
+  air_conditioners: number;
 }
 
 export interface CreateAirConditionerRequest {

@@ -1,0 +1,16 @@
+<Project>
+
+  <!--
+    Shared MSBuild properties for every .NET project in the solution (API, API.Tests).
+    MSBuild auto-imports this by walking up from each project directory to the repo root,
+    so neither the .sln nor the .csproj files need to reference it explicitly.
+    The Node frontend/ has no MSBuild project and is unaffected.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+</Project>

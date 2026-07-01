@@ -316,6 +316,7 @@
     "subtitle": "Manage air conditioner error codes and solutions",
     "total": "Total Error Codes",
     "with_solutions": "With Solutions",
+    "unknown_ac": "Unknown",
     "air_conditioners": "Air Conditioners",
     "add_error_code": "Add Error Code",
     "search": "Search by code or description...",
@@ -438,6 +439,7 @@
     "delete_confirmation": "Are you sure you want to delete this item? This action cannot be undone.",
     "error_loading": "Failed to load inventory items",
     "view_history": "View History",
+    "history": "History",
     "cannot_delete": "Cannot delete this item. It has been used in montages or is older than 30 days. You can deactivate it instead.",
     "units": {
       "pieces": "Pieces",
@@ -525,6 +527,8 @@
     "edit_material": "Edit material",
     "material_updated": "Material updated successfully",
     "insufficient_stock": "Insufficient stock",
+    "available_stock": "Available: {{quantity}} {{unit}}",
+    "quantity_must_be_positive": "Quantity must be greater than 0",
     "photos": {
       "title": "Photos",
       "view": "View photo",
@@ -539,7 +543,12 @@
       "add_more": "Add {{count}} more",
       "description_placeholder": "Describe what this photo shows...",
       "description_required": "Description is required",
-      "validation_info": "Max {{maxSize}}MB per file. Formats: {{formats}}"
+      "validation_info": "Max {{maxSize}}MB per file. Formats: {{formats}}",
+      "error_too_many": "Cannot upload {{count}} photo(s). Only {{remaining}} more can be added (max {{max}} per montage).",
+      "error_file_size": "File size exceeds the maximum allowed size of {{maxSize}}MB.",
+      "error_file_type": "Invalid file type. Allowed types: {{types}}.",
+      "error_file_extension": "Invalid file extension. Allowed extensions: {{extensions}}.",
+      "error_file_named": "File '{{name}}': {{error}}"
     },
     "location": "Location",
     "no_address": "No address provided",
@@ -560,6 +569,13 @@
     "material_add_failed": "Failed to add material",
     "material_remove_failed": "Failed to remove material",
     "material_update_failed": "Failed to update material",
+    "error_amount_less_than_total_params": "Cannot complete: Paid amount ({{paid}}) is less than total price ({{total}})",
+    "insufficient_stock_for": "Insufficient stock for {{name}}. Available: {{available}}, Requested: {{requested}}",
+    "insufficient_stock_needed": "Insufficient stock. Available: {{available}}, additional needed: {{needed}}",
+    "inventory_item_not_found": "Inventory item {{id}} not found",
+    "material_item_deactivated": "Cannot edit: inventory item '{{name}}' is deactivated.",
+    "material_item_add_deactivated": "Cannot add: inventory item '{{name}}' is deactivated.",
+    "error_duplicate_montage": "A montage with the same company, client email, installation date, and air conditioner already exists.",
     "status_planned": "Planned",
     "status_in_progress": "In Progress",
     "status_completed": "Completed",
@@ -570,11 +586,19 @@
     "payment_paid": "Paid",
     "payment_overdue": "Overdue"
   },
+  "pwa": {
+    "offline_ready": "AirPro is ready to work offline",
+    "update_available": "Update available",
+    "update_description": "A new version of AirPro is ready.",
+    "update_action": "Update"
+  },
   "employees": {
     "title": "Employees",
     "subtitle": "Manage your team and their access",
     "add_employee": "Add Employee",
     "search_placeholder": "Search team members...",
+    "member": "Member",
+    "workload": "Workload",
     "role": "Role",
     "no_employees": "No employees found.",
     "create_account": "Create Account",

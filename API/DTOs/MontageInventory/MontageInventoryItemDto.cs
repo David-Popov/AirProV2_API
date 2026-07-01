@@ -36,6 +36,13 @@ public class MontageInventoryItemDto
     
     [JsonPropertyName("unit_of_measure")]
     public string? UnitOfMeasure { get; set; }
+
+    /// <summary>
+    /// Whether the referenced inventory item is currently active.
+    /// Null when the inventory item no longer exists.
+    /// </summary>
+    [JsonPropertyName("item_is_active")]
+    public bool? ItemIsActive { get; set; }
 }
 
 /// <summary>

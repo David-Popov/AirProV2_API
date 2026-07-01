@@ -100,7 +100,7 @@ export default function DashboardLayout() {
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-primary/8 to-transparent pointer-events-none" />
+        <div className="absolute top-0 left-0 right-0 h-28 bg-linear-to-b from-primary/8 to-transparent pointer-events-none" />
 
         <button
           onClick={() => setIsSidebarOpen(false)}
@@ -169,11 +169,11 @@ export default function DashboardLayout() {
 
           <div className="pt-3 mt-2">
             <div className="flex items-center gap-2 px-2 mb-2">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-sidebar-border/60 to-transparent" />
+              <div className="flex-1 h-px bg-linear-to-r from-transparent via-sidebar-border/60 to-transparent" />
               <p className="text-[10px] text-muted-foreground/40 font-semibold uppercase tracking-widest shrink-0">
                 {t('nav.database', 'Database')}
               </p>
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-sidebar-border/60 to-transparent" />
+              <div className="flex-1 h-px bg-linear-to-r from-transparent via-sidebar-border/60 to-transparent" />
             </div>
             <NavItem
               icon={Snowflake}
@@ -192,11 +192,11 @@ export default function DashboardLayout() {
           {isAdmin && (
             <div className="pt-3 mt-2">
               <div className="flex items-center gap-2 px-2 mb-2">
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-sidebar-border/60 to-transparent" />
+                <div className="flex-1 h-px bg-linear-to-r from-transparent via-sidebar-border/60 to-transparent" />
                 <p className="text-[10px] text-muted-foreground/40 font-semibold uppercase tracking-widest shrink-0">
                   {t('nav.admin', 'Admin')}
                 </p>
-                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-sidebar-border/60 to-transparent" />
+                <div className="flex-1 h-px bg-linear-to-r from-transparent via-sidebar-border/60 to-transparent" />
               </div>
               <NavItem
                 icon={Building2}
@@ -214,7 +214,7 @@ export default function DashboardLayout() {
           )}
 
           <div className="pt-3 mt-2">
-            <div className="h-px bg-gradient-to-r from-transparent via-sidebar-border/60 to-transparent mb-2" />
+            <div className="h-px bg-linear-to-r from-transparent via-sidebar-border/60 to-transparent mb-2" />
             <NavItem
               icon={Settings}
               label={t('common.settings')}
@@ -229,7 +229,7 @@ export default function DashboardLayout() {
             <div className="flex items-center gap-2.5 mb-2">
               <div className="relative shrink-0">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="text-[11px] font-bold bg-gradient-to-br from-primary/30 to-primary/10 text-primary">
+                  <AvatarFallback className="text-[11px] font-bold bg-linear-to-br from-primary/30 to-primary/10 text-primary">
                     {user?.full_name ? getInitials(user.full_name) : '?'}
                   </AvatarFallback>
                 </Avatar>
@@ -307,7 +307,7 @@ function NavItem({ icon: Icon, label, active = false, onClick }: NavItemProps) {
       onClick={onClick}
       className={`w-full flex items-center gap-2.5 py-2.5 px-3 rounded-xl transition-all duration-200 group text-sm ${
         active
-          ? 'bg-gradient-to-r from-primary/15 to-primary/5 text-primary font-semibold border border-primary/20 shadow-sm'
+          ? 'bg-linear-to-r from-primary/15 to-primary/5 text-primary font-semibold border border-primary/20 shadow-sm'
           : 'text-muted-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-foreground border border-transparent hover:translate-x-0.5'
       }`}
     >

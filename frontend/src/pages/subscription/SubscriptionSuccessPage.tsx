@@ -47,7 +47,7 @@ export default function SubscriptionSuccessPage() {
     <div className="flex items-center justify-center min-h-[70vh]">
       <Card className="max-w-md w-full glass-card text-center">
         <CardContent className="pt-12 pb-8 px-8">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-linear-to-br from-green-400 to-emerald-500 flex items-center justify-center">
             <CheckCircle className="w-10 h-10 text-white" />
           </div>
           

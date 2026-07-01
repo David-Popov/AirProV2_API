@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
+import { notifyApiError } from '@/lib/apiErrors'
 import {
   Mail,
   Lock,
@@ -217,7 +217,7 @@ export default function RegisterPage() {
         state: { message: t('auth.check_email_confirm', 'Registration successful! Please check your email to confirm your account.') }
       })
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('auth.registration_failed'))
+      notifyApiError(error, t, t('auth.registration_failed'))
     } finally {
       setIsLoading(false)
     }

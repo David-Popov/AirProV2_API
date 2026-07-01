@@ -1,4 +1,4 @@
-import { formatCurrency } from '@/lib/formatters'
+import { formatCurrency, formatDate } from '@/lib/formatters'
 import { logger } from '@/lib/logger'
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -114,14 +114,14 @@ export default function SubscriptionSection() {
                   {subscriptionInfo.currentPeriodEnd && (
                     <span className="text-sm text-muted-foreground">
                       {t('subscription.renews_on', { 
-                        date: new Date(subscriptionInfo.currentPeriodEnd).toLocaleDateString() 
+                        date: formatDate(subscriptionInfo.currentPeriodEnd) 
                       })}
                     </span>
                   )}
                   {subscriptionInfo.trialEndDate && !subscriptionInfo.hasStripeSubscription && (
                     <span className="text-sm text-muted-foreground">
                       {t('subscription.trial_ends', { 
-                        date: new Date(subscriptionInfo.trialEndDate).toLocaleDateString() 
+                        date: formatDate(subscriptionInfo.trialEndDate) 
                       })}
                     </span>
                   )}
@@ -280,12 +280,12 @@ export default function SubscriptionSection() {
 
       {plan && !isPremiumSubscriber && (
         <Card className="relative overflow-hidden border-primary shadow-lg shadow-primary/10">
-          <div className="absolute top-0 right-0 bg-gradient-to-bl from-primary to-primary/80 text-primary-foreground text-xs font-medium px-4 py-1.5 rounded-bl-xl">
+          <div className="absolute top-0 right-0 bg-linear-to-bl from-primary to-primary/80 text-primary-foreground text-xs font-medium px-4 py-1.5 rounded-bl-xl">
             {t('subscription.popular')}
           </div>
           
           <CardHeader className="text-center pb-6 pt-8">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center text-white shadow-lg shadow-violet-500/30">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-linear-to-br from-violet-500 to-purple-500 flex items-center justify-center text-white shadow-lg shadow-violet-500/30">
               <Sparkles className="w-10 h-10" />
             </div>
             <CardTitle className="text-3xl font-bold">{plan.name}</CardTitle>
@@ -311,7 +311,7 @@ export default function SubscriptionSection() {
             </ul>
             
             <Button 
-              className="w-full bg-gradient-to-r from-violet-500 via-purple-500 to-violet-600 hover:from-violet-600 hover:via-purple-600 hover:to-violet-700 h-12 text-base font-semibold shadow-lg shadow-violet-500/30"
+              className="w-full bg-linear-to-r from-violet-500 via-purple-500 to-violet-600 hover:from-violet-600 hover:via-purple-600 hover:to-violet-700 h-12 text-base font-semibold shadow-lg shadow-violet-500/30"
               disabled={isRedirecting || !plan.priceId}
               onClick={handleSubscribe}
             >

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { KeyRound, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { notifyApiError } from '@/lib/apiErrors'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/ui/password-input'
@@ -43,7 +44,7 @@ export function ForcedPasswordChangeModal({ isOpen }: ForcedPasswordChangeModalP
       setConfirmPassword('')
       await refreshUser()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('common.unknown_error', 'Something went wrong'))
+      notifyApiError(error, t, t('common.unknown_error', 'Something went wrong'))
     } finally {
       setSaving(false)
     }

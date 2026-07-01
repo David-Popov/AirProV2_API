@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { authService } from '@/services';
+import { translateApiError } from '@/lib/apiErrors';
 import { toast } from 'sonner';
 import { KeyRound, XCircle } from 'lucide-react';
 
@@ -59,7 +60,7 @@ export default function ResetPasswordPage() {
       toast.success(t('auth.password_reset_success', 'Password reset successfully!'));
       navigate('/login', { state: { message: t('auth.password_reset_success', 'Password reset successfully! You can now log in with your new password.') } });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : t('auth.reset_failed', 'Failed to reset password. The link may have expired.');
+      const message = err instanceof Error ? translateApiError(err.message) : t('auth.reset_failed', 'Failed to reset password. The link may have expired.');
       setError(message);
     } finally {
       setIsSubmitting(false);

@@ -11,6 +11,8 @@ export interface MontageInventoryItem {
   item_name?: string;
   item_sku?: string;
   unit_of_measure?: string;
+  /** Whether the referenced inventory item is still active. Null when the item no longer exists. */
+  item_is_active?: boolean | null;
 }
 
 export interface MontagePhoto {

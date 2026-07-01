@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { notifyApiError } from '@/lib/apiErrors'
 import {
   Building2,
   Plus,
@@ -126,7 +127,7 @@ export default function CompaniesPage() {
       resetForm()
       loadCompanies()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('companies.error_creating', 'Failed to create company'))
+      notifyApiError(error, t, t('companies.error_creating', 'Failed to create company'))
     }
   }
   
@@ -139,7 +140,7 @@ export default function CompaniesPage() {
       resetForm()
       loadCompanies()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('companies.error_updating', 'Failed to update company'))
+      notifyApiError(error, t, t('companies.error_updating', 'Failed to update company'))
     }
   }
   
@@ -152,7 +153,7 @@ export default function CompaniesPage() {
       setSelectedCompany(null)
       loadCompanies()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('companies.error_deleting', 'Failed to delete company'))
+      notifyApiError(error, t, t('companies.error_deleting', 'Failed to delete company'))
     }
   }
   
@@ -173,7 +174,7 @@ export default function CompaniesPage() {
       setIsSubscriptionDialogOpen(false)
       loadCompanies()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('companies.error_updating_subscription', 'Failed to update subscription'))
+      notifyApiError(error, t, t('companies.error_updating_subscription', 'Failed to update subscription'))
     }
   }
   
@@ -183,7 +184,7 @@ export default function CompaniesPage() {
       toast.success(t('companies.subscription_renewed', 'Subscription renewed successfully'))
       loadCompanies()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('companies.error_renewing', 'Failed to renew subscription'))
+      notifyApiError(error, t, t('companies.error_renewing', 'Failed to renew subscription'))
     }
   }
   
@@ -510,7 +511,7 @@ export default function CompaniesPage() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-foreground">{t('companies.name', 'Company Name')} *</label>
+                <Label className="text-foreground">{t('companies.name', 'Company Name')} *</Label>
                 <Input
                   value={formData.company_name}
                   onChange={(e) => setFormData({...formData, company_name: e.target.value})}
@@ -518,7 +519,7 @@ export default function CompaniesPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground">{t('companies.type', 'Company Type')} *</label>
+                <Label className="text-foreground">{t('companies.type', 'Company Type')} *</Label>
                 <Select
                   value={formData.company_type}
                   onValueChange={(value) => setFormData({...formData, company_type: value as typeof formData.company_type})}
@@ -538,7 +539,7 @@ export default function CompaniesPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-foreground">{t('companies.bulstat', 'BULSTAT')}</label>
+                <Label className="text-foreground">{t('companies.bulstat', 'BULSTAT')}</Label>
                 <Input
                   value={formData.bulstat || ''}
                   onChange={(e) => setFormData({...formData, bulstat: e.target.value})}
@@ -546,7 +547,7 @@ export default function CompaniesPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground">{t('companies.vat', 'VAT Number')}</label>
+                <Label className="text-foreground">{t('companies.vat', 'VAT Number')}</Label>
                 <Input
                   value={formData.vat_number || ''}
                   onChange={(e) => setFormData({...formData, vat_number: e.target.value})}
@@ -556,7 +557,7 @@ export default function CompaniesPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="text-sm font-medium text-foreground">{t('companies.city', 'City')}</label>
+                <Label className="text-foreground">{t('companies.city', 'City')}</Label>
                 <Input
                   value={formData.city || ''}
                   onChange={(e) => setFormData({...formData, city: e.target.value})}
@@ -564,7 +565,7 @@ export default function CompaniesPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground">{t('companies.address', 'Address')}</label>
+                <Label className="text-foreground">{t('companies.address', 'Address')}</Label>
                 <Input
                   value={formData.address || ''}
                   onChange={(e) => setFormData({...formData, address: e.target.value})}
@@ -572,7 +573,7 @@ export default function CompaniesPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground">{t('companies.postal_code', 'Postal Code')}</label>
+                <Label className="text-foreground">{t('companies.postal_code', 'Postal Code')}</Label>
                 <Input
                   value={formData.postal_code || ''}
                   onChange={(e) => setFormData({...formData, postal_code: e.target.value})}
@@ -582,7 +583,7 @@ export default function CompaniesPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-foreground">{t('companies.phone', 'Phone')}</label>
+                <Label className="text-foreground">{t('companies.phone', 'Phone')}</Label>
                 <Input
                   value={formData.phone || ''}
                   onChange={(e) => setFormData({...formData, phone: e.target.value})}
@@ -590,7 +591,7 @@ export default function CompaniesPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground">{t('companies.email', 'Email')}</label>
+                <Label className="text-foreground">{t('companies.email', 'Email')}</Label>
                 <Input
                   type="email"
                   value={formData.email || ''}
@@ -649,7 +650,7 @@ export default function CompaniesPage() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div>
-              <label className="text-sm font-medium text-foreground">{t('companies.subscription_plan', 'Plan')}</label>
+              <Label className="text-foreground">{t('companies.subscription_plan', 'Plan')}</Label>
               <Select
                 value={subscriptionForm.subscription_plan}
                 onValueChange={(value) => setSubscriptionForm({...subscriptionForm, subscription_plan: value})}
@@ -667,7 +668,7 @@ export default function CompaniesPage() {
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">{t('companies.subscription_status', 'Status')}</label>
+              <Label className="text-foreground">{t('companies.subscription_status', 'Status')}</Label>
               <Select
                 value={subscriptionForm.subscription_status}
                 onValueChange={(value) => setSubscriptionForm({...subscriptionForm, subscription_status: value})}

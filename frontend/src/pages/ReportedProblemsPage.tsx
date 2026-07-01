@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { formatDateTime } from '@/lib/formatters'
 import { useTranslation } from 'react-i18next'
 import {
   MessageSquareWarning,
@@ -36,6 +37,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { PROBLEM_CATEGORY_COLORS } from '@/lib/status-maps'
 import { problemReportsService } from '@/services/problem-reports'
 import type { ReportedProblem } from '@/types'
 import { ProblemCategory, PROBLEM_CATEGORY_OPTIONS } from '@/types'
@@ -73,22 +75,6 @@ export default function ReportedProblemsPage() {
     return option ? t(option.labelKey) : String(category)
   }
 
-  const getCategoryColor = (category: ProblemCategory): string => {
-    switch (category) {
-      case ProblemCategory.Bug:
-        return 'bg-red-500/10 text-red-500 border-red-500/20'
-      case ProblemCategory.FeatureNotWorking:
-        return 'bg-orange-500/10 text-orange-500 border-orange-500/20'
-      case ProblemCategory.DataNotInserted:
-        return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
-      case ProblemCategory.UIIssue:
-        return 'bg-blue-500/10 text-blue-500 border-blue-500/20'
-      case ProblemCategory.PerformanceIssue:
-        return 'bg-purple-500/10 text-purple-500 border-purple-500/20'
-      default:
-        return 'bg-gray-500/10 text-gray-500 border-gray-500/20'
-    }
-  }
 
   const handleViewDetails = async (problem: ReportedProblem) => {
     setSelectedProblem(problem)
@@ -141,15 +127,6 @@ export default function ReportedProblemsPage() {
     }
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
 
   return (
     <main className="lg:pl-64 min-h-screen bg-linear-to-br from-background to-muted/30">
@@ -202,7 +179,7 @@ export default function ReportedProblemsPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={getCategoryColor(problem.category)}>
+                          <Badge variant="outline" className={PROBLEM_CATEGORY_COLORS[problem.category]}>
                             {getCategoryLabel(problem.category)}
                           </Badge>
                         </TableCell>
@@ -212,7 +189,7 @@ export default function ReportedProblemsPage() {
                           </p>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                          {formatDate(problem.createdAt)}
+                          {formatDateTime(problem.createdAt)}
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
@@ -254,7 +231,7 @@ export default function ReportedProblemsPage() {
                 {t('problem_reports.report_details')}
               </DialogTitle>
               <DialogDescription>
-                {selectedProblem && formatDate(selectedProblem.createdAt)}
+                {selectedProblem && formatDateTime(selectedProblem.createdAt)}
               </DialogDescription>
             </DialogHeader>
 
@@ -270,7 +247,7 @@ export default function ReportedProblemsPage() {
 
                 <div className="flex items-center gap-3">
                   <Tag className="w-5 h-5 text-muted-foreground" />
-                  <Badge variant="outline" className={getCategoryColor(selectedProblem.category)}>
+                  <Badge variant="outline" className={PROBLEM_CATEGORY_COLORS[selectedProblem.category]}>
                     {getCategoryLabel(selectedProblem.category)}
                   </Badge>
                 </div>

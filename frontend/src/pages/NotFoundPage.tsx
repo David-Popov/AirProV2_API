@@ -7,8 +7,8 @@ export default function NotFoundPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 left-1/3 w-[300px] h-[300px] bg-primary/3 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-150 h-150 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 left-1/3 w-75 h-75 bg-primary/3 rounded-full blur-3xl" />
       </div>
 
       <div className="relative z-10 text-center max-w-md mx-auto animate-fade-in">

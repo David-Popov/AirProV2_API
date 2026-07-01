@@ -286,14 +286,20 @@ public class AirConditionerService : IAirConditionerService
     {
         try
         {
-            var entity = await _repository.GetErrorCodeByIdAsync(errorCodeId);
+            // SQL projection (not Adapt) so the AirConditioner JOIN is generated and
+            // AirConditionerName is populated — consistent with the list endpoints.
+            var dto = await _context.ErrorCodes
+                .AsNoTracking()
+                .Where(e => e.Id == errorCodeId)
+                .ProjectToType<ErrorCodeDto>()
+                .FirstOrDefaultAsync();
 
-            if (entity is null)
+            if (dto is null)
             {
                 throw new NotFoundException("Error code not found");
             }
-            
-            return entity.Adapt<ErrorCodeDto>();
+
+            return dto;
         }
         catch (Exception e)
         {
@@ -327,6 +333,32 @@ public class AirConditionerService : IAirConditionerService
                 .AsNoTracking()
                 .ProjectToType<ErrorCodeDto>();
             return await PagedList<ErrorCodeDto>.CreateAsync(query, pageParameters);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, e.Message);
+            throw;
+        }
+    }
+
+    public async Task<ErrorCodeStatsDto> GetErrorCodeStatsAsync()
+    {
+        try
+        {
+            // Aggregate over the whole catalog at the SQL level — no rows materialized.
+            return await _context.ErrorCodes
+                .AsNoTracking()
+                .GroupBy(_ => 1)
+                .Select(g => new ErrorCodeStatsDto
+                {
+                    Total = g.Count(),
+                    WithSolutions = g.Count(e => e.Solution != null && e.Solution.Trim() != ""),
+                    AirConditioners = g.Select(e => e.AirConditionerId)
+                        .Where(id => id != null)
+                        .Distinct()
+                        .Count()
+                })
+                .FirstOrDefaultAsync() ?? new ErrorCodeStatsDto();
         }
         catch (Exception e)
         {

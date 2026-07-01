@@ -423,7 +423,7 @@ export default function AirConditionerDetailsPage() {
         open={!!selectedErrorCode}
         onOpenChange={(open) => !open && setSelectedErrorCode(null)}
       >
-        <DialogContent className="bg-card border-border text-card-foreground sm:max-w-[500px]">
+        <DialogContent className="bg-card border-border text-card-foreground sm:max-w-125">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
               <span className="font-mono text-2xl font-bold text-destructive">

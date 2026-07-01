@@ -1,4 +1,5 @@
 import { logger } from '@/lib/logger'
+import { ADMIN_COMPANY_STATUS_VARIANT } from '@/lib/status-maps'
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -108,14 +109,9 @@ export default function AdminCompaniesPage() {
     }
   }
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'Active': return <Badge variant="success">{status}</Badge>
-      case 'Trial': return <Badge variant="info">{status}</Badge>
-      case 'Expired': case 'Cancelled': return <Badge variant="destructive">{status}</Badge>
-      default: return <Badge variant="secondary">{status}</Badge>
-    }
-  }
+  const getStatusBadge = (status: string) => (
+    <Badge variant={ADMIN_COMPANY_STATUS_VARIANT[status] ?? 'secondary'}>{status}</Badge>
+  )
 
   const FilterPanel = () => (
     <div className="space-y-4">

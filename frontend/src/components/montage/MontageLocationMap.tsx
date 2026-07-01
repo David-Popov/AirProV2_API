@@ -66,7 +66,7 @@ export function MontageLocationMap({ address, city, clientName }: MontageLocatio
           <iframe
             src={mapEmbedUrl}
             title={`Map showing location of ${clientName || 'client'}`}
-            className="w-full h-[300px]"
+            className="w-full h-75"
             style={{ border: 0 }}
             allowFullScreen
             loading="lazy"

@@ -203,7 +203,7 @@ export default function HomePage() {
                 { label: 'Inventory', val: '247', trend: '+2%', color: 'text-violet-600 dark:text-violet-400', bg: 'from-violet-500/20 to-violet-500/5', trendColor: 'text-amber-500' },
                 { label: 'Team', val: '6', trend: 'Active', color: 'text-amber-600 dark:text-amber-400', bg: 'from-amber-500/20 to-amber-500/5', trendColor: 'text-green-500' },
               ].map((s) => (
-                <div key={s.label} className={`bg-gradient-to-br ${s.bg} rounded-xl p-3 border border-border/40`}>
+                <div key={s.label} className={`bg-linear-to-br ${s.bg} rounded-xl p-3 border border-border/40`}>
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-xs text-muted-foreground">{s.label}</p>
                     <span className={`text-[10px] font-medium ${s.trendColor}`}>{s.trend}</span>
@@ -459,7 +459,7 @@ function FeatureCard({ icon: Icon, title, description, iconBg, iconColor }: Feat
       whileHover={{ y: -5, transition: { duration: 0.2 } }}
       className="group bg-card/70 backdrop-blur-sm border border-border/50 rounded-2xl p-7 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-colors duration-300"
     >
-      <div className={`w-12 h-12 bg-gradient-to-br ${iconBg} rounded-xl flex items-center justify-center mb-5 group-hover:scale-105 transition-transform duration-200`}>
+      <div className={`w-12 h-12 bg-linear-to-br ${iconBg} rounded-xl flex items-center justify-center mb-5 group-hover:scale-105 transition-transform duration-200`}>
         <Icon className={`w-6 h-6 ${iconColor}`} />
       </div>
       <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>

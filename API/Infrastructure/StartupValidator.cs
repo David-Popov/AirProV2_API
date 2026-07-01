@@ -29,6 +29,23 @@ public static class StartupValidator
 
         if (env.IsDevelopment())
         {
+            // In Development we don't fail the boot when the Mailtrap token is
+            // missing, but emails would then 401 and be silently dropped by the
+            // background processor. Surface a clear warning so the cause is obvious.
+            var devEmail = services.GetRequiredService<IOptions<EmailSettings>>().Value;
+            if (string.IsNullOrWhiteSpace(devEmail.ApiToken))
+            {
+                var logger = services.GetRequiredService<ILoggerFactory>()
+                    .CreateLogger(nameof(StartupValidator));
+                logger.LogWarning(
+                    "EmailSettings:ApiToken is not configured — all outgoing emails (confirmation, " +
+                    "password reset, employee welcome, etc.) will fail with a Mailtrap 401 and be dropped. " +
+                    "Set it in the gitignored API/appsettings.Development.local.json:  " +
+                    "{ \"EmailSettings\": { \"ApiToken\": \"<token>\" } }.  " +
+                    "For a sandbox inbox also set EmailSettings:ApiBaseUrl=https://sandbox.api.mailtrap.io " +
+                    "and EmailSettings:InboxId=<inboxId> in the same file.");
+            }
+
             return;
         }
 

@@ -10,6 +10,7 @@ import {
   RotateCcw
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { notifyApiError } from '@/lib/apiErrors'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -53,8 +54,7 @@ export function SubscriptionExpiredModal({ isOpen }: SubscriptionExpiredModalPro
     try {
       await stripeService.redirectToCheckout()
     } catch (error) {
-      const message = error instanceof Error ? error.message : t('common.unknown_error')
-      toast.error(message)
+      notifyApiError(error, t)
       setIsRenewing(false)
     }
   }
@@ -67,8 +67,7 @@ export function SubscriptionExpiredModal({ isOpen }: SubscriptionExpiredModalPro
       await refreshUser()
       navigate('/employees')
     } catch (error) {
-      const message = error instanceof Error ? error.message : t('common.unknown_error')
-      toast.error(message)
+      notifyApiError(error, t)
     } finally {
       setIsReturningToFree(false)
     }
@@ -87,8 +86,7 @@ export function SubscriptionExpiredModal({ isOpen }: SubscriptionExpiredModalPro
       logout()
       navigate('/login')
     } catch (error) {
-      const message = error instanceof Error ? error.message : t('common.unknown_error')
-      toast.error(message)
+      notifyApiError(error, t)
     } finally {
       setIsDeleting(false)
       setShowDeleteConfirm(false)
@@ -104,7 +102,7 @@ export function SubscriptionExpiredModal({ isOpen }: SubscriptionExpiredModalPro
     <>
       <Dialog open={isOpen} onOpenChange={() => {}}>
         <DialogContent 
-          className="bg-card border-border sm:max-w-[500px]"
+          className="bg-card border-border sm:max-w-125"
           onPointerDownOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
