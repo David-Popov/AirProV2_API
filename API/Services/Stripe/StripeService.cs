@@ -61,7 +61,7 @@ public class StripeService : IStripeService
 
     public async Task<CheckoutSessionResponseDto> CreateCheckoutSessionForUserAsync(string userId, string successUrl, string cancelUrl)
     {
-        var company = await GetCallerCompanyAsync(userId);
+        var company = await GetCallerCompanyAsync(userId, trackForUpdate: true);
 
         if (string.IsNullOrEmpty(_stripeSettings.PremiumPriceId))
         {
