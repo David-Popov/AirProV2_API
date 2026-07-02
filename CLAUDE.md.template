@@ -1,0 +1,86 @@
+# CLAUDE.md — AirProV2_API
+
+<!-- Copy this file to the repo root as CLAUDE.md (it is gitignored there by design).
+     Master copy lives at CLAUDE.md.template in the repo root — update both when conventions change. -->
+
+SaaS for Bulgarian HVAC companies: montages, inventory, employees, Stripe subscriptions.
+Solution `AirProV2_API.sln` = `API/` (.NET 10 ASP.NET Core, EF Core 10 + PostgreSQL, Identity + JWT,
+MinIO, Stripe) + `API.Tests/` (xUnit, NSubstitute, EF InMemory). `frontend/` = React 19 + Vite 7 +
+TypeScript + Tailwind 4 + TanStack Query + i18next; the admin panel is inside the SPA
+(`frontend/src/pages/admin/`). Ignore the stray `API/API.sln` — always use the root solution.
+
+## Commands
+
+Backend (needs .NET **10** SDK; tests need no DB or external services):
+
+```bash
+dotnet build AirProV2_API.sln --configuration Release
+dotnet test AirProV2_API.sln
+```
+
+Frontend (from `frontend/`):
+
+```bash
+npm ci
+npm run typecheck   # tsc -b --noEmit — MANDATORY; `build` does NOT typecheck (removed for perf)
+npm run lint
+npm run build
+npm run dev         # :5173
+```
+
+Full local stack: `docker compose -f docker-compose.local.yml up` (frontend :3000, API :8080 via
+nginx `/api`, Postgres, MinIO; dev secrets baked in).
+**Trap:** plain `docker-compose.yml` runs the backend in Production mode and will crash-loop
+without Stripe/Mailtrap secrets — don't use it for local dev.
+
+Host-run API: `cd API && dotnet run` (:5209) — requires the `EncryptionSettings:Key` user-secret
+or a copy of `API/appsettings.Development.local.json.example`; needs Postgres running
+(migrations auto-apply at startup). Dev seed logins exist in Development only.
+
+## Startup validation tripwires (`API/Infrastructure/StartupValidator.cs`)
+
+- `EncryptionSettings:Key` must be **exactly 16 characters**
+- `JwtSettings:SecretKey` must be **≥ 32 characters**
+- Outside Development, Stripe `SecretKey`/`WebhookSecret` and Mailtrap `ApiToken` are **required** —
+  a config mistake here only surfaces as a prod crash-loop
+
+## Config changes: sweep all 6 places
+
+Any setting/env-var change must be applied consistently across:
+1. the settings class + DI binding (`API/Infrastructure/`)
+2. `appsettings.json` / `.Development.json` / `.Production.json`
+3. `API/appsettings.Development.local.json.example`
+4. `docker-compose.local.yml` **and** `docker-compose.prod.yml` (`Section__Key` form)
+5. root `.env.example` (prod secrets; compose.prod reads `${VAR}` from `.env`)
+6. `StartupValidator.cs` if required
+Verify with `docker compose -f <file> config -q`. Email is **Mailtrap HTTP API** (Bearer token),
+not SMTP — ignore/clean up any SMTP-shaped leftovers in appsettings.Production.json.
+
+## i18n
+
+Every UI string goes through `t('…')`. Update **both** `frontend/src/locales/en/translation.json`
+and `bg/translation.json` in the same commit, same nested position — bg is the fallback and the
+primary market. Run `node scripts/check-i18n-parity.mjs` if it exists. These two files are the
+most-edited files in the repo; keep keys grouped per page/feature as already done.
+
+## Git & deploy conventions
+
+- Flow: feature branch → `dev` → `main`, always via merges/PRs. Never apply the same fix as
+  separate commits on two branches. Delete `claude/*` branches right after merge.
+- **Verify before push/merge:** dotnet test + typecheck + lint + build must be green locally;
+  never merge a PR before CI completes.
+- Deploy is `.github/workflows/deploy.yml` (SSH to DigitalOcean, push to `main`). In deploy
+  scripts **never `git pull`** — use `git fetch && git checkout main && git reset --hard origin/main`.
+  Compose project name is `airpro-prod`; prod frontend owns host port 80. There is **no staging
+  environment** (removed Jun 2026) — local verification is the only pre-prod gate.
+- The prod server is small: keep `tsc` out of `npm run build`, avoid dependencies with huge module
+  graphs (Phosphor icons once caused 943-second builds; we use lucide-react).
+
+## Known quirks — do not "helpfully" fix without asking
+
+- README links to `docs/`, `Data/*.sql`, and a scraper that don't exist in the tree; note `/docs/`
+  and `/Data/` are gitignored — nothing written there reaches git
+- `frontend/README.md` is the untouched Vite template
+- CORS policy is named "AllowAll" but prod origins are restricted via `CorsSettings`
+- `API/Folder.DotSettings.user` is tracked; `API/skills-lock.json` is intentional (Stripe skills)
+- `CLAUDE.md` and `.claude/` are gitignored on purpose — never `git add -f` them
